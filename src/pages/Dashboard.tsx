@@ -5,7 +5,8 @@ import {
   Users, 
   PackageOpen, 
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Gift
 } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -43,7 +44,7 @@ export default function Dashboard() {
         supabase.from('customer_visits').select('*').eq('is_deleted', false).order('visit_date', { ascending: false }),
         supabase.from('expenses').select('*').eq('is_deleted', false).order('date', { ascending: false }),
         supabase.from('products').select('*').eq('is_deleted', false),
-        supabase.from('customers').select('id, created_at').eq('is_deleted', false)
+        supabase.from('customers').select('id, created_at, name, dob, phone').eq('is_deleted', false)
       ]);
 
       setVisits(visitsData || []);
@@ -73,7 +74,38 @@ export default function Dashboard() {
     };
   }, []);
 
+  // --- Birthdays Today ---
   const today = new Date();
+  const todayDate = today.getDate();
+  const todayMonth = today.getMonth() + 1;
+
+  const birthdayCustomers = customers.filter(c => {
+    if (!c.dob) return false;
+    const parts = c.dob.split('-');
+    if (parts.length === 3) {
+      const year = Number(parts[0]);
+      const month = Number(parts[1]);
+      const day = Number(parts[2]);
+      return day === todayDate && month === todayMonth;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (birthdayCustomers.length > 0) {
+      const hasPlayed = sessionStorage.getItem('birthday_sound_played');
+      if (!hasPlayed) {
+        try {
+          const audio = new Audio('/chime.mp3');
+          audio.volume = 0.3; // Low volume, premium feel
+          audio.play().catch(e => console.log('Audio autoplay blocked by browser', e));
+          sessionStorage.setItem('birthday_sound_played', 'true');
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, [birthdayCustomers.length]);
 
   // --- Row 1: Metrics ---
   const todayVisits = visits.filter(v => v.visit_date && isSameDay(new Date(v.visit_date), today));
@@ -142,6 +174,33 @@ export default function Dashboard() {
          </div>
       ) : (
         <>
+          {/* Birthday Notifications */}
+          {birthdayCustomers.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {birthdayCustomers.map(customer => (
+                <motion.div key={customer.id} variants={itemVariants} className="glass-card p-5 relative overflow-hidden group border border-primary/20 bg-primary/5">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl"></div>
+                  <div className="relative z-10 flex items-start gap-4">
+                    <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 shadow-sm backdrop-blur-md">
+                      <Gift className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-light text-white">{customer.name}</h3>
+                      <p className="text-[10px] text-white/60 tracking-[0.2em] uppercase mt-1 font-bold">Birthday Today</p>
+                      
+                      <button 
+                        onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/\D/g,'')}?text=${encodeURIComponent(`Happy Birthday ${customer.name}! Wishing you a wonderful day from TENS11 Salon!`)}`, '_blank')}
+                        className="mt-4 w-full py-2 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 rounded-xl font-bold text-xs transition-all shadow-sm flex justify-center items-center gap-2"
+                      >
+                        Send Wish
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
           {/* Key Daily Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard 
