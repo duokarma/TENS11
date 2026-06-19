@@ -319,7 +319,7 @@ export default function Accounts() {
                 </div>
               ) : (
                 <div className="h-[300px] w-full relative">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="99%" height="100%" minHeight={300}>
                     <PieChart>
                       <Pie
                         data={expenseData}
