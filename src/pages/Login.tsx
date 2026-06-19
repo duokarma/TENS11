@@ -160,14 +160,8 @@ export default function Login() {
             />
 
             <div className="text-center mb-10 relative z-10">
-              <div
-                className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-6"
-                style={{
-                  background: '#D6C1A3',
-                  boxShadow: '0 0 40px rgba(214,193,163,0.25)',
-                }}
-              >
-                <Scissors className="text-[#0E0E0E] w-7 h-7 -rotate-45" strokeWidth={1.5} />
+              <div className="mx-auto w-24 h-24 mb-6 rounded-full overflow-hidden shadow-2xl border border-[#D6C1A3]/20">
+                <img src="/logo.png" alt="TENS11 Logo" className="w-full h-full object-cover" />
               </div>
               <h1
                 className="text-4xl mb-2 leading-none"

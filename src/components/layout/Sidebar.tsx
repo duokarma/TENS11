@@ -44,14 +44,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       
       {/* Brand Header */}
       <div className="flex h-24 shrink-0 items-center px-6 border-b border-white/[0.05] relative">
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center mr-3 shrink-0"
-          style={{
-            background: 'rgba(214,193,163,0.12)',
-            border: '1px solid rgba(214,193,163,0.25)',
-          }}
-        >
-          <Scissors className="w-4 h-4" style={{ color: '#D6C1A3' }} strokeWidth={1.5} />
+        <div className="w-10 h-10 rounded-full flex items-center justify-center mr-3 shrink-0 overflow-hidden shadow-sm" style={{ border: '1px solid rgba(214,193,163,0.25)' }}>
+          <img src="/logo.png" alt="TENS11 Logo" className="w-full h-full object-cover" />
         </div>
         <div>
           <h1
