@@ -21,7 +21,7 @@ export const generateInvoicePDF = (data: InvoiceData) => {
   // Salon Header
   doc.setFontSize(22);
   doc.setTextColor(212, 175, 55); // Gold color
-  doc.text('WOW SALON', 14, 22);
+  doc.text('TENS11 SALON', 14, 22);
   
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
@@ -103,8 +103,8 @@ export const generateInvoicePDF = (data: InvoiceData) => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(150, 150, 150);
-  doc.text('Thank you for choosing WOW Salon!', 105, 280, { align: 'center' });
+  doc.text('Thank you for choosing TENS11 Salon!', 105, 280, { align: 'center' });
 
   // Save PDF
-  doc.save(`WOW_Invoice_${data.invoiceNumber}.pdf`);
+  doc.save(`TENS11_Invoice_${data.invoiceNumber}.pdf`);
 };

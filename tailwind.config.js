@@ -37,7 +37,8 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-        serif: ['Instrument Serif', 'serif'],
+        serif: ['Playfair Display', 'Georgia', 'serif'],
+        display: ['Playfair Display', 'Georgia', 'serif'],
       },
       backgroundImage: {
         'accent-gradient': 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))',
@@ -47,8 +48,9 @@ export default {
         '4xl': '2rem',
       },
       boxShadow: {
-        'premium': '0 20px 40px -10px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.02)',
-        'premium-hover': '0 30px 60px -12px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.03)',
+        'premium': '0 8px 32px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05) inset',
+        'premium-hover': '0 16px 48px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.08) inset',
+        'glass': '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
       }
     },
   },

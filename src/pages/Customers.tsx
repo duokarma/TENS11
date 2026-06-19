@@ -514,7 +514,7 @@ export default function Customers() {
                           {customer.phone}
                           {customer.phone && (
                             <a 
-                              href={`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello from WOW Salon!')}`}
+                              href={`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello from TENS11 Salon!')}`}
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="text-[#25D366] hover:text-[#128C7E] transition-colors bg-[#25D366]/10 p-1.5 rounded-lg"

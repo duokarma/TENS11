@@ -121,8 +121,15 @@ export default function Dashboard() {
       animate="show"
     >
       <div className="mb-12 mt-6">
-        <h1 className="text-6xl font-serif text-white tracking-tight mb-4">Dashboard</h1>
-        <p className="text-white/40 text-sm font-medium tracking-widest uppercase">Executive Overview • {today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
+        <h1
+          className="text-6xl mb-4 leading-none"
+          style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F7F3EE', fontWeight: 400, letterSpacing: '-0.02em' }}
+        >
+          Dashboard
+        </h1>
+        <p className="text-sm font-medium tracking-widest uppercase" style={{ color: 'rgba(207,199,188,0.4)' }}>
+          Executive Overview &bull; {today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+        </p>
       </div>
 
       {loading ? (

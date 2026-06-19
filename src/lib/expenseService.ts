@@ -38,7 +38,7 @@ export const expenseService = {
     // Or do 4 separate aggregated queries. Let's do 4 separate queries with `.select('amount')`
     const now = new Date();
 
-    const [todayRes, monthRes, yearRes, pendingRes] = await Promise.all([
+    const [todayRes, monthRes, yearRes] = await Promise.all([
       supabase.from('expenses')
         .select('amount')
         .eq('is_deleted', false)
