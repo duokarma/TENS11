@@ -67,6 +67,25 @@ CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT U
 CREATE POLICY "Owner can view all profiles" ON public.profiles FOR SELECT USING (public.is_owner());
 CREATE POLICY "Owner can update profiles" ON public.profiles FOR UPDATE USING (public.is_owner());
 
+-- Trigger to automatically create a profile for new users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, role)
+  -- Defaulting to Owner for the first user to allow full access, 
+  -- subsequent users can be changed in the dashboard
+  VALUES (new.id, new.email, 'Owner');
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Drop trigger if exists to prevent errors on re-run
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
 --------------------------------------------------------
 -- 4. CREATE CORE ENTITY TABLES
 --------------------------------------------------------
