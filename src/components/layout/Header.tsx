@@ -29,7 +29,22 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    
+    // Setup real-time listener for customers table to auto-refresh notifications
+    const channel = supabase.channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'customers' },
+        () => {
+          fetchBirthdays();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchBirthdays = async () => {
@@ -63,7 +78,7 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
   const sendWhatsAppGreeting = (customer: any) => {
     if (!customer.phone) return;
     const cleanPhone = customer.phone.replace(/\D/g, '');
-    const message = `Happy Birthday ${customer.name}! \u{1F388} Wishing you a wonderful day from TENS11 Salon! As a gift, enjoy 10% off your next visit. We hope to see you soon!`;
+    const message = `Happy Birthday ${customer.name}! Wishing you a wonderful day from TENS11 Salon! As a gift, enjoy 10% off your next visit. We hope to see you soon!`;
     const url = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
