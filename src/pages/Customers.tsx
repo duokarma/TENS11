@@ -208,11 +208,6 @@ export default function Customers() {
       } else {
         const newCust = await customerService.addCustomer(parsedData);
         
-        // --- Create Visit & Commission automatically ---
-        const selectedStaffMember = staff.find(s => s.id.toString() === customerStaffId.toString());
-        const commissionRate = selectedStaffMember ? Number(selectedStaffMember.commission_rate || 10) : 10;
-        const commissionAmount = serviceTotal * (commissionRate / 100);
-        
         const { data: visitData, error: visitErr } = await supabase.from('customer_visits').insert([{
           customer_id: newCust.id,
           service_total: serviceTotal,
@@ -234,13 +229,6 @@ export default function Customers() {
           );
         }
 
-        await supabase.from('staff_commissions').insert([{
-          staff_id: customerStaffId,
-          visit_id: visitData.id,
-          service_amount: serviceTotal,
-          commission_amount: commissionAmount
-        }]);
-
         toast.success('Customer added and visit recorded successfully!');
       }
       setIsCustomerModalOpen(false);
@@ -261,8 +249,7 @@ export default function Customers() {
     }
   };
 
-  // --- Record Visit Logic ---
-  const openVisitModal = (customer: Customer) => {
+  const openVisitModal = (customer: any) => {
     setCustomerForVisit(customer);
     setVisitServices([]);
     setVisitProducts([]);
@@ -282,7 +269,6 @@ export default function Customers() {
     }
 
     try {
-      // Calculate totals
       let serviceTotal = 0;
       const vServicesData = visitServices.map(vs => {
         const s = services.find(x => x.id.toString() === vs.serviceId.toString())!;
@@ -299,12 +285,7 @@ export default function Customers() {
       });
 
       const grandTotal = serviceTotal + productTotal;
-      // Calculate dynamic commission
-      const selectedStaffMember = staff.find(s => s.id.toString() === visitStaffId.toString());
-      const commissionRate = selectedStaffMember ? Number(selectedStaffMember.commission_rate || 10) : 10;
-      const commissionAmount = serviceTotal * (commissionRate / 100);
 
-      // Insert Visit
       const { data: visitData, error: visitErr } = await supabase.from('customer_visits').insert([{
         customer_id: customerForVisit.id,
         service_total: serviceTotal,
@@ -317,14 +298,12 @@ export default function Customers() {
 
       const visitId = visitData.id;
 
-      // Insert Visit Services
       if (vServicesData.length > 0) {
         await supabase.from('visit_services').insert(
           vServicesData.map(vs => ({ visit_id: visitId, ...vs }))
         );
       }
 
-      // Insert Visit Products and deduct inventory
       if (vProductsData.length > 0) {
         await supabase.from('visit_products').insert(
           vProductsData.map(vp => ({ visit_id: visitId, ...vp }))
@@ -336,15 +315,6 @@ export default function Customers() {
         }
       }
 
-      // Insert Commission
-      await supabase.from('staff_commissions').insert([{
-        staff_id: visitStaffId,
-        visit_id: visitId,
-        service_amount: serviceTotal,
-        commission_amount: commissionAmount
-      }]);
-
-      // Update Customer arrays (services_taken, staff_served)
       const currentServices = customerForVisit.services_taken || [];
       const currentStaff = customerForVisit.staff_served || [];
       const newServices = [...new Set([...currentServices, ...vServicesData.map(vs => vs.service_name)])];
@@ -429,7 +399,7 @@ export default function Customers() {
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Lifetime Revenue</dt>
-                <dd className="text-3xl font-light text-white mt-1">₹{stats.totalRevenue.toLocaleString()}</dd>
+                <dd className="text-3xl font-light text-white mt-1">Rs. {stats.totalRevenue.toLocaleString()}</dd>
               </dl>
             </div>
           </div>
@@ -442,7 +412,7 @@ export default function Customers() {
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Average Spend</dt>
-                <dd className="text-3xl font-light text-white mt-1">₹{Math.round(stats.avgSpend).toLocaleString()}</dd>
+                <dd className="text-3xl font-light text-white mt-1">Rs. {Math.round(stats.avgSpend).toLocaleString()}</dd>
               </dl>
             </div>
           </div>
@@ -527,7 +497,7 @@ export default function Customers() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="font-light text-white text-lg">
-                          ₹{getCustomerTotalSpend(customer).toLocaleString()}
+                          Rs. {getCustomerTotalSpend(customer).toLocaleString()}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right whitespace-nowrap">
@@ -668,7 +638,7 @@ export default function Customers() {
                             <option value="" className="text-white/60">-- Select Service --</option>
                             {Object.entries(groupedServices).map(([category, items]) => (
                               <optgroup key={category} label={category} className="text-white/60">
-                                {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - ₹{s.price}</option>)}
+                                {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - Rs. {s.price}</option>)}
                               </optgroup>
                             ))}
                           </select>
@@ -683,7 +653,7 @@ export default function Customers() {
                     <div className="mt-4 bg-black/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
                       <span className="text-xs font-bold tracking-widest text-white/60 uppercase">Total Amount</span>
                       <span className="text-xl font-light text-white">
-                        ₹{customerServices.reduce((sum, cs) => sum + Number(services.find(s => s.id.toString() === cs.serviceId.toString())?.price || 0), 0).toLocaleString()}
+                        Rs. {customerServices.reduce((sum, cs) => sum + Number(services.find(s => s.id.toString() === cs.serviceId.toString())?.price || 0), 0).toLocaleString()}
                       </span>
                     </div>
                   )}
@@ -754,7 +724,7 @@ export default function Customers() {
                           <option value="" className="text-white/60">-- Select Service --</option>
                           {Object.entries(groupedServices).map(([category, items]) => (
                             <optgroup key={category} label={category} className="text-white/60">
-                              {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - ₹{s.price}</option>)}
+                              {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - Rs. {s.price}</option>)}
                             </optgroup>
                           ))}
                         </select>
@@ -789,7 +759,7 @@ export default function Customers() {
                           className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40"
                         >
                           <option value="" className="text-white/60">-- Select Product --</option>
-                          {products.map(p => <option key={p.id} value={p.id} className="text-white">{(p.name || '').substring(0,40)} - ₹{p.selling_price || p.sellingPrice || 0}</option>)}
+                          {products.map(p => <option key={p.id} value={p.id} className="text-white">{(p.name || '').substring(0,40)} - Rs. {p.selling_price || p.sellingPrice || 0}</option>)}
                         </select>
                         <input 
                           type="number" 
@@ -817,7 +787,7 @@ export default function Customers() {
                 <div className="flex justify-between items-center text-sm font-bold text-white relative z-10">
                   <span className="tracking-wide uppercase text-white/60">Grand Total</span>
                   <span className="text-3xl font-light tracking-tight">
-                    ₹{
+                    Rs. {
                       visitServices.reduce((sum, vs) => sum + Number(services.find(s => s.id.toString() === vs.serviceId.toString())?.price || 0), 0) +
                       visitProducts.reduce((sum, vp) => sum + (Number(products.find(p => p.id.toString() === vp.productId.toString())?.selling_price || products.find(p => p.id.toString() === vp.productId.toString())?.sellingPrice || 0) * vp.quantity), 0)
                     }
@@ -920,7 +890,7 @@ export default function Customers() {
                         <div className="shrink-0 flex flex-col justify-center items-end pl-6 border-l border-white/10 min-w-[120px] gap-3">
                           <div>
                             <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1 block text-right">Total</span>
-                            <span className="text-2xl font-light text-white">₹{visit.grand_total}</span>
+                            <span className="text-2xl font-light text-white">Rs. {visit.grand_total}</span>
                           </div>
                           <button
                             onClick={() => {

@@ -193,7 +193,7 @@ export default function Services() {
                           <div className="font-medium text-white text-base">{service.service_name}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-light text-white text-lg">₹{service.price.toLocaleString()}</div>
+                          <div className="font-light text-white text-lg">Rs. {service.price.toLocaleString()}</div>
                         </td>
                         <td className="px-6 py-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -245,7 +245,7 @@ export default function Services() {
                   {errors.category && <p className="text-danger text-xs mt-1.5">{errors.category.message as string}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold tracking-widest text-white/50 uppercase mb-2">Price (₹) *</label>
+                  <label className="block text-xs font-bold tracking-widest text-white/50 uppercase mb-2">Price (Rs. ) *</label>
                   <input type="number" {...register("price")} className="glass-input w-full px-4 py-3" placeholder="Enter price..." />
                   {errors.price && <p className="text-danger text-xs mt-1.5">{errors.price.message as string}</p>}
                 </div>

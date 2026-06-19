@@ -200,7 +200,7 @@ export default function Packages() {
 
               <div className="mt-auto pt-4 border-t border-white/10 flex justify-between items-center">
                 <span className="text-xs font-bold tracking-widest text-white/60 uppercase">Price</span>
-                <span className="text-2xl font-light text-white">₹{pkg.price}</span>
+                <span className="text-2xl font-light text-white">Rs. {pkg.price}</span>
               </div>
             </div>
           ))}

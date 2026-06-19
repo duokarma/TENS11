@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [visits, setVisits] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -36,16 +37,19 @@ export default function Dashboard() {
       const [
         { data: visitsData },
         { data: expensesData },
-        { data: productsData }
+        { data: productsData },
+        { data: customersData }
       ] = await Promise.all([
         supabase.from('customer_visits').select('*').eq('is_deleted', false).order('visit_date', { ascending: false }),
         supabase.from('expenses').select('*').eq('is_deleted', false).order('date', { ascending: false }),
-        supabase.from('products').select('*').eq('is_deleted', false)
+        supabase.from('products').select('*').eq('is_deleted', false),
+        supabase.from('customers').select('id, created_at').eq('is_deleted', false)
       ]);
 
       setVisits(visitsData || []);
       setExpenses(expensesData || []);
       setProducts(productsData || []);
+      setCustomers(customersData || []);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -61,6 +65,7 @@ export default function Dashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_visits' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, fetchData)
       .subscribe();
 
     return () => {
@@ -82,8 +87,7 @@ export default function Dashboard() {
   const todayProfit = todayRevenue - todayExpensesAmount;
 
   // --- Lifetime Metrics ---
-  const allUniqueCustomerIds = new Set(visits.map(v => v.customer_id).filter(Boolean));
-  const lifetimeCustomersCount = allUniqueCustomerIds.size;
+  const lifetimeCustomersCount = customers.length;
   const lifetimeRevenue = visits.reduce((sum, v) => sum + (Number(v.grand_total) || 0), 0);
   const lifetimeExpensesAmount = expenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
   const lifetimeProfit = lifetimeRevenue - lifetimeExpensesAmount;
@@ -142,14 +146,14 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard 
               title="Today's Revenue" 
-              todayValue={`₹${todayRevenue.toLocaleString()}`}
-              lifetimeValue={`₹${lifetimeRevenue.toLocaleString()}`}
+              todayValue={`Rs. ${todayRevenue.toLocaleString()}`}
+              lifetimeValue={`Rs. ${lifetimeRevenue.toLocaleString()}`}
               icon={IndianRupee} 
             />
             <StatCard 
               title="Today's Profit" 
-              todayValue={`₹${todayProfit.toLocaleString()}`}
-              lifetimeValue={`₹${lifetimeProfit.toLocaleString()}`}
+              todayValue={`Rs. ${todayProfit.toLocaleString()}`}
+              lifetimeValue={`Rs. ${lifetimeProfit.toLocaleString()}`}
               icon={TrendingUp} 
             />
             <StatCard 
@@ -161,8 +165,8 @@ export default function Dashboard() {
             />
             <StatCard 
               title="Today's Expenses" 
-              todayValue={`₹${todayExpensesAmount.toLocaleString()}`}
-              lifetimeValue={`₹${lifetimeExpensesAmount.toLocaleString()}`}
+              todayValue={`Rs. ${todayExpensesAmount.toLocaleString()}`}
+              lifetimeValue={`Rs. ${lifetimeExpensesAmount.toLocaleString()}`}
               icon={IndianRupee} 
             />
           </div>

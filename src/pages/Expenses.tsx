@@ -200,23 +200,23 @@ export default function Expenses() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">Total Capital Invested</p>
-            <p className="text-2xl font-light text-white">₹{totalSpentInventory.toLocaleString()}</p>
+            <p className="text-2xl font-light text-white">Rs. {totalSpentInventory.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">Current Stock Value</p>
-            <p className="text-2xl font-light text-white">₹{currentStockValue.toLocaleString()}</p>
+            <p className="text-2xl font-light text-white">Rs. {currentStockValue.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-danger mb-1">Salon Consumption (Cost)</p>
-            <p className="text-2xl font-light text-danger">₹{costOfConsumed.toLocaleString()}</p>
+            <p className="text-2xl font-light text-danger">Rs. {costOfConsumed.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-success mb-1">Retail Revenue</p>
-            <p className="text-2xl font-light text-success">₹{retailRevenue.toLocaleString()}</p>
+            <p className="text-2xl font-light text-success">Rs. {retailRevenue.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-success mb-1">Net Retail Profit</p>
-            <p className="text-2xl font-light text-success font-bold">₹{retailProfit.toLocaleString()}</p>
+            <p className="text-2xl font-light text-success font-bold">Rs. {retailProfit.toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -293,7 +293,7 @@ export default function Expenses() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="bg-black/40 text-white border border-white/10 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest">{e.category}</span>
                         </td>
-                        <td className="px-6 py-4 font-bold text-white whitespace-nowrap">₹{Number(e.amount).toLocaleString()}</td>
+                        <td className="px-6 py-4 font-bold text-white whitespace-nowrap">Rs. {Number(e.amount).toLocaleString()}</td>
                         <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => handleOpenEdit(e)} className="p-2 text-white/60 hover:bg-black/5 hover:text-white rounded-xl transition-colors"><Edit2 className="w-4 h-4"/></button>
                           <button onClick={() => handleDelete(e.id)} className="p-2 text-danger hover:bg-danger/10 rounded-xl transition-colors"><Trash2 className="w-4 h-4"/></button>
@@ -344,7 +344,7 @@ export default function Expenses() {
                   <div key={cat}>
                     <div className="flex justify-between text-sm mb-2 font-light">
                       <span className="text-white/60">{cat}</span>
-                      <span className="text-white">₹{amount}</span>
+                      <span className="text-white">Rs. {amount}</span>
                     </div>
                     <div className="w-full bg-black/5 rounded-full h-1.5 overflow-hidden">
                       <div className="bg-primary h-full rounded-full" style={{ width: `${Math.min((amount / stats.monthExpenses) * 100, 100)}%` }}></div>
@@ -422,7 +422,7 @@ export default function Expenses() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Amount (₹) *</label>
+                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Amount (Rs. ) *</label>
                   <input 
                     type="number" 
                     required 

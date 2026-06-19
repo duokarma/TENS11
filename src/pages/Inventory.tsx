@@ -216,8 +216,8 @@ export default function Inventory() {
                       <td className="px-6 py-4">
                         <div className="font-medium text-white text-base">{item.name}</div>
                       </td>
-                      <td className="px-6 py-4 text-center text-white/60">₹{item.purchase_price || 0}</td>
-                      <td className="px-6 py-4 text-center text-white/60">₹{item.selling_price || 0}</td>
+                      <td className="px-6 py-4 text-center text-white/60">Rs. {item.purchase_price || 0}</td>
+                      <td className="px-6 py-4 text-center text-white/60">Rs. {item.selling_price || 0}</td>
                       <td className="px-6 py-4 text-center text-white/60">{item.purchased_quantity}</td>
                       <td className="px-6 py-4 text-center text-white/60">{item.sold_quantity}</td>
                       <td className="px-6 py-4 text-center text-white/60">{item.salon_consumption}</td>

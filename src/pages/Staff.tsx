@@ -56,8 +56,7 @@ export default function Staff() {
       const staffData = {
         name: editingStaff.name || editingStaff.staff_name,
         gender: editingStaff.gender,
-        salary: editingStaff.salary || 15000,
-        commission_rate: editingStaff.commission_rate ?? 10
+        salary: editingStaff.salary || 15000
       };
 
       if (editingStaff.id) {
@@ -85,20 +84,14 @@ export default function Staff() {
     }
   };
 
-  const handleCommissionChange = async (id: string, newRate: string) => {
-    const val = parseInt(newRate, 10);
-    if (!isNaN(val) && val >= 0 && val <= 100) {
-      setStaffList(prev => prev.map(s => s.id === id ? { ...s, commission_rate: val } : s));
-      await supabase.from('staff').update({ commission_rate: val }).eq('id', id);
-    }
-  };
+
 
   const handlePaySalary = async (e: React.MouseEvent, staffId: string, amount: number, name: string) => {
     e.stopPropagation();
-    if (confirm(`Pay ₹${amount} to ${name}?`)) {
+    if (confirm(`Pay Rs. ${amount} to ${name}?`)) {
       try {
         await supabase.from('expenses').insert([{
-          title: `Salary & Commission - ${name} (Auto-generated payment for ${format(new Date(), 'MMM yyyy')})`,
+          title: `Salary - ${name} (Auto-generated payment for ${format(new Date(), 'MMM yyyy')})`,
           amount,
           category: 'Salary',
           date: new Date().toISOString()
@@ -124,7 +117,6 @@ export default function Staff() {
     });
 
     const totalServiceRevenue = currentMonthCommissions.reduce((sum, c) => sum + (Number(c.service_amount) || 0), 0);
-    const totalCommission = currentMonthCommissions.reduce((sum, c) => sum + (Number(c.commission_amount) || 0), 0);
 
     const staffVisits = visits.filter(v => {
       if (v.staff_id !== staffId) return false;
@@ -134,7 +126,6 @@ export default function Staff() {
 
     return {
       totalServiceRevenue,
-      commission: totalCommission,
       customersServed: staffVisits.length,
       staffVisits
     };
@@ -174,8 +165,7 @@ export default function Staff() {
             const staffName = staff.name || staff.staff_name || 'Unnamed';
             const metrics = calculateStaffMetrics(staff.id);
             const baseSalary = Number(staff.salary) || 15000;
-            const commissionRate = Number(staff.commission_rate ?? 10);
-            const totalPayable = baseSalary + metrics.commission;
+            const totalPayable = baseSalary;
             
             const initials = staffName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
@@ -188,7 +178,7 @@ export default function Staff() {
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
-                    setEditingStaff({ ...staff, name: staffName, salary: baseSalary, commission_rate: commissionRate });
+                    setEditingStaff({ ...staff, name: staffName, salary: baseSalary });
                     setIsEditModalOpen(true);
                   }}
                   className="absolute top-4 right-4 p-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-full text-white/60 hover:text-white shadow-sm opacity-0 group-hover:opacity-100 transition-all z-10"
@@ -225,28 +215,12 @@ export default function Staff() {
                         />
                       </div>
                     </div>
-                    <div className="flex justify-between items-center bg-black/40 p-4 rounded-xl border border-white/10 shadow-sm relative">
-                      <div className="flex flex-col flex-1">
-                        <label className="text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Commission Rate (%)</label>
-                        <input 
-                          type="number" 
-                          min="0" max="100"
-                          className="glass-input w-24 px-3 py-1.5 bg-black/40 text-white border-white/10 text-sm"
-                          value={commissionRate}
-                          onChange={(e) => handleCommissionChange(staff.id, e.target.value)}
-                        />
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Earned</span>
-                        <span className="font-light text-success text-lg">+ ₹{metrics.commission.toLocaleString()}</span>
-                      </div>
-                    </div>
                   </div>
 
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-sm font-bold tracking-widest text-white/60 uppercase">Total Payable</span>
-                      <span className="text-2xl font-light text-white tracking-tight">₹{totalPayable.toLocaleString()}</span>
+                      <span className="text-2xl font-light text-white tracking-tight">Rs. {totalPayable.toLocaleString()}</span>
                     </div>
                     <button 
                       onClick={(e) => handlePaySalary(e, staff.id, totalPayable, staffName)}
@@ -296,29 +270,15 @@ export default function Staff() {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Base Salary</label>
-                    <input 
-                      type="number" 
-                      required 
-                      value={editingStaff?.salary || 15000} 
-                      onChange={e => setEditingStaff({...editingStaff, salary: Number(e.target.value)})}
-                      className="glass-input bg-black/40 w-full px-4 py-3 border-white/10 text-white shadow-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Commission Rate (%)</label>
-                    <input 
-                      type="number" 
-                      required 
-                      min="0"
-                      max="100"
-                      value={editingStaff?.commission_rate ?? 10} 
-                      onChange={e => setEditingStaff({...editingStaff, commission_rate: Number(e.target.value)})}
-                      className="glass-input bg-black/40 w-full px-4 py-3 border-white/10 text-white shadow-sm"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Base Salary</label>
+                  <input 
+                    type="number" 
+                    required 
+                    value={editingStaff?.salary || 15000} 
+                    onChange={e => setEditingStaff({...editingStaff, salary: Number(e.target.value)})}
+                    className="glass-input bg-black/40 w-full px-4 py-3 border-white/10 text-white shadow-sm"
+                  />
                 </div>
 
               </div>
@@ -372,19 +332,15 @@ export default function Staff() {
                       </div>
                       <div className="flex justify-between items-center text-sm border-b border-white/10 pb-3">
                         <span className="font-light text-white/60">Service Revenue</span>
-                        <span className="font-medium text-white">₹{selectedStaffMetrics.totalServiceRevenue.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm border-b border-white/10 pb-3">
-                        <span className="font-light text-white/60">Commission ({selectedStaff.commission_rate ?? 10}%)</span>
-                        <span className="font-medium text-success">₹{selectedStaffMetrics.commission.toLocaleString()}</span>
+                        <span className="font-medium text-white">Rs. {selectedStaffMetrics.totalServiceRevenue.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center text-sm border-b border-white/10 pb-3">
                         <span className="font-light text-white/60">Base Salary</span>
-                        <span className="font-medium text-white">₹{(selectedStaff.salary || 15000).toLocaleString()}</span>
+                        <span className="font-medium text-white">Rs. {(selectedStaff.salary || 15000).toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center pt-4">
                         <span className="font-bold tracking-widest text-white/60 uppercase text-xs">Total Payout</span>
-                        <span className="font-light text-white text-2xl tracking-tight">₹{((selectedStaff.salary || 15000) + selectedStaffMetrics.commission).toLocaleString()}</span>
+                        <span className="font-light text-white text-2xl tracking-tight">Rs. {(selectedStaff.salary || 15000).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
@@ -408,25 +364,20 @@ export default function Staff() {
                               <th className="px-4 py-4 rounded-tl-lg">Date</th>
                               <th className="px-4 py-4">Customer</th>
                               <th className="px-4 py-4">Services</th>
-                              <th className="px-4 py-4">Service Total</th>
-                              <th className="px-4 py-4 text-right rounded-tr-lg">Commission</th>
+                              <th className="px-4 py-4 text-right rounded-tr-lg">Service Total</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border">
                             {selectedStaffMetrics.staffVisits.sort((a,b) => new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime()).map(v => {
                               const srvNames = v.visit_services?.map((s: any) => s.service_name).join(', ') || 'No Services';
                               const srvTotal = v.service_total || 0;
-                              // Match commission from staff_commissions
-                              const commRec = commissions.find(c => c.visit_id === v.id && c.staff_id === selectedStaff.id);
-                              const commAmt = commRec ? commRec.commission_amount : (srvTotal * ((selectedStaff.commission_rate ?? 10) / 100));
                               
                               return (
                                 <tr key={v.id} className="hover:bg-black/5 transition-colors font-light">
                                   <td className="px-4 py-4 whitespace-nowrap text-white/60">{v.visit_date ? format(new Date(v.visit_date), 'dd MMM yyyy') : ''}</td>
                                   <td className="px-4 py-4 font-medium text-white">{v.customers?.name || 'Walk-in'}</td>
                                   <td className="px-4 py-4 text-white/60">{srvNames}</td>
-                                  <td className="px-4 py-4 text-white">₹{srvTotal.toLocaleString()}</td>
-                                  <td className="px-4 py-4 text-right font-medium text-success">₹{Number(commAmt).toFixed(2)}</td>
+                                  <td className="px-4 py-4 text-right text-white">Rs. {srvTotal.toLocaleString()}</td>
                                 </tr>
                               );
                             })}

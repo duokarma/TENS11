@@ -335,7 +335,7 @@ export default function Accounts() {
                         ))}
                       </Pie>
                       <RechartsTooltip 
-                        formatter={(value: any) => `₹${value}`} 
+                        formatter={(value: any) => `Rs. ${value}`} 
                         contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(10px)' }}
                         itemStyle={{ color: '#fff' }}
                       />
@@ -363,7 +363,7 @@ export default function Accounts() {
                         <p className="text-xs font-light tracking-wide text-white/60 mt-1 uppercase">{format(tx.date, 'dd MMM yyyy, hh:mm a')}</p>
                       </div>
                       <span className={`font-bold text-sm px-3 py-1 rounded-lg border ${tx.type === 'income' ? 'text-success bg-success/10 border-success/20' : 'text-danger bg-danger/10 border-danger/20'}`}>
-                        {tx.type === 'income' ? '+' : '-'}₹{tx.amount.toLocaleString()}
+                        {tx.type === 'income' ? '+' : '-'}Rs. {tx.amount.toLocaleString()}
                       </span>
                     </div>
                   ))

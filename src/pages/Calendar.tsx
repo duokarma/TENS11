@@ -92,7 +92,7 @@ export default function CalendarView() {
                   {dayVisits.length > 0 && (
                     <div className="text-xs space-y-1 mt-auto">
                       <div className={`font-semibold flex items-center ${isSelected ? 'text-green-400' : 'text-success'}`}>
-                         ₹{dayRevenue.toLocaleString()}
+                         Rs. {dayRevenue.toLocaleString()}
                       </div>
                       <div className={`flex items-center ${isSelected ? 'text-white/90' : 'text-white/50'}`}>
                         <Users className="w-3 h-3 mr-1"/> {dayVisits.length}
@@ -135,13 +135,13 @@ export default function CalendarView() {
                 <div key={v.id || i} className="bg-black/40/5 rounded-2xl p-5 border border-white/10 hover:border-white/30 transition-all">
                   <div className="flex justify-between items-start mb-3">
                     <h4 className="font-medium text-white text-lg">{i + 1}. {v.customer?.name || 'Walk-in'}</h4>
-                    <span className="font-bold text-success text-lg tracking-tight">₹{(v.grand_total || 0).toLocaleString()}</span>
+                    <span className="font-bold text-success text-lg tracking-tight">Rs. {(v.grand_total || 0).toLocaleString()}</span>
                   </div>
                   <div className="text-sm text-white/60 space-y-2">
                     {v.visit_services?.map((svc: any, idx: number) => (
                       <div key={`svc-${idx}`} className="flex justify-between items-center bg-black/20 px-3 py-2 rounded-lg border border-white/5">
                         <span className="font-light text-white">{svc.service_name}</span>
-                        <span className="text-white/80 font-medium">₹{svc.price}</span>
+                        <span className="text-white/80 font-medium">Rs. {svc.price}</span>
                       </div>
                     ))}
                     {v.visit_products?.map((prod: any, idx: number) => (
@@ -150,7 +150,7 @@ export default function CalendarView() {
                           <Package className="w-4 h-4 mr-2 text-white/40" /> 
                           {prod.product_name} (x{prod.quantity})
                         </span>
-                        <span className="text-white/80 font-medium">₹{prod.price}</span>
+                        <span className="text-white/80 font-medium">Rs. {prod.price}</span>
                       </div>
                     ))}
                     <div className="pt-3 mt-3 border-t border-white/10 text-xs flex justify-between">
