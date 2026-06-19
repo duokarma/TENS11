@@ -26,8 +26,9 @@ export const generateInvoicePDF = (data: InvoiceData) => {
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
   doc.text('Luxury Hair & Beauty', 14, 28);
-  doc.text('123 Salon Avenue, Style District', 14, 34);
-  doc.text('Phone: +91 98765 43210', 14, 40);
+  doc.text('tower, F13, Khushil, First floor, 14/15', 14, 34);
+  doc.text('Govindnagar, Dahod, Gujarat 389151', 14, 39);
+  doc.text('Phone: +91 98765 43210', 14, 44);
 
   // Invoice Title
   doc.setFontSize(16);
@@ -41,11 +42,11 @@ export const generateInvoicePDF = (data: InvoiceData) => {
   // Customer Details
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0);
-  doc.text('Bill To:', 14, 55);
+  doc.text('Bill To:', 14, 59);
   doc.setFontSize(10);
-  doc.text(data.customerName || 'Walk-in Customer', 14, 62);
+  doc.text(data.customerName || 'Walk-in Customer', 14, 66);
   if (data.customerPhone) {
-    doc.text(`Phone: ${data.customerPhone}`, 14, 68);
+    doc.text(`Phone: ${data.customerPhone}`, 14, 72);
   }
 
   // Table Data
@@ -77,27 +78,27 @@ export const generateInvoicePDF = (data: InvoiceData) => {
 
   // Totals
   doc.setFontSize(10);
-  doc.text('Subtotal:', 140, startY);
-  doc.text(`Rs. ${data.subtotal.toFixed(2)}`, 180, startY, { align: 'right' });
+  doc.text('Subtotal:', 130, startY);
+  doc.text(`Rs. ${data.subtotal.toFixed(2)}`, 190, startY, { align: 'right' });
   
   if (data.discount > 0) {
     startY += 8;
-    doc.text('Discount:', 140, startY);
-    doc.text(`- Rs. ${data.discount.toFixed(2)}`, 180, startY, { align: 'right' });
+    doc.text('Discount:', 130, startY);
+    doc.text(`- Rs. ${data.discount.toFixed(2)}`, 190, startY, { align: 'right' });
   }
 
   if (data.tax > 0) {
     startY += 8;
-    doc.text('Tax:', 140, startY);
-    doc.text(`+ Rs. ${data.tax.toFixed(2)}`, 180, startY, { align: 'right' });
+    doc.text('Tax:', 130, startY);
+    doc.text(`+ Rs. ${data.tax.toFixed(2)}`, 190, startY, { align: 'right' });
   }
 
   startY += 10;
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('Grand Total:', 140, startY);
+  doc.text('Grand Total:', 130, startY);
   doc.setTextColor(212, 175, 55);
-  doc.text(`Rs. ${data.grandTotal.toFixed(2)}`, 180, startY, { align: 'right' });
+  doc.text(`Rs. ${data.grandTotal.toFixed(2)}`, 190, startY, { align: 'right' });
 
   // Footer
   doc.setFontSize(10);
