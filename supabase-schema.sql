@@ -290,26 +290,177 @@ CREATE INDEX IF NOT EXISTS idx_products_name ON public.products(name);
 --------------------------------------------------------
 
 INSERT INTO public.services (service_name, category, price) VALUES 
-('Hair Cuts', 'Hair Services', 500),
-('Shampoo & Conditioning', 'Hair Services', 300),
-('Deep Conditioning', 'Hair Services', 800),
-('Head Massage', 'Hair Services', 400),
-('Hair Styling', 'Hair Services', 600),
-('Hair Fall Treatment', 'Hair Treatments', 2000),
-('Anti-Dandruff Treatment', 'Hair Treatments', 1800),
-('Keratin Treatment', 'Hair Treatments', 4000),
-('Ombre Colour', 'Hair Colour Services', 4500),
-('Balayage Colour', 'Hair Colour Services', 5000),
-('Botox Treatment', 'Hair Smoothing Services', 5500),
-('Threading', 'Beauty Services', 100),
-('Waxing', 'Beauty Services', 600),
-('Bridal Makeup', 'Beauty Services', 15000),
-('Facial', 'Beauty Services', 1500),
-('Manicure', 'Beauty Services', 500),
-('Pedicure', 'Beauty Services', 600);
+-- Haircut service
+('Hair wash', 'Haircut', 200),
+('Hairwash with blow dry', 'Haircut', 400),
+('Premium hair wash', 'Haircut', 500),
+('Ironing', 'Haircut', 500),
+('Tong', 'Haircut', 700),
+('Crimping', 'Haircut', 700),
+('Normal haircut', 'Haircut', 700),
+('Premium haircut', 'Haircut', 1500),
+
+-- Hair colour service
+('Root touch-up (Ammonia)', 'Hair colour', 1500),
+('Root touch-up (Ammonia free)', 'Hair colour', 2000),
+('Global colour (Ammonia)', 'Hair colour', 3000),
+('Global colour (Ammonia free)', 'Hair colour', 4000),
+('Highlights (Classic)', 'Hair colour', 5000),
+('Highlights with global', 'Hair colour', 9000),
+('Balyage', 'Hair colour', 8000),
+('Omre', 'Hair colour', 8000),
+
+-- Threading service
+('Upper lips (Threading)', 'Threading', 20),
+('Chin (Threading)', 'Threading', 30),
+('Side lock (Threading)', 'Threading', 50),
+('Eyebrow + forehead', 'Threading', 50),
+('Full face (Threading)', 'Threading', 150),
+
+-- Clean up
+('Basic Clean up', 'Clean up', 800),
+('Premium Clean up', 'Clean up', 1000),
+
+-- Facial
+('Basic Facial', 'Facial', 1000),
+('AHA BHA Facial', 'Facial', 1500),
+('Hydra facial', 'Facial', 3000),
+('Advance hydra facial', 'Facial', 5000),
+('Korean glow with hydra', 'Facial', 5000),
+('Korean glow', 'Facial', 3000),
+('Pro bio french glow premium', 'Facial', 4000),
+('Super white treatment', 'Facial', 5000),
+
+-- Skeyndor service
+('Cleanup (Skeyndor)', 'Skeyndor', 1000),
+('Basic facial (Skeyndor)', 'Skeyndor', 2000),
+('Expert cleaning pro (Skeyndor)', 'Skeyndor', 2500),
+('Power c (Skeyndor)', 'Skeyndor', 4000),
+('Power retinol (Skeyndor)', 'Skeyndor', 4000),
+('Aquatherm (Skeyndor)', 'Skeyndor', 4000),
+('Power oxygen (Skeyndor)', 'Skeyndor', 4000),
+
+-- D-Tan
+('Face D-Tan', 'D-Tan', 500),
+('Underarms D-Tan', 'D-Tan', 200),
+('Face & neck D-Tan', 'D-Tan', 600),
+('Full hand D-Tan', 'D-Tan', 600),
+('Front & back D-Tan', 'D-Tan', 700),
+('Full leg D-Tan', 'D-Tan', 800),
+('Full body D-Tan', 'D-Tan', 2500),
+
+-- Wax (Rica/Gel)
+('Upperlips Wax', 'Wax', 50),
+('Chin Wax', 'Wax', 100),
+('Side lock Wax', 'Wax', 150),
+('Under arms Wax', 'Wax', 150),
+('Face Wax', 'Wax', 500),
+('Full hand Wax', 'Wax', 500),
+('Full leg Wax', 'Wax', 1000),
+('Front & back Wax', 'Wax', 700),
+('Full body Wax', 'Wax', 3000),
+('Bikini brazilian Wax', 'Wax', 1500),
+('Bikini rica Wax', 'Wax', 1000),
+
+-- Mani-pedi
+('Manicure basic', 'Mani-pedi', 1200),
+('Peducure basic', 'Mani-pedi', 1500),
+('Manicure premium', 'Mani-pedi', 2000),
+('Pedicure premium', 'Mani-pedi', 3000),
+
+-- Hair spa (Shoulder length)
+('Loreal hair spa', 'Hair spa', 1000),
+('Instant hair spa', 'Hair spa', 1000),
+('Wella hair spa', 'Hair spa', 2000),
+('Shea butter hair spa', 'Hair spa', 2500),
+('Schwarzkopf hair spa', 'Hair spa', 2500),
+('Nashi hair spa', 'Hair spa', 3000),
+('Korean hair spa', 'Hair spa', 4000),
+
+-- Body polishing
+('Body polishing', 'Body polishing', 3000),
+('Dtan body polishing', 'Body polishing', 5000),
+
+-- Body massage
+('Body massage (15 min sauna & 30 min massage)', 'Body massage', 2000),
+('Body masaage (60min)', 'Body massage', 4000),
+('Premium massage with full body care', 'Body massage', 11000),
+
+-- Hair treatment
+('Dandruff treatment', 'Hair treatment', 1500),
+('Hairfall treatment', 'Hair treatment', 1500),
+('Protein treatment', 'Hair treatment', 4000),
+('Smoothening', 'Hair treatment', 5000),
+('Rebounding', 'Hair treatment', 5000),
+('Keratin smooth', 'Hair treatment', 6000),
+('Botox', 'Hair treatment', 6000),
+('Brazillian botox', 'Hair treatment', 7000),
+('Nano plastia', 'Hair treatment', 7000),
+
+-- Nail's service
+('Simple gel polish', 'Nails', 500),
+('Gel polish with art', 'Nails', 700),
+('Extension', 'Nails', 1000),
+('Extension with art', 'Nails', 1200),
+('Gel extension with diamond art work', 'Nails', 1500),
+('Toe gel polish', 'Nails', 500),
+('Toe gel extension', 'Nails', 1000),
+('Simple cat eye', 'Nails', 1200);
 
 INSERT INTO public.staff (name, gender, salary, commission_rate) VALUES 
 ('Rahul (Senior Stylist)', 'Male', 25000, 15),
 ('Priya (Beautician)', 'Female', 20000, 10),
 ('Amit (Hair Expert)', 'Male', 22000, 10);
+
+INSERT INTO public.products (name, purchase_price, selling_price, current_stock) VALUES
+-- Hair care: Nashi Argan
+('Nashi Argan kit', 0, 0, 10),
+('Nashi bloom kit', 0, 0, 10),
+('Nashi bloom mist', 0, 0, 10),
+('Nashi filler kit', 0, 0, 10),
+('Nashi essential kit for hairfall', 0, 0, 10),
+('Nashi mass solution for hair thickning', 0, 0, 10),
+('Nashi armonia for dandruff', 0, 0, 10),
+
+-- Hair care: Wella
+('Color motion kit (Wella)', 0, 0, 10),
+('Color brilliance kit (Wella)', 0, 0, 10),
+
+-- Hair care: Brillare professional
+('Dandruff kit (Brillare)', 0, 0, 10),
+('Hairfall kit (Brillare)', 0, 0, 10),
+
+-- Hair care: Other
+('Keracare shampoo mask', 0, 0, 10),
+('Probio living cream', 0, 0, 10),
+
+-- Hair care: Loreal professional paris
+('Vitamino color kit (Loreal)', 0, 0, 10),
+('Liss umlimited kit (Loreal)', 0, 0, 10),
+('Inforcer kit (Loreal)', 0, 0, 10),
+('Xtenso care blue kit (Loreal)', 0, 0, 10),
+('Xtenso care glod kit (Loreal)', 0, 0, 10),
+
+-- Skin care: Skeyndor
+('Power c kit (Skeyndor)', 0, 0, 10),
+('Power hyaluronic kit (Skeyndor)', 0, 0, 10),
+('Aquatherm (Skeyndor)', 0, 0, 10),
+('Clear balance (Skeyndor)', 0, 0, 10),
+
+-- Skin care: Cares derma
+('Face wash (Cares derma)', 0, 0, 10),
+('Sunacream (Cares derma)', 0, 0, 10),
+('Moisturiser (Cares derma)', 0, 0, 10),
+('Maintenance cream (Cares derma)', 0, 0, 10),
+
+-- Skin care: Urban colour london
+('Face wash (Urban colour)', 0, 0, 10),
+('Sunscream (Urban colour)', 0, 0, 10),
+
+-- Skin care: Age lock
+('Day cream (Age lock)', 0, 0, 10),
+('Night cream (Age lock)', 0, 0, 10),
+('Serum (Age lock)', 0, 0, 10),
+('Face wash (Age lock)', 0, 0, 10);
+
 
