@@ -482,4 +482,12 @@ INSERT INTO public.products (name, purchase_price, selling_price, current_stock)
 ('Serum (Age lock)', 0, 0, 10),
 ('Face wash (Age lock)', 0, 0, 10);
 
+--------------------------------------------------------
+-- 8. ENABLE REALTIME
+--------------------------------------------------------
+BEGIN;
+  DROP PUBLICATION IF EXISTS supabase_realtime;
+  CREATE PUBLICATION supabase_realtime;
+COMMIT;
 
+ALTER PUBLICATION supabase_realtime ADD TABLE public.customers;
