@@ -92,6 +92,17 @@ export default function Accounts() {
 
   useEffect(() => {
     fetchData();
+
+    const channel = supabase
+      .channel('accounts-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_visits' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchData)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [startDate, endDate]);
 
   // Calculations

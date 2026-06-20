@@ -78,6 +78,15 @@ export default function Expenses() {
 
   useEffect(() => {
     loadData();
+
+    const channel = supabase
+      .channel('expenses-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, loadData)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [page, debouncedSearch, filterCategory, filterStatus, filterMonth]);
 
   const resetForm = () => {
