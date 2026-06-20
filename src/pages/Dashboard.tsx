@@ -148,8 +148,8 @@ export default function Dashboard() {
         </div>
       </div>
       <div className="relative z-10">
-        <h3 className="text-[10px] font-bold mb-2 tracking-[0.2em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>{title}</h3>
-        <p className="text-4xl font-light text-white tracking-tight mb-3" style={{ fontFamily: "'Cinzel', serif" }}>{todayValue}</p>
+        <h3 className="text-[11px] font-bold mb-2 tracking-[0.2em] uppercase" style={{ color: 'rgba(212,175,55,0.6)' }}>{title}</h3>
+        <p className="heading-display text-5xl font-light text-white tracking-tight mb-3">{todayValue}</p>
         
         <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid rgba(212,175,55,0.08)' }}>
           <span className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(212,175,55,0.35)' }}>{lifetimeLabel || 'Lifetime'}</span>
@@ -167,10 +167,7 @@ export default function Dashboard() {
       animate="show"
     >
       <div className="mb-12 mt-6">
-        <h1
-          className="text-6xl mb-4 leading-none"
-          style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif", color: '#FFFFFF', fontWeight: 400, letterSpacing: '0.04em' }}
-        >
+        <h1 className="heading-display text-5xl mb-4 leading-none">
           Dashboard
         </h1>
         <p className="text-sm font-medium tracking-widest uppercase" style={{ color: 'rgba(212,175,55,0.4)' }}>
@@ -203,8 +200,8 @@ export default function Dashboard() {
                       <Gift className="w-6 h-6" style={{ color: '#D4AF37' }} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-light text-white">{customer.name}</h3>
-                      <p className="text-[10px] tracking-[0.2em] uppercase mt-1 font-bold" style={{ color: 'rgba(212,175,55,0.5)' }}>Birthday Today</p>
+                      <h3 className="heading-display text-2xl font-light text-white">{customer.name}</h3>
+                      <p className="text-[11px] tracking-[0.2em] uppercase mt-1 font-bold" style={{ color: 'rgba(212,175,55,0.6)' }}>Birthday Today</p>
                       
                       <button 
                         onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/\D/g,'')}?text=${encodeURIComponent(`Happy Birthday ${customer.name}! Wishing you a wonderful day from TENS11 Salon!`)}`, '_blank')}

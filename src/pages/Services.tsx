@@ -108,7 +108,7 @@ export default function Services() {
     <div className="space-y-8 relative max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif", fontWeight: 400, letterSpacing: '0.04em' }}>Services</h2>
+          <h1 className="heading-display text-5xl tracking-tight text-white leading-none mb-1">Services</h1>
           <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Manage your salon's service menu and pricing.</p>
         </div>
         <button 
@@ -129,7 +129,7 @@ export default function Services() {
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Services</dt>
-                <dd className="text-3xl font-light text-white mt-1">{services.length}</dd>
+                <dd className="heading-display text-5xl font-light text-white mt-2">{services.length}</dd>
               </dl>
             </div>
           </div>

@@ -141,7 +141,7 @@ export default function Staff() {
       {/* Header Area */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-4xl tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif", fontWeight: 400, letterSpacing: '0.04em' }}>Staff Management</h2>
+          <h1 className="heading-display text-5xl tracking-tight text-white leading-none mb-1">Staff Management</h1>
           <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Manage team payroll, commissions, and performance.</p>
         </div>
         <button 
@@ -194,7 +194,7 @@ export default function Staff() {
                       <span className="font-bold text-lg transition-colors" style={{ color: '#D4AF37' }}>{initials}</span>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-light text-white tracking-wide">{staffName}</h3>
+                      <h3 className="heading-display text-2xl font-light text-white tracking-wide">{staffName}</h3>
                       <p className="text-sm font-light text-white/60">{staff.gender}</p>
                     </div>
                     <div className="px-3 py-1 rounded-full text-xs font-bold" style={staff.status === 'Active' ? { background: 'rgba(212,175,55,0.08)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' } : { background: 'rgba(207,102,121,0.08)', color: '#CF6679', border: '1px solid rgba(207,102,121,0.2)' }}>
@@ -222,7 +222,7 @@ export default function Staff() {
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-sm font-bold tracking-widest uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Payable</span>
-                      <span className="text-2xl font-light tracking-tight" style={{ color: '#D4AF37' }}>Rs. {totalPayable.toLocaleString()}</span>
+                      <span className="heading-display text-3xl font-light tracking-tight" style={{ color: '#D4AF37' }}>Rs. {totalPayable.toLocaleString()}</span>
                     </div>
                     <button 
                       onClick={(e) => handlePaySalary(e, staff.id, totalPayable, staffName)}

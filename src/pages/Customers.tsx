@@ -351,7 +351,7 @@ export default function Customers() {
     <div className="space-y-8 relative max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif", fontWeight: 400, letterSpacing: '0.04em' }}>Customers</h2>
+          <h1 className="heading-display text-5xl tracking-tight text-white leading-none mb-1">Customers</h1>
           <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Manage your client relationships and view their history.</p>
         </div>
         <button 
@@ -373,7 +373,7 @@ export default function Customers() {
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Customers</dt>
-                <dd className="text-3xl font-light text-white mt-1">{stats.totalCustomers}</dd>
+                <dd className="heading-display text-5xl font-light text-white mt-2">{stats.totalCustomers}</dd>
               </dl>
             </div>
           </div>
@@ -386,7 +386,7 @@ export default function Customers() {
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>New This Month</dt>
-                <dd className="text-3xl font-light text-white mt-1">{stats.newThisMonth}</dd>
+                <dd className="heading-display text-5xl font-light text-white mt-2">{stats.newThisMonth}</dd>
               </dl>
             </div>
           </div>
@@ -399,7 +399,7 @@ export default function Customers() {
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Lifetime Revenue</dt>
-                <dd className="text-3xl font-light text-white mt-1">Rs. {stats.totalRevenue.toLocaleString()}</dd>
+                <dd className="heading-display text-4xl font-light text-white mt-2">Rs. {stats.totalRevenue.toLocaleString()}</dd>
               </dl>
             </div>
           </div>
@@ -412,7 +412,7 @@ export default function Customers() {
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Average Spend</dt>
-                <dd className="text-3xl font-light text-white mt-1">Rs. {Math.round(stats.avgSpend).toLocaleString()}</dd>
+                <dd className="heading-display text-4xl font-light text-white mt-2">Rs. {Math.round(stats.avgSpend).toLocaleString()}</dd>
               </dl>
             </div>
           </div>

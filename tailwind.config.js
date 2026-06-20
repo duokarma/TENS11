@@ -56,12 +56,12 @@ export default {
         '4xl': '2rem',
       },
       boxShadow: {
-        'premium': '0 10px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(212,175,55,0.05) inset',
-        'premium-hover': '0 16px 48px rgba(0,0,0,0.8), 0 0 30px rgba(212,175,55,0.08)',
-        'glass': '0 4px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.04) inset',
-        'gold': '0 4px 16px rgba(212,175,55,0.15)',
-        'gold-hover': '0 8px 32px rgba(212,175,55,0.25)',
-        'gold-glow': '0 0 20px rgba(212,175,55,0.1), 0 0 40px rgba(212,175,55,0.05)',
+        'premium': '0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,175,55,0.05) inset',
+        'premium-hover': '0 12px 40px rgba(0,0,0,0.6), 0 0 20px rgba(212,175,55,0.08)',
+        'glass': '0 4px 20px rgba(0,0,0,0.3), 0 0 0 1px rgba(212,175,55,0.03) inset',
+        'gold': '0 4px 12px rgba(212,175,55,0.1)',
+        'gold-hover': '0 8px 24px rgba(212,175,55,0.15)',
+        'gold-glow': '0 0 16px rgba(212,175,55,0.08), 0 0 32px rgba(212,175,55,0.03)',
       }
     },
   },

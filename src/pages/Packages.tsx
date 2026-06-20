@@ -130,7 +130,7 @@ export default function Packages() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 glass-panel p-6 sm:p-8 animate-in slide-in-from-bottom-4 duration-500">
         <div>
-          <h1 className="text-4xl tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif", fontWeight: 400, letterSpacing: '0.04em' }}>Packages</h1>
+          <h1 className="heading-display text-5xl tracking-tight text-white leading-none mb-1">Packages</h1>
           <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Manage bundled services</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -171,7 +171,7 @@ export default function Packages() {
               
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-light text-white">{pkg.name}</h3>
+                  <h3 className="heading-display text-2xl font-light text-white">{pkg.name}</h3>
                   <p className="text-sm text-white/60 mt-1 line-clamp-2">{pkg.description}</p>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -200,7 +200,7 @@ export default function Packages() {
 
               <div className="mt-auto pt-4 border-t border-white/10 flex justify-between items-center">
                 <span className="text-xs font-bold tracking-widest uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Price</span>
-                <span className="text-2xl font-light" style={{ color: '#D4AF37' }}>Rs. {pkg.price}</span>
+                <span className="heading-display text-3xl font-light" style={{ color: '#D4AF37' }}>Rs. {pkg.price}</span>
               </div>
             </div>
           ))}

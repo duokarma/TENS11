@@ -86,33 +86,26 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                   onClick={onClose}
                   className={({ isActive }) =>
                     cn(
-                      'group flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 relative',
+                      'group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-300 relative',
                       isActive
                         ? 'text-white'
-                        : 'text-[#B8B8B8] hover:text-white'
+                        : 'text-[#B8B8B8] hover:text-white hover:bg-[rgba(212,175,55,0.04)]'
                     )
                   }
                   style={({ isActive }) => isActive ? {
-                    background: 'rgba(212,175,55,0.08)',
-                    border: '1px solid rgba(212,175,55,0.2)',
+                    background: 'linear-gradient(90deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.02) 100%)',
+                    borderLeft: '3px solid #D4AF37',
                   } : {
                     background: 'transparent',
-                    border: '1px solid transparent',
+                    borderLeft: '3px solid transparent',
                   }}
                 >
                   {({ isActive }) => (
                     <>
-                      {/* Active left indicator — gold */}
-                      {isActive && (
-                        <span
-                          className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full"
-                          style={{ background: '#D4AF37', boxShadow: '0 0 8px rgba(212,175,55,0.4)' }}
-                        />
-                      )}
                       <Icon
                         className={cn(
-                          'mr-3 h-4 w-4 flex-shrink-0 transition-all duration-200',
-                          isActive ? 'text-[#D4AF37]' : 'text-[#B8B8B8] group-hover:text-[#D4AF37]'
+                          'mr-3 h-5 w-5 shrink-0 transition-colors duration-300',
+                          isActive ? 'text-[#D4AF37]' : 'text-white/40 group-hover:text-[#D4AF37]'
                         )}
                         strokeWidth={isActive ? 2 : 1.5}
                         aria-hidden="true"
