@@ -56,7 +56,8 @@ export default function Staff() {
       const staffData = {
         name: editingStaff.name || editingStaff.staff_name,
         gender: editingStaff.gender,
-        salary: editingStaff.salary || 15000
+        salary: editingStaff.salary || 15000,
+        status: editingStaff.status || 'Active'
       };
 
       if (editingStaff.id) {
@@ -281,6 +282,18 @@ export default function Staff() {
                     onChange={e => setEditingStaff({...editingStaff, salary: Number(e.target.value)})}
                     className="glass-input bg-black/40 w-full px-4 py-3 border-white/10 text-white shadow-sm"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Status</label>
+                  <select 
+                    value={editingStaff?.status || 'Active'} 
+                    onChange={e => setEditingStaff({...editingStaff, status: e.target.value})}
+                    className="glass-input bg-black/40 w-full px-4 py-3 appearance-none border-white/10 text-white shadow-sm"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
                 </div>
 
               </div>

@@ -172,6 +172,7 @@ CREATE TABLE public.staff (
     commission_rate NUMERIC DEFAULT 10, -- Default 10%
     service_revenue NUMERIC DEFAULT 0,
     commission_earned NUMERIC DEFAULT 0,
+    status TEXT DEFAULT 'Active',
     is_deleted BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
