@@ -557,15 +557,15 @@ export default function Customers() {
       {/* Add/Edit Customer Modal (No Billing) */}
       {isCustomerModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md flex flex-col animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-white/10 bg-black/40 rounded-t-2xl">
+          <div className="glass-panel w-full max-w-md flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-white/10 shrink-0 bg-black/40 rounded-t-2xl">
               <h3 className="text-xl font-light tracking-tight text-white">{customerToEdit ? 'Edit Customer' : 'Add New Customer'}</h3>
               <button onClick={() => setIsCustomerModalOpen(false)} className="p-2 hover:bg-black/5 rounded-full text-white/60 transition-colors">
                 <X className="w-5 h-5"/>
               </button>
             </div>
-            <form onSubmit={handleSubmit(onSubmitCustomer)} className="flex flex-col flex-1">
-              <div className="p-6 space-y-5 bg-black/60">
+            <form onSubmit={handleSubmit(onSubmitCustomer)} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 space-y-5 bg-black/60 flex-1 overflow-y-auto custom-scrollbar">
                 <div>
                   <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Full Name *</label>
                   <input type="text" {...register("name")} className="glass-input w-full px-4 py-3" placeholder="e.g. Jane Doe" />
@@ -660,7 +660,7 @@ export default function Customers() {
                   )}
                 </div>
               </div>
-              <div className="p-6 border-t border-white/10 bg-black/40 rounded-b-2xl flex justify-end gap-3">
+              <div className="p-6 border-t border-white/10 bg-black/40 rounded-b-2xl flex justify-end gap-3 shrink-0">
                 <button type="button" onClick={() => setIsCustomerModalOpen(false)} className="btn-secondary">Cancel</button>
                 <button type="submit" disabled={isSubmitting} className="btn-primary disabled:opacity-50">
                   {customerToEdit ? 'Save Changes' : 'Add Customer'}
