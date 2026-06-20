@@ -11,13 +11,15 @@ export default function CalendarView() {
   const fetchVisits = async () => {
     const { data, error } = await supabase.from('customer_visits').select(`
       *,
-      customer:customer_id(name),
+      customer:customer_id(name, is_deleted),
       staff:staff_id(name),
       visit_services(*),
       visit_products(*)
-    `);
+    `).eq('is_deleted', false);
     if (!error && data) {
-      setVisits(data);
+      // Filter out visits where the customer has been soft-deleted
+      const activeVisits = data.filter((v: any) => !v.customer || v.customer.is_deleted !== true);
+      setVisits(activeVisits);
     } else if (error) {
       console.error("Error fetching visits:", error);
     }
