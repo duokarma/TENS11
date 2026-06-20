@@ -209,7 +209,7 @@ export default function Staff() {
                         <IndianRupee className="w-4 h-4 text-white/60 absolute left-4" />
                         <input 
                           type="number" 
-                          className="glass-input w-full pl-10 pr-4 py-3 bg-black/40 text-white border-white/10"
+                          className="glass-input w-full !pl-10 pr-4 py-3 bg-black/40 text-white border-white/10"
                           value={baseSalary}
                           onChange={(e) => handleSalaryChange(staff.id, e.target.value)}
                         />
