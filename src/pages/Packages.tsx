@@ -141,7 +141,7 @@ export default function Packages() {
               placeholder="Search packages..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="glass-input pl-10 pr-4 py-2.5 w-full sm:w-64 text-sm"
+              className="glass-input !pl-10 pr-4 py-2.5 w-full sm:w-64 text-sm"
             />
           </div>
           <button onClick={openAddModal} className="btn-primary py-2.5 whitespace-nowrap">

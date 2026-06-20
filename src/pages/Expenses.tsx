@@ -387,7 +387,7 @@ export default function Expenses() {
                   <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Amount *</label>
                   <div className="relative flex items-center">
                     <IndianRupee className="w-4 h-4 text-white/60 absolute left-4" />
-                    <input type="number" required min="0" step="0.01" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} className="glass-input w-full pl-10 pr-4 py-3" placeholder="0.00" />
+                    <input type="number" required min="0" step="0.01" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} className="glass-input w-full !pl-10 pr-4 py-3" placeholder="0.00" />
                   </div>
                 </div>
                 
