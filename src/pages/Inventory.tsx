@@ -155,8 +155,8 @@ export default function Inventory() {
     <div className="space-y-8 relative max-w-7xl mx-auto pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-light tracking-tight text-white">Inventory</h2>
-          <p className="text-white/60 mt-2 font-light tracking-wide">Manage your product stock quantities directly.</p>
+          <h2 className="text-4xl tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif", fontWeight: 400, letterSpacing: '0.04em' }}>Inventory</h2>
+          <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Manage your product stock quantities directly.</p>
         </div>
         <button onClick={openAddModal} className="btn-primary">
           <Plus className="mr-2 h-4 w-4" />
@@ -175,7 +175,7 @@ export default function Inventory() {
         />
       </div>
 
-      <div className="glass-card overflow-hidden bg-black/40 border border-white/10 shadow-sm">
+      <div className="glass-card overflow-hidden" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
         {isLoading ? (
           <div className="p-12 text-center text-white/60">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -190,7 +190,7 @@ export default function Inventory() {
           <>
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-sm text-left text-white">
-                <thead className="bg-black/40 text-white/60 text-xs uppercase font-bold tracking-wider border-b border-white/10 shadow-sm">
+                <thead className="text-xs uppercase font-bold tracking-wider" style={{ background: 'rgba(212,175,55,0.04)', borderBottom: '1px solid rgba(212,175,55,0.12)', color: 'rgba(212,175,55,0.6)' }}>
                   <tr>
                     <th className="px-6 py-5">Product Name</th>
                     <th className="px-6 py-5 text-center">Cost</th>
@@ -222,7 +222,7 @@ export default function Inventory() {
                       <td className="px-6 py-4 text-center text-white/60">{item.sold_quantity}</td>
                       <td className="px-6 py-4 text-center text-white/60">{item.salon_consumption}</td>
                       <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-bold border ${item.current_stock <= 0 ? 'bg-danger/10 text-danger border-danger/20' : 'bg-success/10 text-success border-success/20'}`}>
+                        <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-bold`} style={item.current_stock <= 0 ? { background: 'rgba(207,102,121,0.1)', color: '#CF6679', border: '1px solid rgba(207,102,121,0.2)' } : { background: 'rgba(212,175,55,0.08)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }}>
                           {item.current_stock}
                         </span>
                       </td>

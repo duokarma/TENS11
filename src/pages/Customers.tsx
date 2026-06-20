@@ -351,8 +351,8 @@ export default function Customers() {
     <div className="space-y-8 relative max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-light tracking-tight text-white">Customers</h2>
-          <p className="text-white/50 mt-2 font-light tracking-wide">Manage your client relationships and view their history.</p>
+          <h2 className="text-4xl tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif", fontWeight: 400, letterSpacing: '0.04em' }}>Customers</h2>
+          <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Manage your client relationships and view their history.</p>
         </div>
         <button 
           onClick={openAddModal}
@@ -367,12 +367,12 @@ export default function Customers() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <div className="glass-card p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0 bg-black/40/5 p-3 rounded-2xl border border-white/20">
-              <Users className="h-6 w-6 text-white" />
+            <div className="flex-shrink-0 p-3 rounded-2xl" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)' }}>
+              <Users className="h-6 w-6" style={{ color: '#D4AF37' }} />
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Total Customers</dt>
+                <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Customers</dt>
                 <dd className="text-3xl font-light text-white mt-1">{stats.totalCustomers}</dd>
               </dl>
             </div>
@@ -380,12 +380,12 @@ export default function Customers() {
         </div>
         <div className="glass-card p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0 bg-black/40/5 p-3 rounded-2xl border border-white/20">
-              <UserPlus className="h-6 w-6 text-white" />
+            <div className="flex-shrink-0 p-3 rounded-2xl" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)' }}>
+              <UserPlus className="h-6 w-6" style={{ color: '#D4AF37' }} />
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">New This Month</dt>
+                <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>New This Month</dt>
                 <dd className="text-3xl font-light text-white mt-1">{stats.newThisMonth}</dd>
               </dl>
             </div>
@@ -393,12 +393,12 @@ export default function Customers() {
         </div>
         <div className="glass-card p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0 bg-black/40/5 p-3 rounded-2xl border border-white/20">
-              <IndianRupee className="h-6 w-6 text-white" />
+            <div className="flex-shrink-0 p-3 rounded-2xl" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)' }}>
+              <IndianRupee className="h-6 w-6" style={{ color: '#D4AF37' }} />
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Lifetime Revenue</dt>
+                <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Lifetime Revenue</dt>
                 <dd className="text-3xl font-light text-white mt-1">Rs. {stats.totalRevenue.toLocaleString()}</dd>
               </dl>
             </div>
@@ -406,8 +406,8 @@ export default function Customers() {
         </div>
         <div className="glass-card p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0 bg-black/40/5 p-3 rounded-2xl border border-white/20">
-              <TrendingUp className="h-6 w-6 text-white" />
+            <div className="flex-shrink-0 p-3 rounded-2xl" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)' }}>
+              <TrendingUp className="h-6 w-6" style={{ color: '#D4AF37' }} />
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
@@ -446,7 +446,7 @@ export default function Customers() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-white">
-              <thead className="bg-black/40/5 text-white/60 text-xs uppercase font-bold tracking-wider border-b border-white/10">
+              <thead className="text-xs uppercase font-bold tracking-wider" style={{ background: 'rgba(212,175,55,0.04)', borderBottom: '1px solid rgba(212,175,55,0.12)', color: 'rgba(212,175,55,0.6)' }}>
                 <tr>
                   <th className="px-6 py-5">Customer</th>
                   <th className="px-6 py-5">Contact</th>
@@ -470,7 +470,7 @@ export default function Customers() {
                     <tr key={customer.id} className="hover:bg-black/40 transition-colors group">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-4">
-                          <div className="h-11 w-11 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
+                          <div className="h-11 w-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.25)', color: '#D4AF37' }}>
                             {initials}
                           </div>
                           <div>
@@ -504,7 +504,8 @@ export default function Customers() {
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
                             onClick={() => openVisitModal(customer)}
-                            className="px-4 py-2 text-xs font-bold bg-[#F7E7CE] text-[#36454F] hover:bg-[#eadebe] rounded-xl transition-colors flex items-center shadow-sm"
+                            className="px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center shadow-sm"
+                            style={{ background: 'linear-gradient(135deg, #D4AF37, #E5C158)', color: '#0A0A0A' }}
                           >
                             <Plus className="w-3 h-3 mr-1.5" /> Record Visit
                           </button>

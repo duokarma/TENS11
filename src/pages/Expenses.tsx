@@ -182,8 +182,8 @@ export default function Expenses() {
     <div className="space-y-8 pb-10 relative max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-4xl font-light tracking-tight text-white">Expense & Analytics</h2>
-          <p className="text-white/60 mt-2 font-light tracking-wide">Track expenses and monitor inventory profitability.</p>
+          <h2 className="text-4xl tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif", fontWeight: 400, letterSpacing: '0.04em' }}>Expense & Analytics</h2>
+          <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Track expenses and monitor inventory profitability.</p>
         </div>
         <button 
           onClick={() => { resetForm(); setIsModalOpen(true); }}
@@ -195,8 +195,8 @@ export default function Expenses() {
       </div>
 
       {/* Inventory Analytics Cards */}
-      <div className="glass-card p-6 border-warning/20">
-        <h4 className="text-xl font-light tracking-wide text-white mb-6 flex items-center"><Package className="w-5 h-5 mr-3 text-warning"/> Inventory Accounting</h4>
+      <div className="glass-card p-6" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
+        <h4 className="text-xl font-light tracking-wide text-white mb-6 flex items-center" style={{ fontFamily: "'Cinzel', serif" }}><Package className="w-5 h-5 mr-3" style={{ color: '#D4AF37' }}/> Inventory Accounting</h4>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">Total Capital Invested</p>
@@ -223,21 +223,21 @@ export default function Expenses() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="glass-card p-6 flex flex-col justify-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">Today's Expenses</p>
-          <p className="text-3xl font-light text-white tracking-tight flex items-center"><IndianRupee className="w-5 h-5 mr-1 text-white/60"/>{stats.todayExpenses.toLocaleString()}</p>
+        <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(212,175,55,0.4)' }}>Today's Expenses</p>
+          <p className="text-3xl font-light tracking-tight flex items-center" style={{ color: '#D4AF37' }}><IndianRupee className="w-5 h-5 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }}/>{stats.todayExpenses.toLocaleString()}</p>
         </div>
-        <div className="glass-card p-6 flex flex-col justify-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">This Month</p>
-          <p className="text-3xl font-light text-white tracking-tight flex items-center"><IndianRupee className="w-5 h-5 mr-1 text-white/60"/>{stats.monthExpenses.toLocaleString()}</p>
+        <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(212,175,55,0.4)' }}>This Month</p>
+          <p className="text-3xl font-light tracking-tight flex items-center" style={{ color: '#D4AF37' }}><IndianRupee className="w-5 h-5 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }}/>{stats.monthExpenses.toLocaleString()}</p>
         </div>
-        <div className="glass-card p-6 flex flex-col justify-center">
-          <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">This Year</p>
-          <p className="text-3xl font-light text-white tracking-tight flex items-center"><IndianRupee className="w-5 h-5 mr-1 text-white/60"/>{stats.yearExpenses.toLocaleString()}</p>
+        <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(212,175,55,0.4)' }}>This Year</p>
+          <p className="text-3xl font-light tracking-tight flex items-center" style={{ color: '#D4AF37' }}><IndianRupee className="w-5 h-5 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }}/>{stats.yearExpenses.toLocaleString()}</p>
         </div>
-        <div className="glass-card p-6 flex flex-col justify-center border-danger/30 bg-danger/5">
-          <p className="text-xs font-bold uppercase tracking-widest text-danger mb-2">Pending Payments</p>
-          <p className="text-3xl font-light text-danger tracking-tight flex items-center"><IndianRupee className="w-5 h-5 mr-1 opacity-70"/>{stats.pendingPayments.toLocaleString()}</p>
+        <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(207,102,121,0.2)', background: 'rgba(207,102,121,0.05)' }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#CF6679' }}>Pending Payments</p>
+          <p className="text-3xl font-light tracking-tight flex items-center" style={{ color: '#CF6679' }}><IndianRupee className="w-5 h-5 mr-1 opacity-70"/>{stats.pendingPayments.toLocaleString()}</p>
         </div>
       </div>
 
@@ -268,10 +268,10 @@ export default function Expenses() {
             </select>
           </div>
 
-          <div className="glass-card overflow-hidden">
+          <div className="glass-card overflow-hidden" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full text-sm text-left text-white">
-                <thead className="bg-black/40/5 text-white/60 text-xs uppercase font-bold tracking-wider border-b border-white/10">
+                <thead className="text-xs uppercase font-bold tracking-wider" style={{ background: 'rgba(212,175,55,0.04)', borderBottom: '1px solid rgba(212,175,55,0.12)', color: 'rgba(212,175,55,0.6)' }}>
                   <tr>
                     <th className="px-6 py-4">Date</th>
                     <th className="px-6 py-4">Description</th>
@@ -334,8 +334,8 @@ export default function Expenses() {
 
         {/* Sidebar Analytics */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="glass-card p-6 sticky top-6">
-            <h4 className="text-xl font-light tracking-wide text-white mb-6 flex items-center"><PieChart className="w-5 h-5 mr-3 text-white/60"/> Monthly Analytics</h4>
+          <div className="glass-card p-6 sticky top-6" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
+            <h4 className="text-xl font-light tracking-wide text-white mb-6 flex items-center" style={{ fontFamily: "'Cinzel', serif" }}><PieChart className="w-5 h-5 mr-3" style={{ color: '#D4AF37' }}/> Monthly Analytics</h4>
             {stats.categoryAnalytics.length === 0 ? (
               <p className="text-sm text-white/60 font-light">No expenses this month.</p>
             ) : (

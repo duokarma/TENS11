@@ -216,8 +216,8 @@ export default function Accounts() {
     <div className="space-y-6 pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-light tracking-tight text-white">Accounts Overview</h2>
-          <p className="text-white/60 font-light mt-1 tracking-wide">Financial summary, P&L, and expense tracking.</p>
+          <h2 className="text-4xl tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif", fontWeight: 400, letterSpacing: '0.04em' }}>Accounts Overview</h2>
+          <p className="font-light mt-1 tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Financial summary, P&L, and expense tracking.</p>
         </div>
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2 bg-black/40 px-3 py-2 border border-white/10 shadow-sm rounded-lg">
@@ -254,13 +254,13 @@ export default function Accounts() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="glass-card p-6 flex flex-col justify-center border border-white/10 bg-black/40">
+            <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(17,17,17,0.6)' }}>
               <div className="flex justify-between items-start">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-white/60">Total Revenue</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Revenue</h3>
                 <div className="bg-success/10 p-2 rounded-lg border border-success/20"><ArrowUpRight className="h-5 w-5 text-success" /></div>
               </div>
               <div className="mt-4 flex items-center gap-2">
-                <span className="text-4xl font-light text-white flex items-center tracking-tight"><IndianRupee className="w-6 h-6 mr-1 text-white/60" />{totalRevenue.toLocaleString()}</span>
+                <span className="text-4xl font-light tracking-tight flex items-center" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }} />{totalRevenue.toLocaleString()}</span>
               </div>
             </div>
             
@@ -274,29 +274,29 @@ export default function Accounts() {
               </div>
             </div>
 
-            <div className="glass-card p-6 flex flex-col justify-center border border-primary/20 bg-primary/5 relative overflow-hidden">
+            <div className="glass-card p-6 flex flex-col justify-center relative overflow-hidden" style={{ border: '1px solid rgba(212,175,55,0.2)', background: 'rgba(212,175,55,0.05)' }}>
               <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
-                 <Package className="w-24 h-24 text-primary" />
+                 <Package className="w-24 h-24" style={{ color: '#D4AF37' }} />
               </div>
               <div className="relative z-10">
                 <div className="flex justify-between items-start">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Inventory Purchased</h3>
-                  <div className="bg-primary/10 p-2 rounded-lg border border-primary/20"><Package className="h-5 w-5 text-primary" /></div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: '#D4AF37' }}>Inventory Purchased</h3>
+                  <div className="p-2 rounded-lg" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}><Package className="h-5 w-5" style={{ color: '#D4AF37' }} /></div>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
-                  <span className="text-4xl font-light text-primary flex items-center tracking-tight"><IndianRupee className="w-6 h-6 mr-1 text-primary/50" />{totalInventoryPurchasedCost.toLocaleString()}</span>
+                  <span className="text-4xl font-light flex items-center tracking-tight" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }} />{totalInventoryPurchasedCost.toLocaleString()}</span>
                 </div>
                 <p className="text-xs font-light mt-2 text-primary/70">Lifetime product cost</p>
               </div>
             </div>
 
-            <div className="glass-card p-6 relative overflow-hidden flex flex-col justify-center group border border-white/10 bg-black/40">
+            <div className="glass-card p-6 relative overflow-hidden flex flex-col justify-center group" style={{ border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(17,17,17,0.6)' }}>
               <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
-                 <IndianRupee className="w-24 h-24 text-white" />
+                 <IndianRupee className="w-24 h-24" style={{ color: '#D4AF37' }} />
               </div>
               <div className="relative z-10">
                 <div className="flex justify-between items-start">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-white/60">Net Profit</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(212,175,55,0.5)' }}>Net Profit</h3>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <span className={`text-4xl font-light tracking-tight flex items-center ${netProfit >= 0 ? 'text-success' : 'text-danger'}`}>
@@ -311,8 +311,8 @@ export default function Accounts() {
           <div className="grid lg:grid-cols-2 gap-6">
             
             {/* Pie Chart */}
-            <div className="glass-card p-6 border border-white/10 bg-black/40">
-              <h3 className="text-xl font-light text-white mb-6 tracking-tight">Expense Breakdown</h3>
+            <div className="glass-card p-6" style={{ border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(17,17,17,0.6)' }}>
+              <h3 className="text-xl font-light text-white mb-6 tracking-tight" style={{ fontFamily: "'Cinzel', serif" }}>Expense Breakdown</h3>
               {expenseData.length === 0 ? (
                 <div className="h-[300px] flex items-center justify-center text-white/60 text-sm italic font-light">
                   No expenses recorded for this period.
@@ -346,9 +346,9 @@ export default function Accounts() {
             </div>
 
             {/* Recent Transactions List */}
-            <div className="glass-card p-6 flex flex-col h-full max-h-[420px] border border-white/10 bg-black/40">
+            <div className="glass-card p-6 flex flex-col h-full max-h-[420px]" style={{ border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(17,17,17,0.6)' }}>
               <div className="flex justify-between items-center mb-6 shrink-0">
-                <h3 className="text-xl font-light text-white tracking-tight">Recent Transactions</h3>
+                <h3 className="text-xl font-light text-white tracking-tight" style={{ fontFamily: "'Cinzel', serif" }}>Recent Transactions</h3>
                 <span className="text-xs font-bold px-3 py-1.5 bg-black/40 text-white border border-white/10 rounded-lg shadow-sm">Period</span>
               </div>
               

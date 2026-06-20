@@ -128,21 +128,31 @@ export default function Dashboard() {
   const lowStockProducts = products.filter(p => (Number(p.current_stock) || 0) <= 5).slice(0, 10);
 
   const StatCard = ({ title, todayValue, lifetimeValue, lifetimeLabel, icon: Icon, colorClass }: any) => (
-    <motion.div variants={itemVariants} className="glass-card p-5 flex flex-col justify-between relative overflow-hidden group">
-      {/* Decorative background glow */}
-      <div className="absolute -right-10 -top-10 w-40 h-40 bg-black/40/[0.02] rounded-full blur-3xl group-hover:bg-black/40/[0.04] transition-all duration-500"></div>
+    <motion.div
+      variants={itemVariants}
+      className="glass-card p-5 flex flex-col justify-between relative overflow-hidden group"
+      style={{ border: '1px solid rgba(212,175,55,0.1)' }}
+    >
+      {/* Decorative gold glow */}
+      <div
+        className="absolute -right-10 -top-10 w-40 h-40 rounded-full pointer-events-none transition-all duration-500"
+        style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.03) 0%, transparent 70%)' }}
+      />
       
       <div className="flex justify-between items-start mb-4 relative z-10">
-        <div className="p-3 rounded-2xl bg-black/40/[0.03] border border-white/5 shadow-sm backdrop-blur-md">
-          <Icon className="w-5 h-5 text-white/60" />
+        <div
+          className="p-3 rounded-2xl shadow-sm backdrop-blur-md"
+          style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)' }}
+        >
+          <Icon className="w-5 h-5" style={{ color: '#D4AF37' }} />
         </div>
       </div>
       <div className="relative z-10">
-        <h3 className="text-white/40 text-[10px] font-bold mb-2 tracking-[0.2em] uppercase">{title}</h3>
-        <p className="text-4xl font-serif text-white tracking-tight mb-3">{todayValue}</p>
+        <h3 className="text-[10px] font-bold mb-2 tracking-[0.2em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>{title}</h3>
+        <p className="text-4xl font-light text-white tracking-tight mb-3" style={{ fontFamily: "'Cinzel', serif" }}>{todayValue}</p>
         
-        <div className="flex items-center justify-between border-t border-white/5 pt-3">
-          <span className="text-[10px] text-white/40 uppercase tracking-widest">{lifetimeLabel || 'Lifetime'}</span>
+        <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid rgba(212,175,55,0.08)' }}>
+          <span className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(212,175,55,0.35)' }}>{lifetimeLabel || 'Lifetime'}</span>
           <span className="text-sm font-light text-white/70">{lifetimeValue}</span>
         </div>
       </div>
@@ -159,18 +169,18 @@ export default function Dashboard() {
       <div className="mb-12 mt-6">
         <h1
           className="text-6xl mb-4 leading-none"
-          style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F7F3EE', fontWeight: 400, letterSpacing: '-0.02em' }}
+          style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif", color: '#FFFFFF', fontWeight: 400, letterSpacing: '0.04em' }}
         >
           Dashboard
         </h1>
-        <p className="text-sm font-medium tracking-widest uppercase" style={{ color: 'rgba(207,199,188,0.4)' }}>
+        <p className="text-sm font-medium tracking-widest uppercase" style={{ color: 'rgba(212,175,55,0.4)' }}>
           Executive Overview &bull; {today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
         </p>
       </div>
 
       {loading ? (
          <div className="flex justify-center items-center h-64">
-           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+           <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#D4AF37' }}></div>
          </div>
       ) : (
         <>
@@ -178,19 +188,34 @@ export default function Dashboard() {
           {birthdayCustomers.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {birthdayCustomers.map(customer => (
-                <motion.div key={customer.id} variants={itemVariants} className="glass-card p-5 relative overflow-hidden group border border-primary/20 bg-primary/5">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl"></div>
+                <motion.div
+                  key={customer.id}
+                  variants={itemVariants}
+                  className="glass-card p-5 relative overflow-hidden group"
+                  style={{ border: '1px solid rgba(212,175,55,0.2)', background: 'rgba(212,175,55,0.04)' }}
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl" style={{ background: 'rgba(212,175,55,0.06)' }}></div>
                   <div className="relative z-10 flex items-start gap-4">
-                    <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 shadow-sm backdrop-blur-md">
-                      <Gift className="w-6 h-6 text-primary" />
+                    <div
+                      className="p-3 rounded-2xl shadow-sm backdrop-blur-md"
+                      style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}
+                    >
+                      <Gift className="w-6 h-6" style={{ color: '#D4AF37' }} />
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl font-light text-white">{customer.name}</h3>
-                      <p className="text-[10px] text-white/60 tracking-[0.2em] uppercase mt-1 font-bold">Birthday Today</p>
+                      <p className="text-[10px] tracking-[0.2em] uppercase mt-1 font-bold" style={{ color: 'rgba(212,175,55,0.5)' }}>Birthday Today</p>
                       
                       <button 
                         onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/\D/g,'')}?text=${encodeURIComponent(`Happy Birthday ${customer.name}! Wishing you a wonderful day from TENS11 Salon!`)}`, '_blank')}
-                        className="mt-4 w-full py-2 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 rounded-xl font-bold text-xs transition-all shadow-sm flex justify-center items-center gap-2"
+                        className="mt-4 w-full py-2 rounded-xl font-bold text-xs transition-all shadow-sm flex justify-center items-center gap-2"
+                        style={{
+                          background: 'rgba(212,175,55,0.15)',
+                          color: '#D4AF37',
+                          border: '1px solid rgba(212,175,55,0.25)',
+                        }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(212,175,55,0.25)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(212,175,55,0.15)'; }}
                       >
                         Send Wish
                       </button>
@@ -231,15 +256,24 @@ export default function Dashboard() {
           </div>
 
           {/* Low Stock Alerts */}
-          <motion.div variants={itemVariants} className="glass-card p-5 flex flex-col min-h-[300px] mt-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-danger/[0.02] rounded-full blur-[100px] pointer-events-none"></div>
+          <motion.div
+            variants={itemVariants}
+            className="glass-card p-5 flex flex-col min-h-[300px] mt-6 relative overflow-hidden"
+            style={{ border: '1px solid rgba(207,102,121,0.1)' }}
+          >
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[100px] pointer-events-none" style={{ background: 'rgba(207,102,121,0.02)' }}></div>
             
-            <div className="flex justify-between items-center mb-5 shrink-0 border-b border-white/5 pb-4 relative z-10">
+            <div className="flex justify-between items-center mb-5 shrink-0 pb-4 relative z-10" style={{ borderBottom: '1px solid rgba(212,175,55,0.06)' }}>
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-danger/10 border border-danger/20">
-                  <AlertTriangle className="w-4 h-4 text-danger" />
+                <div className="p-2 rounded-xl" style={{ background: 'rgba(207,102,121,0.08)', border: '1px solid rgba(207,102,121,0.15)' }}>
+                  <AlertTriangle className="w-4 h-4" style={{ color: '#CF6679' }} />
                 </div>
-                <h3 className="text-xl font-light tracking-tight text-white">Low Stock Alerts</h3>
+                <h3
+                  className="text-xl font-light tracking-tight text-white"
+                  style={{ fontFamily: "'Cinzel', serif" }}
+                >
+                  Low Stock Alerts
+                </h3>
               </div>
             </div>
             
@@ -252,7 +286,22 @@ export default function Dashboard() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {lowStockProducts.map(product => (
-                    <div key={product.id} className="flex flex-col p-4 rounded-xl bg-danger/[0.03] border border-danger/10 backdrop-blur-md transition-all hover:bg-danger/[0.05] hover:border-danger/30">
+                    <div
+                      key={product.id}
+                      className="flex flex-col p-4 rounded-xl backdrop-blur-md transition-all"
+                      style={{
+                        background: 'rgba(207,102,121,0.04)',
+                        border: '1px solid rgba(207,102,121,0.1)',
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(207,102,121,0.06)';
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(207,102,121,0.2)';
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(207,102,121,0.04)';
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(207,102,121,0.1)';
+                      }}
+                    >
                       <p className="text-base font-medium text-white truncate">{product.name}</p>
                       <div className="flex justify-between items-end mt-4">
                         <div>
@@ -260,8 +309,8 @@ export default function Dashboard() {
                           <p className="text-xs font-semibold text-white/70">5</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[9px] text-danger uppercase tracking-[0.1em] font-bold mb-1">Current Stock</p>
-                          <p className="text-xl font-light text-danger">{product.current_stock || 0}</p>
+                          <p className="text-[9px] uppercase tracking-[0.1em] font-bold mb-1" style={{ color: '#CF6679' }}>Current Stock</p>
+                          <p className="text-xl font-light" style={{ color: '#CF6679' }}>{product.current_stock || 0}</p>
                         </div>
                       </div>
                     </div>

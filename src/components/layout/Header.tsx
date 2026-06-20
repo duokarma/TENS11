@@ -84,14 +84,30 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
   };
 
   return (
-    <header className="flex h-24 shrink-0 items-center justify-between px-4 md:px-8 sticky top-0 z-20 backdrop-blur-md bg-black/40 border-b border-white/5">
+    <header
+      className="flex h-24 shrink-0 items-center justify-between px-4 md:px-8 sticky top-0 z-20 backdrop-blur-md"
+      style={{
+        background: 'rgba(10,10,10,0.6)',
+        borderBottom: '1px solid rgba(212,175,55,0.08)',
+      }}
+    >
       
       {/* Left Side: Sidebar Toggle */}
       <div className="flex items-center">
         {toggleSidebar && (
           <button 
             onClick={toggleSidebar} 
-            className="p-2.5 mr-4 bg-black/40 border border-white/10 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-colors shadow-sm"
+            className="p-2.5 mr-4 rounded-xl text-white/60 hover:text-[#D4AF37] transition-all shadow-sm"
+            style={{
+              background: 'rgba(20,20,20,0.8)',
+              border: '1px solid rgba(212,175,55,0.12)',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(212,175,55,0.3)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(212,175,55,0.12)';
+            }}
           >
             {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -104,19 +120,46 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="p-3 bg-black/40 border border-white/10 rounded-2xl text-white/60 hover:text-white transition-colors relative shadow-sm"
+            className="p-3 rounded-2xl text-white/60 hover:text-[#D4AF37] transition-all relative shadow-sm"
+            style={{
+              background: 'rgba(20,20,20,0.8)',
+              border: '1px solid rgba(212,175,55,0.12)',
+            }}
           >
             <Bell className="w-5 h-5" />
             {birthdays.length > 0 && (
-              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.8)]"></span>
+              <span
+                className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full animate-pulse"
+                style={{
+                  background: '#D4AF37',
+                  boxShadow: '0 0 10px rgba(212,175,55,0.8)',
+                }}
+              ></span>
             )}
           </button>
 
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-3 w-80 bg-black/80 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden z-50">
-              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+            <div
+              className="absolute right-0 mt-3 w-80 rounded-2xl overflow-hidden z-50"
+              style={{
+                background: 'rgba(17,17,17,0.95)',
+                backdropFilter: 'blur(40px)',
+                border: '1px solid rgba(212,175,55,0.15)',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(212,175,55,0.05)',
+              }}
+            >
+              <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
                 <h3 className="text-white font-medium text-sm">Notifications</h3>
-                <span className="text-xs bg-white/10 text-white/80 px-2 py-1 rounded-full">{birthdays.length} New</span>
+                <span
+                  className="text-xs px-2 py-1 rounded-full"
+                  style={{
+                    background: 'rgba(212,175,55,0.1)',
+                    color: '#D4AF37',
+                    border: '1px solid rgba(212,175,55,0.2)',
+                  }}
+                >
+                  {birthdays.length} New
+                </span>
               </div>
               
               <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
@@ -126,14 +169,21 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
                   </div>
                 ) : (
                   birthdays.map((customer) => (
-                    <div key={customer.id} className="p-4 border-b border-white/5 hover:bg-white/5 transition-colors group">
+                    <div
+                      key={customer.id}
+                      className="p-4 hover:bg-white/5 transition-colors group"
+                      style={{ borderBottom: '1px solid rgba(212,175,55,0.05)' }}
+                    >
                       <div className="flex gap-3">
-                        <div className="shrink-0 w-10 h-10 rounded-full bg-[#F4E3C5]/10 text-[#F4E3C5] flex items-center justify-center">
-                          <Gift className="w-5 h-5" />
+                        <div
+                          className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                          style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}
+                        >
+                          <Gift className="w-5 h-5" style={{ color: '#D4AF37' }} />
                         </div>
                         <div className="flex-1">
                           <p className="text-sm text-white mb-1">
-                            It's <span className="font-bold text-[#F4E3C5]">{customer.name}'s</span> Birthday today! {'\u{1F382}'}
+                            It's <span className="font-bold" style={{ color: '#D4AF37' }}>{customer.name}'s</span> Birthday today! {'\u{1F382}'}
                           </p>
                           <button 
                             onClick={() => sendWhatsAppGreeting(customer)}
@@ -152,8 +202,14 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
         </div>
 
         {/* Date Display */}
-        <div className="hidden md:flex items-center gap-2 text-sm font-medium text-white glass-panel px-4 py-2.5">
-          <CalendarIcon className="h-4 w-4 text-white/60" />
+        <div
+          className="hidden md:flex items-center gap-2 text-sm font-medium text-white px-4 py-2.5 rounded-2xl"
+          style={{
+            background: 'rgba(20,20,20,0.8)',
+            border: '1px solid rgba(212,175,55,0.12)',
+          }}
+        >
+          <CalendarIcon className="h-4 w-4" style={{ color: '#D4AF37' }} />
           {todayStr}
         </div>
       </div>

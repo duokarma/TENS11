@@ -9,8 +9,11 @@ export default function AppLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-white selection:bg-primary/30 font-sans p-4 gap-6 relative">
+    <div className="flex h-screen w-full overflow-hidden text-white selection:bg-[#D4AF37]/20 font-sans p-4 gap-6 relative" style={{ background: '#0A0A0A' }}>
       
+      {/* Ambient gold mesh background */}
+      <div className="ambient-gold-mesh" />
+
       {/* Fixed Sidebar Container */}
       <div 
         className={`h-full shrink-0 relative z-10 transition-all duration-300 ease-in-out ${

@@ -140,8 +140,8 @@ export default function Staff() {
       {/* Header Area */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-4xl font-light tracking-tight text-white">Staff Management</h2>
-          <p className="text-white/60 mt-2 font-light tracking-wide">Manage team payroll, commissions, and performance.</p>
+          <h2 className="text-4xl tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif", fontWeight: 400, letterSpacing: '0.04em' }}>Staff Management</h2>
+          <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Manage team payroll, commissions, and performance.</p>
         </div>
         <button 
           onClick={() => {
@@ -172,7 +172,8 @@ export default function Staff() {
             return (
               <div 
                 key={staff.id} 
-                className="glass-card hover:bg-black/40 transition-all cursor-pointer group flex flex-col overflow-hidden relative border border-white/10 bg-black/40"
+                className="glass-card hover:bg-[rgba(212,175,55,0.04)] transition-all cursor-pointer group flex flex-col overflow-hidden relative"
+                style={{ border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(20,20,20,0.8)' }}
                 onClick={() => setSelectedStaffId(staff.id)}
               >
                 <button 
@@ -188,14 +189,14 @@ export default function Staff() {
 
                 <div className="p-6 border-b border-white/10">
                   <div className="flex items-center gap-4 mb-4 pr-8">
-                    <div className="w-14 h-14 rounded-full bg-black/5 border border-white/10 flex items-center justify-center shrink-0 transition-colors">
-                      <span className="text-white font-bold text-lg transition-colors">{initials}</span>
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-colors" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.25)' }}>
+                      <span className="font-bold text-lg transition-colors" style={{ color: '#D4AF37' }}>{initials}</span>
                     </div>
                     <div className="flex-1">
                       <h3 className="text-xl font-light text-white tracking-wide">{staffName}</h3>
                       <p className="text-sm font-light text-white/60">{staff.gender}</p>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-bold border ${staff.status === 'Active' ? 'bg-success/10 text-success border-success/20' : 'bg-danger/10 text-danger border-danger/20'}`}>
+                    <div className="px-3 py-1 rounded-full text-xs font-bold" style={staff.status === 'Active' ? { background: 'rgba(212,175,55,0.08)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' } : { background: 'rgba(207,102,121,0.08)', color: '#CF6679', border: '1px solid rgba(207,102,121,0.2)' }}>
                       {staff.status || 'Active'}
                     </div>
                   </div>
@@ -204,7 +205,7 @@ export default function Staff() {
                 <div className="p-6 flex-1 flex flex-col justify-between bg-black/5" onClick={e => e.stopPropagation()}>
                   <div className="space-y-4 mb-4">
                     <div className="flex flex-col">
-                      <label className="text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Monthly Salary</label>
+                      <label className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: 'rgba(212,175,55,0.5)' }}>Monthly Salary</label>
                       <div className="relative flex items-center">
                         <IndianRupee className="w-4 h-4 text-white/60 absolute left-4" />
                         <input 
@@ -219,12 +220,13 @@ export default function Staff() {
 
                   <div>
                     <div className="flex justify-between items-center mb-4">
-                      <span className="text-sm font-bold tracking-widest text-white/60 uppercase">Total Payable</span>
-                      <span className="text-2xl font-light text-white tracking-tight">Rs. {totalPayable.toLocaleString()}</span>
+                      <span className="text-sm font-bold tracking-widest uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Payable</span>
+                      <span className="text-2xl font-light tracking-tight" style={{ color: '#D4AF37' }}>Rs. {totalPayable.toLocaleString()}</span>
                     </div>
                     <button 
                       onClick={(e) => handlePaySalary(e, staff.id, totalPayable, staffName)}
-                      className="w-full py-3 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-bold text-sm transition-all flex items-center justify-center shadow-md"
+                      className="w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center"
+                      style={{ background: 'linear-gradient(135deg, #D4AF37, #E5C158)', color: '#0A0A0A', boxShadow: '0 4px 16px rgba(212,175,55,0.2)' }}
                     >
                       Pay Salary
                     </button>

@@ -9,13 +9,13 @@ const FeatureItem = ({ icon: Icon, title, desc }: { icon: any, title: string, de
   <div className="flex items-center gap-5 group">
     <div
       className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 group-hover:scale-105"
-      style={{ background: 'rgba(214,193,163,0.08)', border: '1px solid rgba(214,193,163,0.15)' }}
+      style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)' }}
     >
-      <Icon className="w-4 h-4" style={{ color: '#D6C1A3' }} strokeWidth={1.5} />
+      <Icon className="w-4 h-4" style={{ color: '#D4AF37' }} strokeWidth={1.5} />
     </div>
     <div>
-      <h4 className="text-[13px] font-semibold tracking-wide mb-0.5" style={{ color: '#F7F3EE' }}>{title}</h4>
-      <p className="text-[11px]" style={{ color: 'rgba(207,199,188,0.5)' }}>{desc}</p>
+      <h4 className="text-[13px] font-semibold tracking-wide mb-0.5" style={{ color: '#EAEAEA' }}>{title}</h4>
+      <p className="text-[11px]" style={{ color: 'rgba(184,184,184,0.5)' }}>{desc}</p>
     </div>
   </div>
 );
@@ -47,15 +47,15 @@ export default function Login() {
 
       toast.success('Login successful! Redirecting...', {
         duration: 1000,
-        style: { background: '#D6C1A3', color: '#0E0E0E', borderRadius: '12px', fontWeight: 'bold' },
-        iconTheme: { primary: '#0E0E0E', secondary: '#D6C1A3' },
+        style: { background: '#D4AF37', color: '#0A0A0A', borderRadius: '12px', fontWeight: 'bold' },
+        iconTheme: { primary: '#0A0A0A', secondary: '#D4AF37' },
       });
       setTimeout(() => {
         navigate('/');
       }, 500);
     } catch (err: any) {
       toast.error(err.message || 'Invalid credentials. Please try again.', {
-        style: { background: '#2a1a1a', color: '#D1A2A2', borderRadius: '12px', fontWeight: 'bold', border: '1px solid rgba(209,162,162,0.2)' }
+        style: { background: '#1a1111', color: '#CF6679', borderRadius: '12px', fontWeight: 'bold', border: '1px solid rgba(207,102,121,0.2)' }
       });
     } finally {
       setIsLoading(false);
@@ -65,22 +65,26 @@ export default function Login() {
   return (
     <div
       className="min-h-screen w-full relative overflow-hidden font-sans flex flex-col justify-between"
-      style={{ background: '#0E0E0E', color: '#F7F3EE' }}
+      style={{ background: '#0A0A0A', color: '#EAEAEA' }}
     >
       {/* Background */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 z-10" style={{ background: 'rgba(14,14,14,0.55)' }} />
+        <div className="absolute inset-0 z-10" style={{ background: 'rgba(10,10,10,0.6)' }} />
         <img
           src="/bg-waves.png"
           alt="Luxury Background"
-          className="w-full h-full object-cover object-center opacity-60"
+          className="w-full h-full object-cover object-center opacity-50"
         />
       </div>
 
-      {/* Subtle ambient glows */}
+      {/* Ambient gold glows */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full pointer-events-none z-0"
-        style={{ background: 'radial-gradient(ellipse at center, rgba(214,193,163,0.04) 0%, transparent 70%)' }}
+        style={{ background: 'radial-gradient(ellipse at center, rgba(212,175,55,0.05) 0%, transparent 70%)' }}
+      />
+      <div
+        className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none z-0"
+        style={{ background: 'radial-gradient(ellipse at center, rgba(212,175,55,0.03) 0%, transparent 60%)' }}
       />
 
       {/* Main Content */}
@@ -96,23 +100,23 @@ export default function Login() {
           <div>
             <div
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-10"
-              style={{ background: 'rgba(214,193,163,0.08)', border: '1px solid rgba(214,193,163,0.15)' }}
+              style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)' }}
             >
-              <Sparkles className="w-3 h-3" style={{ color: '#D6C1A3' }} />
-              <span className="text-[10px] font-medium tracking-widest uppercase" style={{ color: 'rgba(214,193,163,0.8)' }}>
+              <Sparkles className="w-3 h-3" style={{ color: '#D4AF37' }} />
+              <span className="text-[10px] font-medium tracking-widest uppercase" style={{ color: 'rgba(212,175,55,0.8)' }}>
                 Welcome Back
               </span>
             </div>
-            <p className="text-sm font-light mb-2 tracking-[0.12em] uppercase" style={{ color: 'rgba(207,199,188,0.5)' }}>
+            <p className="text-sm font-light mb-2 tracking-[0.12em] uppercase" style={{ color: 'rgba(184,184,184,0.5)' }}>
               Welcome to
             </p>
             <h1
               className="text-7xl xl:text-8xl mb-5 leading-none"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#D6C1A3', fontWeight: 400, letterSpacing: '-0.02em' }}
+              style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif", color: '#D4AF37', fontWeight: 400, letterSpacing: '0.04em' }}
             >
               TENS11
             </h1>
-            <p className="text-[11px] font-light tracking-[0.2em] uppercase" style={{ color: 'rgba(207,199,188,0.4)' }}>
+            <p className="text-[11px] font-light tracking-[0.2em] uppercase" style={{ color: 'rgba(184,184,184,0.4)' }}>
               Luxury Salon Operating System
             </p>
           </div>
@@ -125,14 +129,14 @@ export default function Login() {
 
           <div
             className="rounded-[2rem] p-7 relative"
-            style={{ background: 'rgba(214,193,163,0.05)', border: '1px solid rgba(214,193,163,0.1)' }}
+            style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}
           >
-            <Quote className="absolute top-5 left-5 w-4 h-4" style={{ color: 'rgba(214,193,163,0.2)' }} />
-            <Quote className="absolute bottom-5 right-5 w-4 h-4 rotate-180" style={{ color: 'rgba(214,193,163,0.2)' }} />
-            <p className="text-[13px] leading-relaxed mb-4 px-6 pt-2" style={{ color: 'rgba(247,243,238,0.7)' }}>
+            <Quote className="absolute top-5 left-5 w-4 h-4" style={{ color: 'rgba(212,175,55,0.2)' }} />
+            <Quote className="absolute bottom-5 right-5 w-4 h-4 rotate-180" style={{ color: 'rgba(212,175,55,0.2)' }} />
+            <p className="text-[13px] leading-relaxed mb-4 px-6 pt-2" style={{ color: 'rgba(234,234,234,0.7)' }}>
               Excellence is not an act,<br />but a habit.
             </p>
-            <p className="text-[11px] px-6 pb-2" style={{ color: 'rgba(207,199,188,0.35)' }}>– Aristotle</p>
+            <p className="text-[11px] px-6 pb-2" style={{ color: 'rgba(184,184,184,0.35)' }}>– Aristotle</p>
           </div>
         </motion.div>
 
@@ -146,50 +150,53 @@ export default function Login() {
           <div
             className="w-full rounded-[2.5rem] p-8 sm:p-10 relative overflow-hidden"
             style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(17,17,17,0.85)',
+              border: '1px solid rgba(212,175,55,0.15)',
               backdropFilter: 'blur(40px)',
               WebkitBackdropFilter: 'blur(40px)',
-              boxShadow: '0 32px 100px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06)',
+              boxShadow: '0 32px 100px rgba(0,0,0,0.9), 0 0 40px rgba(212,175,55,0.04)',
             }}
           >
             {/* Card glow */}
             <div
               className="absolute -top-20 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full pointer-events-none"
-              style={{ background: 'radial-gradient(circle, rgba(214,193,163,0.04) 0%, transparent 70%)' }}
+              style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.05) 0%, transparent 70%)' }}
             />
 
             <div className="text-center mb-10 relative z-10">
-              <div className="mx-auto w-24 h-24 mb-6 rounded-full overflow-hidden shadow-2xl border border-[#D6C1A3]/20">
+              <div
+                className="mx-auto w-24 h-24 mb-6 rounded-full overflow-hidden shadow-2xl"
+                style={{ border: '1px solid rgba(212,175,55,0.3)', boxShadow: '0 0 30px rgba(212,175,55,0.08)' }}
+              >
                 <img src="/logo.png" alt="TENS11 Logo" className="w-full h-full object-cover" />
               </div>
               <h1
                 className="text-4xl mb-2 leading-none"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F7F3EE', fontWeight: 400 }}
+                style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif", color: '#D4AF37', fontWeight: 400, letterSpacing: '0.06em' }}
               >
                 TENS11
               </h1>
-              <p className="text-[9px] uppercase tracking-[0.35em] font-bold" style={{ color: 'rgba(214,193,163,0.6)' }}>
+              <p className="text-[9px] uppercase tracking-[0.35em] font-bold" style={{ color: 'rgba(212,175,55,0.5)' }}>
                 Exclusive Access
               </p>
 
-              {/* Thin glowing separator */}
+              {/* Gold separator */}
               <div className="mt-5 flex justify-center">
                 <div
                   className="h-px w-20"
-                  style={{ background: 'linear-gradient(to right, transparent, rgba(214,193,163,0.35), transparent)' }}
+                  style={{ background: 'linear-gradient(to right, transparent, rgba(212,175,55,0.4), transparent)' }}
                 />
               </div>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5 relative z-10">
               <div className="space-y-2">
-                <label className="text-[9px] font-bold uppercase tracking-[0.15em] pl-1" style={{ color: 'rgba(207,199,188,0.5)' }}>
+                <label className="text-[9px] font-bold uppercase tracking-[0.15em] pl-1" style={{ color: 'rgba(212,175,55,0.5)' }}>
                   Email Address
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Mail className="h-4 w-4 transition-colors duration-300" style={{ color: 'rgba(207,199,188,0.4)' }} />
+                    <Mail className="h-4 w-4 transition-colors duration-300" style={{ color: 'rgba(212,175,55,0.4)' }} />
                   </div>
                   <input
                     type="email"
@@ -203,12 +210,12 @@ export default function Login() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[9px] font-bold uppercase tracking-[0.15em] pl-1" style={{ color: 'rgba(207,199,188,0.5)' }}>
+                <label className="text-[9px] font-bold uppercase tracking-[0.15em] pl-1" style={{ color: 'rgba(212,175,55,0.5)' }}>
                   Password
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock className="h-4 w-4 transition-colors duration-300" style={{ color: 'rgba(207,199,188,0.4)' }} />
+                    <Lock className="h-4 w-4 transition-colors duration-300" style={{ color: 'rgba(212,175,55,0.4)' }} />
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -222,7 +229,7 @@ export default function Login() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center transition-colors focus:outline-none"
-                    style={{ color: 'rgba(207,199,188,0.3)' }}
+                    style={{ color: 'rgba(184,184,184,0.3)' }}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -250,7 +257,7 @@ export default function Login() {
             </form>
 
             <div className="mt-8 text-center relative z-10">
-              <p className="text-[9px] uppercase tracking-[0.2em] font-medium" style={{ color: 'rgba(207,199,188,0.3)' }}>
+              <p className="text-[9px] uppercase tracking-[0.2em] font-medium" style={{ color: 'rgba(184,184,184,0.3)' }}>
                 Data Is Secured
               </p>
             </div>
@@ -270,14 +277,14 @@ export default function Login() {
       >
         <div
           className="inline-flex items-center gap-6 px-8 py-3.5 rounded-full text-[11px] tracking-wide"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', color: 'rgba(207,199,188,0.4)' }}
+          style={{ background: 'rgba(17,17,17,0.6)', border: '1px solid rgba(212,175,55,0.1)', color: 'rgba(184,184,184,0.4)' }}
         >
           <span className="flex items-center gap-2">
-            <Lock className="w-3 h-3" style={{ color: 'rgba(207,199,188,0.3)' }} />
+            <Lock className="w-3 h-3" style={{ color: 'rgba(184,184,184,0.3)' }} />
             © 2026 TENS11 Salon. All rights reserved.
           </span>
-          <span className="w-px h-3" style={{ background: 'rgba(255,255,255,0.1)' }} />
-          <span className="font-medium cursor-default" style={{ color: 'rgba(214,193,163,0.7)' }}>
+          <span className="w-px h-3" style={{ background: 'rgba(212,175,55,0.2)' }} />
+          <span className="font-medium cursor-default" style={{ color: 'rgba(212,175,55,0.7)' }}>
             Powered by Duokarma
           </span>
         </div>

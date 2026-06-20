@@ -108,8 +108,8 @@ export default function Services() {
     <div className="space-y-8 relative max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-4xl font-light tracking-tight text-white">Services</h2>
-          <p className="text-white/50 mt-2 font-light tracking-wide">Manage your salon's service menu and pricing.</p>
+          <h2 className="text-4xl tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif", fontWeight: 400, letterSpacing: '0.04em' }}>Services</h2>
+          <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Manage your salon's service menu and pricing.</p>
         </div>
         <button 
           onClick={openAddModal}
@@ -123,12 +123,12 @@ export default function Services() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-1">
         <div className="glass-card p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0 bg-black/40/5 p-3 rounded-2xl border border-white/20">
-              <Scissors className="h-6 w-6 text-white" />
+            <div className="flex-shrink-0 p-3 rounded-2xl" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)' }}>
+              <Scissors className="h-6 w-6" style={{ color: '#D4AF37' }} />
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/50 uppercase">Total Services</dt>
+                <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Services</dt>
                 <dd className="text-3xl font-light text-white mt-1">{services.length}</dd>
               </dl>
             </div>
@@ -164,7 +164,7 @@ export default function Services() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-white">
-              <thead className="bg-black/40/5 text-white/50 text-xs uppercase font-bold tracking-wider border-b border-white/10">
+              <thead className="text-xs uppercase font-bold tracking-wider" style={{ background: 'rgba(212,175,55,0.04)', borderBottom: '1px solid rgba(212,175,55,0.12)', color: 'rgba(212,175,55,0.6)' }}>
                 <tr>
                   <th className="px-6 py-5">Service Name</th>
                   <th className="px-6 py-5">Price</th>
@@ -183,7 +183,7 @@ export default function Services() {
                 {Object.entries(groupedServices).map(([category, items]) => (
                   <React.Fragment key={category}>
                     <tr className="bg-black/40 border-y border-white/10">
-                      <td colSpan={3} className="px-6 py-3 text-xs font-bold tracking-widest text-[#F4E3C5] uppercase">
+                      <td colSpan={3} className="px-6 py-3 text-xs font-bold tracking-widest uppercase" style={{ color: '#D4AF37' }}>
                         {category}
                       </td>
                     </tr>
