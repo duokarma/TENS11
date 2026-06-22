@@ -45,25 +45,25 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Subtle gold ambient glow at top */}
       <div
         className="absolute top-0 left-0 right-0 h-40 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at top center, rgba(212,175,55,0.04) 0%, transparent 70%)' }}
+        style={{ background: 'radial-gradient(ellipse at top center, rgba(200, 157, 60,0.04) 0%, transparent 70%)' }}
       />
 
       {/* Brand Header */}
-      <div className="flex h-24 shrink-0 items-center px-6 relative" style={{ borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
+      <div className="flex h-24 shrink-0 items-center px-6 relative" style={{ borderBottom: '1px solid rgba(200, 157, 60,0.1)' }}>
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center mr-3 shrink-0 overflow-hidden shadow-sm"
-          style={{ border: '1px solid rgba(212,175,55,0.35)', boxShadow: '0 0 15px rgba(212,175,55,0.08)' }}
+          style={{ border: '1px solid rgba(200, 157, 60,0.35)', boxShadow: '0 0 15px rgba(200, 157, 60,0.08)' }}
         >
-          <img src="/logo.png" alt="TENS11 Logo" className="w-full h-full object-cover" />
+          <img src="/logo.png" alt="TEN11 Logo" className="w-full h-full object-cover" />
         </div>
         <div>
           <h1
             className="text-base font-semibold tracking-widest leading-none"
-            style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif", color: '#D4AF37' }}
+            style={{ fontFamily: "'Cinzel', 'Playfair Display', Georgia, serif", color: 'var(--gold)' }}
           >
-            TENS11
+            TEN11
           </h1>
-          <p className="text-[10px] tracking-[0.18em] uppercase mt-0.5" style={{ color: 'rgba(212,175,55,0.45)' }}>
+          <p className="text-[10px] tracking-[0.18em] uppercase mt-0.5" style={{ color: 'rgba(200, 157, 60,0.45)' }}>
             SALON
           </p>
         </div>
@@ -73,7 +73,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       <div className="flex flex-1 flex-col overflow-y-auto custom-scrollbar px-3 py-5 bg-transparent">
         <nav className="flex-1 space-y-1">
           <div className="px-3 pb-3">
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em]" style={{ color: 'rgba(212,175,55,0.3)' }}>
+            <p className="text-[9px] font-bold uppercase tracking-[0.2em]" style={{ color: 'rgba(200, 157, 60,0.3)' }}>
               Navigation
             </p>
           </div>
@@ -89,12 +89,12 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                       'group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-300 relative',
                       isActive
                         ? 'text-white'
-                        : 'text-[#B8B8B8] hover:text-white hover:bg-[rgba(212,175,55,0.04)]'
+                        : 'text-[#B8B8B8] hover:text-white hover:bg-[rgba(200, 157, 60,0.04)]'
                     )
                   }
                   style={({ isActive }) => isActive ? {
-                    background: 'linear-gradient(90deg, rgba(212,175,55,0.12) 0%, rgba(212,175,55,0.02) 100%)',
-                    borderLeft: '3px solid #D4AF37',
+                    background: 'linear-gradient(90deg, rgba(200, 157, 60,0.12) 0%, rgba(200, 157, 60,0.02) 100%)',
+                    borderLeft: '3px solid var(--gold)',
                   } : {
                     background: 'transparent',
                     borderLeft: '3px solid transparent',
@@ -105,7 +105,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                       <Icon
                         className={cn(
                           'mr-3 h-5 w-5 shrink-0 transition-colors duration-300',
-                          isActive ? 'text-[#D4AF37]' : 'text-white/40 group-hover:text-[#D4AF37]'
+                          isActive ? 'text-[var(--gold)]' : 'text-white/40 group-hover:text-[var(--gold)]'
                         )}
                         strokeWidth={isActive ? 2 : 1.5}
                         aria-hidden="true"
@@ -123,24 +123,24 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Footer Actions */}
       <div
         className="p-3 space-y-2 relative"
-        style={{ borderTop: '1px solid rgba(212,175,55,0.1)' }}
+        style={{ borderTop: '1px solid rgba(200, 157, 60,0.1)' }}
       >
         {profile && (
           <div
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-            style={{ background: 'rgba(212,175,55,0.04)', border: '1px solid rgba(212,175,55,0.1)' }}
+            style={{ background: 'rgba(200, 157, 60,0.04)', border: '1px solid rgba(200, 157, 60,0.1)' }}
           >
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.25)' }}
+              style={{ background: 'rgba(200, 157, 60,0.1)', border: '1px solid rgba(200, 157, 60,0.25)' }}
             >
-              <UserIcon className="w-3.5 h-3.5" style={{ color: '#D4AF37' }} />
+              <UserIcon className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-semibold truncate" style={{ color: '#EAEAEA' }}>
                 {profile.email.split('@')[0]}
               </p>
-              <p className="text-[10px] uppercase tracking-wider truncate" style={{ color: 'rgba(212,175,55,0.5)' }}>
+              <p className="text-[10px] uppercase tracking-wider truncate" style={{ color: 'rgba(200, 157, 60,0.5)' }}>
                 {profile.role}
               </p>
             </div>

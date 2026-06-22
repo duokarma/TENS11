@@ -78,7 +78,7 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
   const sendWhatsAppGreeting = (customer: any) => {
     if (!customer.phone) return;
     const cleanPhone = customer.phone.replace(/\D/g, '');
-    const message = `Happy Birthday ${customer.name}! Wishing you a wonderful day from TENS11 Salon! As a gift, enjoy 10% off your next visit. We hope to see you soon!`;
+    const message = `Happy Birthday ${customer.name}! Wishing you a wonderful day from TEN11 Salon! As a gift, enjoy 10% off your next visit. We hope to see you soon!`;
     const url = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -88,7 +88,7 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
       className="flex h-24 shrink-0 items-center justify-between px-4 md:px-8 sticky top-0 z-20 backdrop-blur-md"
       style={{
         background: 'rgba(10,10,10,0.6)',
-        borderBottom: '1px solid rgba(212,175,55,0.08)',
+        borderBottom: '1px solid rgba(200, 157, 60,0.08)',
       }}
     >
       
@@ -97,16 +97,16 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
         {toggleSidebar && (
           <button 
             onClick={toggleSidebar} 
-            className="p-2.5 mr-4 rounded-xl text-white/60 hover:text-[#D4AF37] transition-all shadow-sm"
+            className="p-2.5 mr-4 rounded-xl text-white/60 hover:text-[var(--gold)] transition-all shadow-sm"
             style={{
               background: 'rgba(20,20,20,0.8)',
-              border: '1px solid rgba(212,175,55,0.12)',
+              border: '1px solid rgba(200, 157, 60,0.12)',
             }}
             onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(212,175,55,0.3)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(200, 157, 60,0.3)';
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(212,175,55,0.12)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'rgba(200, 157, 60,0.12)';
             }}
           >
             {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -120,10 +120,10 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="p-3 rounded-2xl text-white/60 hover:text-[#D4AF37] transition-all relative shadow-sm"
+            className="p-3 rounded-2xl text-white/60 hover:text-[var(--gold)] transition-all relative shadow-sm"
             style={{
               background: 'rgba(20,20,20,0.8)',
-              border: '1px solid rgba(212,175,55,0.12)',
+              border: '1px solid rgba(200, 157, 60,0.12)',
             }}
           >
             <Bell className="w-5 h-5" />
@@ -131,8 +131,8 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
               <span
                 className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full animate-pulse"
                 style={{
-                  background: '#D4AF37',
-                  boxShadow: '0 0 10px rgba(212,175,55,0.8)',
+                  background: 'var(--gold)',
+                  boxShadow: '0 0 10px rgba(200, 157, 60,0.8)',
                 }}
               ></span>
             )}
@@ -144,18 +144,18 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
               style={{
                 background: 'rgba(17,17,17,0.95)',
                 backdropFilter: 'blur(40px)',
-                border: '1px solid rgba(212,175,55,0.15)',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(212,175,55,0.05)',
+                border: '1px solid rgba(200, 157, 60,0.15)',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.8), 0 0 30px rgba(200, 157, 60,0.05)',
               }}
             >
-              <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
+              <div className="p-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(200, 157, 60,0.1)' }}>
                 <h3 className="text-white font-medium text-sm">Notifications</h3>
                 <span
                   className="text-xs px-2 py-1 rounded-full"
                   style={{
-                    background: 'rgba(212,175,55,0.1)',
-                    color: '#D4AF37',
-                    border: '1px solid rgba(212,175,55,0.2)',
+                    background: 'rgba(200, 157, 60,0.1)',
+                    color: 'var(--gold)',
+                    border: '1px solid rgba(200, 157, 60,0.2)',
                   }}
                 >
                   {birthdays.length} New
@@ -172,18 +172,18 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
                     <div
                       key={customer.id}
                       className="p-4 hover:bg-white/5 transition-colors group"
-                      style={{ borderBottom: '1px solid rgba(212,175,55,0.05)' }}
+                      style={{ borderBottom: '1px solid rgba(200, 157, 60,0.05)' }}
                     >
                       <div className="flex gap-3">
                         <div
                           className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
-                          style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}
+                          style={{ background: 'rgba(200, 157, 60,0.1)', border: '1px solid rgba(200, 157, 60,0.2)' }}
                         >
-                          <Gift className="w-5 h-5" style={{ color: '#D4AF37' }} />
+                          <Gift className="w-5 h-5" style={{ color: 'var(--gold)' }} />
                         </div>
                         <div className="flex-1">
                           <p className="text-sm text-white mb-1">
-                            It's <span className="font-bold" style={{ color: '#D4AF37' }}>{customer.name}'s</span> Birthday today! {'\u{1F382}'}
+                            It's <span className="font-bold" style={{ color: 'var(--gold)' }}>{customer.name}'s</span> Birthday today! {'\u{1F382}'}
                           </p>
                           <button 
                             onClick={() => sendWhatsAppGreeting(customer)}
@@ -206,10 +206,10 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
           className="hidden md:flex items-center gap-2 text-sm font-medium text-white px-4 py-2.5 rounded-2xl"
           style={{
             background: 'rgba(20,20,20,0.8)',
-            border: '1px solid rgba(212,175,55,0.12)',
+            border: '1px solid rgba(200, 157, 60,0.12)',
           }}
         >
-          <CalendarIcon className="h-4 w-4" style={{ color: '#D4AF37' }} />
+          <CalendarIcon className="h-4 w-4" style={{ color: 'var(--gold)' }} />
           {todayStr}
         </div>
       </div>

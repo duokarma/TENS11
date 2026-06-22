@@ -20,8 +20,8 @@ export const generateInvoicePDF = (data: InvoiceData) => {
   
   // Salon Header
   doc.setFontSize(22);
-  doc.setTextColor(212, 175, 55); // Gold color
-  doc.text('TENS11 SALON', 14, 22);
+  doc.setTextColor(200, 157, 60); // Gold color
+  doc.text('TEN11 SALON', 14, 22);
   
   doc.setFontSize(10);
   doc.setTextColor(100, 100, 100);
@@ -63,7 +63,7 @@ export const generateInvoicePDF = (data: InvoiceData) => {
       head: [['Description', 'Qty', 'Rate', 'Amount']],
       body: allItems,
       theme: 'grid',
-      headStyles: { fillColor: [20, 20, 20], textColor: [212, 175, 55] },
+      headStyles: { fillColor: [20, 20, 20], textColor: [200, 157, 60] },
       styles: { fontSize: 10, cellPadding: 4 },
       columnStyles: {
         0: { cellWidth: 'auto' },
@@ -97,15 +97,15 @@ export const generateInvoicePDF = (data: InvoiceData) => {
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('Grand Total:', 130, startY);
-  doc.setTextColor(212, 175, 55);
+  doc.setTextColor(200, 157, 60);
   doc.text(`Rs. ${data.grandTotal.toFixed(2)}`, 190, startY, { align: 'right' });
 
   // Footer
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(150, 150, 150);
-  doc.text('Thank you for choosing TENS11 Salon!', 105, 280, { align: 'center' });
+  doc.text('Thank you for choosing TEN11 Salon!', 105, 280, { align: 'center' });
 
   // Save PDF
-  doc.save(`TENS11_Invoice_${data.invoiceNumber}.pdf`);
+  doc.save(`TEN11_Invoice_${data.invoiceNumber}.pdf`);
 };

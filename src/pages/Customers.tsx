@@ -566,7 +566,7 @@ export default function Customers() {
                           {customer.phone}
                           {customer.phone && (
                             <a 
-                              href={`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello from WOW Salon!')}`}
+                              href={`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello from TEN11!')}`}
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="text-[#25D366] hover:text-[#128C7E] transition-colors bg-[#25D366]/10 p-1.5 rounded-lg"
@@ -735,7 +735,7 @@ export default function Customers() {
                   <div className="mt-5">
                     <div className="flex justify-between items-center mb-3">
                       <label className="block text-xs font-bold tracking-widest text-white/60 uppercase">Products Purchased</label>
-                      <button type="button" onClick={() => setCustomerProducts([...customerProducts, {productId: '', quantity: 1}])} className="text-xs font-bold text-[#D4AF37] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 border border-[#D4AF37]/20 px-3 py-1.5 rounded-lg transition-colors flex items-center">
+                      <button type="button" onClick={() => setCustomerProducts([...customerProducts, {productId: '', quantity: 1}])} className="text-xs font-bold text-[var(--gold)] bg-[var(--gold)]/10 hover:bg-[var(--gold)]/20 border border-[var(--gold)]/20 px-3 py-1.5 rounded-lg transition-colors flex items-center">
                         <Package className="w-3 h-3 mr-1" /> Add Product
                       </button>
                     </div>
@@ -785,8 +785,8 @@ export default function Customers() {
                   </div>
 
                   {(customerServices.length > 0 || customerProducts.length > 0) && (
-                    <div className="mt-6 bg-black/20 p-5 rounded-xl border border-[#D4AF37]/30 flex justify-between items-center shadow-[0_0_15px_rgba(212,175,55,0.05)]">
-                      <span className="text-xs font-bold tracking-widest text-[#D4AF37] uppercase">Total Amount</span>
+                    <div className="mt-6 bg-black/20 p-5 rounded-xl border border-[var(--gold)]/30 flex justify-between items-center shadow-[0_0_15px_rgba(200, 157, 60,0.05)]">
+                      <span className="text-xs font-bold tracking-widest text-[var(--gold)] uppercase">Total Amount</span>
                       <span className="text-2xl font-light text-white">
                         ₹{(
                           customerServices.reduce((sum, cs) => sum + Number(services.find(s => s.id.toString() === cs.serviceId.toString())?.price || 0), 0) +
