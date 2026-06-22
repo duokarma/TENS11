@@ -62,6 +62,7 @@ export default function Customers() {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
   const [customerServices, setCustomerServices] = useState<{serviceId: string}[]>([]);
+  const [customerProducts, setCustomerProducts] = useState<{productId: string, quantity: number}[]>([]);
   const [customerStaffId, setCustomerStaffId] = useState<string>('');
   
   const [selectedCustomerForHistory, setSelectedCustomerForHistory] = useState<number | null>(null);
@@ -135,6 +136,7 @@ export default function Customers() {
   const openAddModal = () => {
     setCustomerToEdit(null);
     setCustomerServices([]);
+    setCustomerProducts([]);
     setCustomerStaffId('');
     reset({ name: '', phone: '', dobDay: '', dobMonth: '', dobYear: '' });
     setIsCustomerModalOpen(true);
@@ -142,8 +144,14 @@ export default function Customers() {
 
   const openEditModal = (customer: Customer) => {
     setCustomerToEdit(customer);
-    const dateObj = customer.dob ? new Date(customer.dob) : null;
-    
+    let dDay = '', dMonth = '', dYear = '';
+    if (customer.dob) {
+      const [y, m, d] = customer.dob.split('-');
+      dDay = d.substring(0, 2);
+      dMonth = m;
+      dYear = y !== '1900' ? y : '';
+    }
+
     // Match existing services by name
     const matchedServices = customer.services_taken 
       ? customer.services_taken.map(name => {
@@ -153,21 +161,30 @@ export default function Customers() {
       : [];
     setCustomerServices(matchedServices);
 
+    const matchedProducts = customer.products_bought
+      ? customer.products_bought.map(name => {
+          const p = products.find(x => x.name === name);
+          return p ? { productId: p.id, quantity: 1 } : null;
+        }).filter(Boolean) as {productId: string, quantity: number}[]
+      : [];
+    setCustomerProducts(matchedProducts);
+
     reset({
       name: customer.name,
       phone: customer.phone,
-      dobDay: dateObj ? format(dateObj, 'dd') : '',
-      dobMonth: dateObj ? format(dateObj, 'MM') : '',
-      dobYear: dateObj ? format(dateObj, 'yyyy') : ''
+      dobDay: dDay,
+      dobMonth: dMonth,
+      dobYear: dYear
     });
     setIsCustomerModalOpen(true);
   };
 
   const onSubmitCustomer = async (data: CustomerFormData) => {
     try {
-      const parsedDob = (data.dobYear && data.dobMonth && data.dobDay) 
-        ? `${data.dobYear}-${data.dobMonth}-${data.dobDay}` 
-        : undefined;
+      const yearToUse = data.dobYear || '1900';
+      const parsedDob = (data.dobMonth && data.dobDay) 
+        ? `${yearToUse}-${data.dobMonth}-${data.dobDay}` 
+        : null;
 
       if (!customerToEdit) {
         if (customerServices.length === 0) {
@@ -190,12 +207,25 @@ export default function Customers() {
         return '';
       }).filter(Boolean);
 
+      let productTotal = 0;
+      const parsedProducts = customerProducts.map(cp => {
+        const p = products.find(x => x.id.toString() === cp.productId.toString());
+        if (p) {
+          productTotal += Number(p.selling_price || p.sellingPrice || 0) * cp.quantity;
+          return p.name;
+        }
+        return '';
+      }).filter(Boolean);
+
+      const grandTotal = serviceTotal + productTotal;
+
       const parsedData: any = {
         name: data.name,
         phone: data.phone,
         dob: parsedDob,
         services_taken: parsedServices,
-        amountPaid: serviceTotal
+        products_bought: parsedProducts,
+        amountPaid: grandTotal
       };
       
       if (!customerToEdit && customerStaffId) {
@@ -208,11 +238,16 @@ export default function Customers() {
       } else {
         const newCust = await customerService.addCustomer(parsedData);
         
+        // --- Create Visit & Commission automatically ---
+        const selectedStaffMember = staff.find(s => s.id.toString() === customerStaffId.toString());
+        const commissionRate = selectedStaffMember ? Number(selectedStaffMember.commission_rate || 10) : 10;
+        const commissionAmount = serviceTotal * (commissionRate / 100);
+        
         const { data: visitData, error: visitErr } = await supabase.from('customer_visits').insert([{
           customer_id: newCust.id,
           service_total: serviceTotal,
-          product_total: 0,
-          grand_total: serviceTotal,
+          product_total: productTotal,
+          grand_total: grandTotal,
           staff_id: customerStaffId
         }]).select().single();
 
@@ -228,6 +263,30 @@ export default function Customers() {
             vServicesData.map(vs => ({ visit_id: visitData.id, ...vs }))
           );
         }
+
+        const vProductsData = customerProducts.map(cp => {
+          const p = products.find(x => x.id.toString() === cp.productId.toString())!;
+          return { product_id: p.id, product_name: p.name, quantity: cp.quantity, price: Number(p.selling_price || p.sellingPrice || 0) * cp.quantity };
+        });
+
+        if (vProductsData.length > 0) {
+          await supabase.from('visit_products').insert(
+            vProductsData.map(vp => ({ visit_id: visitData.id, ...vp }))
+          );
+          for (const vp of vProductsData) {
+            const p = products.find(x => x.id === vp.product_id)!;
+            const newQty = (Number(p.current_stock || p.currentStock) || 0) - vp.quantity;
+            const newSold = (Number(p.sold_quantity || p.soldQuantity) || 0) + vp.quantity;
+            await supabase.from('products').update({ current_stock: newQty, sold_quantity: newSold }).eq('id', p.id);
+          }
+        }
+
+        await supabase.from('staff_commissions').insert([{
+          staff_id: customerStaffId,
+          visit_id: visitData.id,
+          service_amount: serviceTotal,
+          commission_amount: commissionAmount
+        }]);
 
         toast.success('Customer added and visit recorded successfully!');
       }
@@ -249,7 +308,8 @@ export default function Customers() {
     }
   };
 
-  const openVisitModal = (customer: any) => {
+  // --- Record Visit Logic ---
+  const openVisitModal = (customer: Customer) => {
     setCustomerForVisit(customer);
     setVisitServices([]);
     setVisitProducts([]);
@@ -269,6 +329,7 @@ export default function Customers() {
     }
 
     try {
+      // Calculate totals
       let serviceTotal = 0;
       const vServicesData = visitServices.map(vs => {
         const s = services.find(x => x.id.toString() === vs.serviceId.toString())!;
@@ -285,7 +346,12 @@ export default function Customers() {
       });
 
       const grandTotal = serviceTotal + productTotal;
+      // Calculate dynamic commission
+      const selectedStaffMember = staff.find(s => s.id.toString() === visitStaffId.toString());
+      const commissionRate = selectedStaffMember ? Number(selectedStaffMember.commission_rate || 10) : 10;
+      const commissionAmount = serviceTotal * (commissionRate / 100);
 
+      // Insert Visit
       const { data: visitData, error: visitErr } = await supabase.from('customer_visits').insert([{
         customer_id: customerForVisit.id,
         service_total: serviceTotal,
@@ -298,31 +364,47 @@ export default function Customers() {
 
       const visitId = visitData.id;
 
+      // Insert Visit Services
       if (vServicesData.length > 0) {
         await supabase.from('visit_services').insert(
           vServicesData.map(vs => ({ visit_id: visitId, ...vs }))
         );
       }
 
+      // Insert Visit Products and deduct inventory
       if (vProductsData.length > 0) {
         await supabase.from('visit_products').insert(
           vProductsData.map(vp => ({ visit_id: visitId, ...vp }))
         );
         for (const vp of vProductsData) {
           const p = products.find(x => x.id === vp.product_id)!;
-          const newQty = (Number(p.stock_quantity || p.stockQuantity) || 0) - vp.quantity;
-          await supabase.from('products').update({ stock_quantity: newQty }).eq('id', p.id);
+          const newQty = (Number(p.current_stock || p.currentStock) || 0) - vp.quantity;
+          const newSold = (Number(p.sold_quantity || p.soldQuantity) || 0) + vp.quantity;
+          await supabase.from('products').update({ current_stock: newQty, sold_quantity: newSold }).eq('id', p.id);
         }
       }
 
+      // Insert Commission
+      await supabase.from('staff_commissions').insert([{
+        staff_id: visitStaffId,
+        visit_id: visitId,
+        service_amount: serviceTotal,
+        commission_amount: commissionAmount
+      }]);
+
+      // Update Customer arrays (services_taken, staff_served, products_bought)
       const currentServices = customerForVisit.services_taken || [];
+      const currentProducts = customerForVisit.products_bought || [];
       const currentStaff = customerForVisit.staff_served || [];
       const newServices = [...new Set([...currentServices, ...vServicesData.map(vs => vs.service_name)])];
+      const newProductsList = [...new Set([...currentProducts, ...vProductsData.map(vp => vp.product_name)])];
       const newStaffList = [...new Set([...currentStaff, staff.find(s => s.id.toString() === visitStaffId.toString())?.name || ''])].filter(Boolean);
 
       await customerService.updateCustomer(customerForVisit.id, {
         services_taken: newServices,
-        staff_served: newStaffList
+        products_bought: newProductsList,
+        staff_served: newStaffList,
+        amountPaid: (customerForVisit.amountPaid || 0) + grandTotal
       });
 
       toast.success('Visit recorded successfully!');
@@ -351,8 +433,8 @@ export default function Customers() {
     <div className="space-y-8 relative max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="heading-display text-5xl tracking-tight text-white leading-none mb-1">Customers</h1>
-          <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Manage your client relationships and view their history.</p>
+          <h2 className="text-4xl font-light tracking-tight text-white">Customers</h2>
+          <p className="text-white/50 mt-2 font-light tracking-wide">Manage your client relationships and view their history.</p>
         </div>
         <button 
           onClick={openAddModal}
@@ -367,52 +449,52 @@ export default function Customers() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <div className="glass-card p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0 p-3 rounded-2xl" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)' }}>
-              <Users className="h-6 w-6" style={{ color: '#D4AF37' }} />
+            <div className="flex-shrink-0 bg-black/40/5 p-3 rounded-2xl border border-white/20">
+              <Users className="h-6 w-6 text-white" />
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Customers</dt>
-                <dd className="heading-display text-5xl font-light text-white mt-2">{stats.totalCustomers}</dd>
+                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Total Customers</dt>
+                <dd className="text-3xl font-light text-white mt-1">{stats.totalCustomers}</dd>
               </dl>
             </div>
           </div>
         </div>
         <div className="glass-card p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0 p-3 rounded-2xl" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)' }}>
-              <UserPlus className="h-6 w-6" style={{ color: '#D4AF37' }} />
+            <div className="flex-shrink-0 bg-black/40/5 p-3 rounded-2xl border border-white/20">
+              <UserPlus className="h-6 w-6 text-white" />
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>New This Month</dt>
-                <dd className="heading-display text-5xl font-light text-white mt-2">{stats.newThisMonth}</dd>
+                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">New This Month</dt>
+                <dd className="text-3xl font-light text-white mt-1">{stats.newThisMonth}</dd>
               </dl>
             </div>
           </div>
         </div>
         <div className="glass-card p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0 p-3 rounded-2xl" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)' }}>
-              <IndianRupee className="h-6 w-6" style={{ color: '#D4AF37' }} />
+            <div className="flex-shrink-0 bg-black/40/5 p-3 rounded-2xl border border-white/20">
+              <IndianRupee className="h-6 w-6 text-white" />
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Lifetime Revenue</dt>
-                <dd className="heading-display text-4xl font-light text-white mt-2">Rs. {stats.totalRevenue.toLocaleString()}</dd>
+                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Lifetime Revenue</dt>
+                <dd className="text-3xl font-light text-white mt-1">₹{stats.totalRevenue.toLocaleString()}</dd>
               </dl>
             </div>
           </div>
         </div>
         <div className="glass-card p-6">
           <div className="flex items-center">
-            <div className="flex-shrink-0 p-3 rounded-2xl" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)' }}>
-              <TrendingUp className="h-6 w-6" style={{ color: '#D4AF37' }} />
+            <div className="flex-shrink-0 bg-black/40/5 p-3 rounded-2xl border border-white/20">
+              <TrendingUp className="h-6 w-6 text-white" />
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Average Spend</dt>
-                <dd className="heading-display text-4xl font-light text-white mt-2">Rs. {Math.round(stats.avgSpend).toLocaleString()}</dd>
+                <dd className="text-3xl font-light text-white mt-1">₹{Math.round(stats.avgSpend).toLocaleString()}</dd>
               </dl>
             </div>
           </div>
@@ -446,7 +528,7 @@ export default function Customers() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-white">
-              <thead className="text-xs uppercase font-bold tracking-wider" style={{ background: 'rgba(212,175,55,0.04)', borderBottom: '1px solid rgba(212,175,55,0.12)', color: 'rgba(212,175,55,0.6)' }}>
+              <thead className="bg-black/40/5 text-white/60 text-xs uppercase font-bold tracking-wider border-b border-white/10">
                 <tr>
                   <th className="px-6 py-5">Customer</th>
                   <th className="px-6 py-5">Contact</th>
@@ -470,7 +552,7 @@ export default function Customers() {
                     <tr key={customer.id} className="hover:bg-black/40 transition-colors group">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-4">
-                          <div className="h-11 w-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.25)', color: '#D4AF37' }}>
+                          <div className="h-11 w-11 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
                             {initials}
                           </div>
                           <div>
@@ -484,7 +566,7 @@ export default function Customers() {
                           {customer.phone}
                           {customer.phone && (
                             <a 
-                              href={`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello from TENS11 Salon!')}`}
+                              href={`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello from WOW Salon!')}`}
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="text-[#25D366] hover:text-[#128C7E] transition-colors bg-[#25D366]/10 p-1.5 rounded-lg"
@@ -497,15 +579,14 @@ export default function Customers() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="font-light text-white text-lg">
-                          Rs. {getCustomerTotalSpend(customer).toLocaleString()}
+                          ₹{getCustomerTotalSpend(customer).toLocaleString()}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
                             onClick={() => openVisitModal(customer)}
-                            className="px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center shadow-sm"
-                            style={{ background: 'linear-gradient(135deg, #D4AF37, #E5C158)', color: '#0A0A0A' }}
+                            className="px-4 py-2 text-xs font-bold bg-[#F7E7CE] text-[#36454F] hover:bg-[#eadebe] rounded-xl transition-colors flex items-center shadow-sm"
                           >
                             <Plus className="w-3 h-3 mr-1.5" /> Record Visit
                           </button>
@@ -557,15 +638,15 @@ export default function Customers() {
       {/* Add/Edit Customer Modal (No Billing) */}
       {isCustomerModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-white/10 shrink-0 bg-black/40 rounded-t-2xl">
+          <div className="glass-panel w-full max-w-md flex flex-col animate-in zoom-in-95 duration-200 max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-white/10 bg-black/40 rounded-t-2xl shrink-0">
               <h3 className="text-xl font-light tracking-tight text-white">{customerToEdit ? 'Edit Customer' : 'Add New Customer'}</h3>
               <button onClick={() => setIsCustomerModalOpen(false)} className="p-2 hover:bg-black/5 rounded-full text-white/60 transition-colors">
                 <X className="w-5 h-5"/>
               </button>
             </div>
-            <form onSubmit={handleSubmit(onSubmitCustomer)} className="flex flex-col flex-1 overflow-hidden">
-              <div className="p-6 space-y-5 bg-black/60 flex-1 overflow-y-auto custom-scrollbar">
+            <form onSubmit={handleSubmit(onSubmitCustomer)} className="flex flex-col flex-1 overflow-hidden min-h-0">
+              <div className="p-6 space-y-5 bg-black/60 overflow-y-auto custom-scrollbar flex-1">
                 <div>
                   <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Full Name *</label>
                   <input type="text" {...register("name")} className="glass-input w-full px-4 py-3" placeholder="e.g. Jane Doe" />
@@ -639,7 +720,7 @@ export default function Customers() {
                             <option value="" className="text-white/60">-- Select Service --</option>
                             {Object.entries(groupedServices).map(([category, items]) => (
                               <optgroup key={category} label={category} className="text-white/60">
-                                {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - Rs. {s.price}</option>)}
+                                {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - ₹{s.price}</option>)}
                               </optgroup>
                             ))}
                           </select>
@@ -650,17 +731,73 @@ export default function Customers() {
                       ))}
                     </div>
                   )}
-                  {customerServices.length > 0 && (
-                    <div className="mt-4 bg-black/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
-                      <span className="text-xs font-bold tracking-widest text-white/60 uppercase">Total Amount</span>
-                      <span className="text-xl font-light text-white">
-                        Rs. {customerServices.reduce((sum, cs) => sum + Number(services.find(s => s.id.toString() === cs.serviceId.toString())?.price || 0), 0).toLocaleString()}
+                  {/* Products Purchased Section */}
+                  <div className="mt-5">
+                    <div className="flex justify-between items-center mb-3">
+                      <label className="block text-xs font-bold tracking-widest text-white/60 uppercase">Products Purchased</label>
+                      <button type="button" onClick={() => setCustomerProducts([...customerProducts, {productId: '', quantity: 1}])} className="text-xs font-bold text-[#D4AF37] bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 border border-[#D4AF37]/20 px-3 py-1.5 rounded-lg transition-colors flex items-center">
+                        <Package className="w-3 h-3 mr-1" /> Add Product
+                      </button>
+                    </div>
+                    {customerProducts.length === 0 ? (
+                      <div className="text-sm text-white/60/60 font-light italic p-6 bg-black/5 rounded-2xl border border-dashed border-white/10 text-center">No products added. Click above to add.</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {customerProducts.map((cp, idx) => (
+                          <div key={idx} className="flex items-center gap-3">
+                            <select 
+                              value={cp.productId} 
+                              onChange={(e) => {
+                                const newProds = [...customerProducts];
+                                newProds[idx].productId = e.target.value;
+                                setCustomerProducts(newProds);
+                              }}
+                              className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40 w-full"
+                            >
+                              <option value="" className="text-white/60">-- Select Product --</option>
+                              {products.filter(p => p.current_stock > 0 || p.currentStock > 0 || cp.productId === p.id.toString()).map(p => (
+                                <option key={p.id} value={p.id} className="text-white">
+                                  {p.name} - ₹{p.selling_price || p.sellingPrice} (Stock: {p.current_stock || p.currentStock})
+                                </option>
+                              ))}
+                            </select>
+                            <input 
+                              type="number" 
+                              min="1"
+                              max={products.find(p => p.id.toString() === cp.productId)?.current_stock || 99}
+                              value={cp.quantity || ''}
+                              onChange={(e) => {
+                                const newProds = [...customerProducts];
+                                newProds[idx].quantity = parseInt(e.target.value) || 1;
+                                setCustomerProducts(newProds);
+                              }}
+                              className="glass-input px-3 py-3 text-center bg-black/40 shrink-0"
+                              style={{ width: '80px', flexBasis: '80px' }}
+                              placeholder="Qty"
+                            />
+                            <button type="button" onClick={() => setCustomerProducts(customerProducts.filter((_, i) => i !== idx))} className="p-3 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 transition-colors shrink-0">
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {(customerServices.length > 0 || customerProducts.length > 0) && (
+                    <div className="mt-6 bg-black/20 p-5 rounded-xl border border-[#D4AF37]/30 flex justify-between items-center shadow-[0_0_15px_rgba(212,175,55,0.05)]">
+                      <span className="text-xs font-bold tracking-widest text-[#D4AF37] uppercase">Total Amount</span>
+                      <span className="text-2xl font-light text-white">
+                        ₹{(
+                          customerServices.reduce((sum, cs) => sum + Number(services.find(s => s.id.toString() === cs.serviceId.toString())?.price || 0), 0) +
+                          customerProducts.reduce((sum, cp) => sum + (Number(products.find(p => p.id.toString() === cp.productId.toString())?.selling_price || products.find(p => p.id.toString() === cp.productId.toString())?.sellingPrice || 0) * cp.quantity), 0)
+                        ).toLocaleString()}
                       </span>
                     </div>
                   )}
                 </div>
               </div>
-              <div className="p-6 border-t border-white/10 bg-black/40 rounded-b-2xl flex justify-end gap-3 shrink-0">
+              <div className="p-6 border-t border-white/10 bg-black/40 rounded-b-2xl shrink-0 flex justify-end gap-3">
                 <button type="button" onClick={() => setIsCustomerModalOpen(false)} className="btn-secondary">Cancel</button>
                 <button type="submit" disabled={isSubmitting} className="btn-primary disabled:opacity-50">
                   {customerToEdit ? 'Save Changes' : 'Add Customer'}
@@ -685,7 +822,7 @@ export default function Customers() {
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto space-y-8 flex-1 custom-scrollbar bg-black/60">
+            <div className="p-6 overflow-y-auto space-y-8 flex-1 custom-scrollbar bg-black/60 min-h-0">
               {/* Staff Selection */}
               <div>
                 <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-3">Select Staff Member *</label>
@@ -725,7 +862,7 @@ export default function Customers() {
                           <option value="" className="text-white/60">-- Select Service --</option>
                           {Object.entries(groupedServices).map(([category, items]) => (
                             <optgroup key={category} label={category} className="text-white/60">
-                              {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - Rs. {s.price}</option>)}
+                              {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - ₹{s.price}</option>)}
                             </optgroup>
                           ))}
                         </select>
@@ -760,7 +897,7 @@ export default function Customers() {
                           className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40"
                         >
                           <option value="" className="text-white/60">-- Select Product --</option>
-                          {products.map(p => <option key={p.id} value={p.id} className="text-white">{(p.name || '').substring(0,40)} - Rs. {p.selling_price || p.sellingPrice || 0}</option>)}
+                          {products.map(p => <option key={p.id} value={p.id} className="text-white">{(p.name || '').substring(0,40)} - ₹{p.selling_price || p.sellingPrice || 0}</option>)}
                         </select>
                         <input 
                           type="number" 
@@ -788,7 +925,7 @@ export default function Customers() {
                 <div className="flex justify-between items-center text-sm font-bold text-white relative z-10">
                   <span className="tracking-wide uppercase text-white/60">Grand Total</span>
                   <span className="text-3xl font-light tracking-tight">
-                    Rs. {
+                    ₹{
                       visitServices.reduce((sum, vs) => sum + Number(services.find(s => s.id.toString() === vs.serviceId.toString())?.price || 0), 0) +
                       visitProducts.reduce((sum, vp) => sum + (Number(products.find(p => p.id.toString() === vp.productId.toString())?.selling_price || products.find(p => p.id.toString() === vp.productId.toString())?.sellingPrice || 0) * vp.quantity), 0)
                     }
@@ -891,7 +1028,7 @@ export default function Customers() {
                         <div className="shrink-0 flex flex-col justify-center items-end pl-6 border-l border-white/10 min-w-[120px] gap-3">
                           <div>
                             <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1 block text-right">Total</span>
-                            <span className="text-2xl font-light text-white">Rs. {visit.grand_total}</span>
+                            <span className="text-2xl font-light text-white">₹{visit.grand_total}</span>
                           </div>
                           <button
                             onClick={() => {

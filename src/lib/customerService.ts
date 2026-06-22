@@ -143,6 +143,7 @@ export const customerService = {
     if (updates.phone !== undefined) payload.phone = updates.phone;
     if (updates.dob !== undefined) payload.dob = updates.dob || null;
     if (updates.services_taken !== undefined) payload.services_taken = updates.services_taken;
+    if (updates.products_bought !== undefined) payload.products_bought = updates.products_bought;
     if (updates.staff_served !== undefined) payload.staff_served = updates.staff_served;
     if (updates.amountPaid !== undefined) payload.amount_paid = updates.amountPaid;
 

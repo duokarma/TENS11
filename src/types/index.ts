@@ -11,6 +11,7 @@ export interface Customer {
   phone: string;
   dob?: string;
   services_taken?: string[];
+  products_bought?: string[];
   staff_served?: string[];
   amountPaid?: number;
   createdAt: string;
