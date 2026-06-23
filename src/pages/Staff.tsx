@@ -22,12 +22,20 @@ export default function Staff() {
       const [staffRes, commissionsRes, visitsRes] = await Promise.all([
         supabase.from('staff').select('*').eq('is_deleted', false),
         supabase.from('staff_commissions').select('*').eq('is_deleted', false),
-        supabase.from('customer_visits').select('*, customers(name), visit_services(service_name, price)').eq('is_deleted', false)
+        supabase.from('customer_visits').select('*, customers(name, is_deleted), visit_services(service_name, price)').eq('is_deleted', false)
       ]);
 
       if (staffRes.data) setStaffList(staffRes.data);
-      if (commissionsRes.data) setCommissions(commissionsRes.data);
-      if (visitsRes.data) setVisits(visitsRes.data);
+      if (visitsRes.data) {
+        const validVisits = visitsRes.data.filter((v: any) => !v.customers || !v.customers.is_deleted);
+        setVisits(validVisits);
+        
+        if (commissionsRes.data) {
+          const validVisitIds = new Set(validVisits.map((v: any) => v.id));
+          const validCommissions = commissionsRes.data.filter((c: any) => validVisitIds.has(c.visit_id));
+          setCommissions(validCommissions);
+        }
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
     } finally {

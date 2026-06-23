@@ -41,13 +41,14 @@ export default function Dashboard() {
         { data: productsData },
         { data: customersData }
       ] = await Promise.all([
-        supabase.from('customer_visits').select('*').eq('is_deleted', false).order('visit_date', { ascending: false }),
+        supabase.from('customer_visits').select('*, customer:customer_id(is_deleted)').eq('is_deleted', false).order('visit_date', { ascending: false }),
         supabase.from('expenses').select('*').eq('is_deleted', false).order('date', { ascending: false }),
         supabase.from('products').select('*').eq('is_deleted', false),
         supabase.from('customers').select('id, created_at, name, dob, phone').eq('is_deleted', false)
       ]);
 
-      setVisits(visitsData || []);
+      const validVisits = (visitsData || []).filter((v: any) => !v.customer || !v.customer.is_deleted);
+      setVisits(validVisits);
       setExpenses(expensesData || []);
       setProducts(productsData || []);
       setCustomers(customersData || []);

@@ -17,9 +17,8 @@ export default function CalendarView() {
       visit_products(*)
     `).eq('is_deleted', false);
     if (!error && data) {
-      // Filter out visits where the customer has been soft-deleted
-      const activeVisits = data.filter((v: any) => !v.customer || v.customer.is_deleted !== true);
-      setVisits(activeVisits);
+      const validVisits = data.filter((v: any) => !v.customer || !v.customer.is_deleted);
+      setVisits(validVisits);
     } else if (error) {
       console.error("Error fetching visits:", error);
     }

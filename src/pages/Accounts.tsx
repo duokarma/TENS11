@@ -25,7 +25,7 @@ export default function Accounts() {
       const eDate = new Date(endDate);
       eDate.setHours(23, 59, 59, 999);
 
-      let visitQuery = supabase.from('customer_visits').select('grand_total, visit_date').eq('is_deleted', false)
+      let visitQuery = supabase.from('customer_visits').select('grand_total, visit_date, customer:customer_id(is_deleted)').eq('is_deleted', false)
         .gte('visit_date', sDate.toISOString()).lte('visit_date', eDate.toISOString());
         
       let expenseQuery = supabase.from('expenses').select('amount, category, date').eq('is_deleted', false)
@@ -36,7 +36,7 @@ export default function Accounts() {
 
       // Recent Transactions Queries
       let recentVisitsQuery = supabase.from('customer_visits')
-        .select('id, grand_total, visit_date, customer:customer_id(name)')
+        .select('id, grand_total, visit_date, customer:customer_id(name, is_deleted)')
         .eq('is_deleted', false)
         .gte('visit_date', sDate.toISOString()).lte('visit_date', eDate.toISOString())
         .order('visit_date', { ascending: false })
@@ -57,11 +57,15 @@ export default function Accounts() {
         recentExpensesQuery
       ]);
 
-      if (vRes.data) setVisits(vRes.data);
+      if (vRes.data) {
+        const validVisits = vRes.data.filter((v: any) => !v.customer || !v.customer.is_deleted);
+        setVisits(validVisits);
+      }
       if (eRes.data) setExpenses(eRes.data);
       if (pRes.data) setProducts(pRes.data);
 
-      const incomes = (rvRes.data || []).map((v: any) => ({
+      const validRecentVisits = (rvRes.data || []).filter((v: any) => !v.customer || !v.customer.is_deleted);
+      const incomes = validRecentVisits.map((v: any) => ({
         id: v.id,
         title: `Visit: ${v.customer?.name || 'Walk-in'}`,
         amount: Number(v.grand_total) || 0,
@@ -171,7 +175,8 @@ export default function Accounts() {
 
   const exportFinanceCSV = async () => {
     try {
-      const { data: allVisits } = await supabase.from('customer_visits').select('visit_date, grand_total, customer:customer_id(name)').eq('is_deleted', false);
+      const { data: allVisitsRaw } = await supabase.from('customer_visits').select('visit_date, grand_total, customer:customer_id(name, is_deleted)').eq('is_deleted', false);
+      const allVisits = (allVisitsRaw || []).filter((v: any) => !v.customer || !v.customer.is_deleted);
       const { data: allExpenses } = await supabase.from('expenses').select('date, title, category, amount').eq('is_deleted', false);
       const { data: allProducts } = await supabase.from('products').select('name, purchased_quantity, purchase_price, created_at');
 

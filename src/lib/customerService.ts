@@ -69,12 +69,14 @@ export const customerService = {
 
       // 3. Lifetime Revenue & Avg Spend
       // For highly scaled apps, we would use an RPC here. For now, fetching grand_totals
-      const { data: visits } = await supabase
+      const { data: visitsRaw } = await supabase
         .from('customer_visits')
-        .select('grand_total')
+        .select('grand_total, customer:customer_id(is_deleted)')
         .eq('is_deleted', false);
         
-      const totalRevenue = (visits || []).reduce((sum, v) => sum + Number(v.grand_total || 0), 0);
+      const visits = (visitsRaw || []).filter((v: any) => !v.customer || !v.customer.is_deleted);
+        
+      const totalRevenue = visits.reduce((sum, v) => sum + Number(v.grand_total || 0), 0);
       const avgSpend = (totalCustomers || 0) > 0 ? totalRevenue / totalCustomers! : 0;
 
       return {
