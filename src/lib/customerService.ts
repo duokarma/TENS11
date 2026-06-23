@@ -184,6 +184,27 @@ export const customerService = {
       console.error('Error deleting customer:', error);
       throw error;
     }
+
+    // Also soft-delete associated visits
+    const { data: visits } = await supabase
+      .from('customer_visits')
+      .select('id')
+      .eq('customer_id', id);
+
+    if (visits && visits.length > 0) {
+      const visitIds = visits.map(v => v.id);
+      
+      await supabase
+        .from('customer_visits')
+        .update({ is_deleted: true })
+        .in('id', visitIds);
+
+      await supabase
+        .from('staff_commissions')
+        .update({ is_deleted: true })
+        .in('visit_id', visitIds);
+    }
+
     return true;
   }
 };
