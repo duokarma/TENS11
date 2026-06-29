@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { customerService } from '../lib/customerService';
 import type { Customer } from '../types';
 import { 
   Search, Plus, User, Scissors, Receipt, Package,
   Trash2, Edit2, X, Users, UserPlus, IndianRupee, TrendingUp, Calendar as CalendarIcon,
-  ChevronLeft, ChevronRight, Download, MessageCircle, Star, ClipboardList
+  ChevronLeft, ChevronRight, Download, MessageCircle, Star, ClipboardList, Tag
 } from 'lucide-react';
 import { generateInvoicePDF } from '../lib/pdfGenerator';
 import { format, isThisMonth } from 'date-fns';
@@ -36,12 +36,31 @@ export default function Customers() {
   const [products, setProducts] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalCustomers: 0, newThisMonth: 0, totalRevenue: 0, avgSpend: 0 });
 
-  const groupedServices = services.reduce((acc, service) => {
+  const groupedServices = useMemo(() => services.reduce((acc, service) => {
     const category = service.category || 'Other';
     if (!acc[category]) acc[category] = [];
     acc[category].push(service);
     return acc;
-  }, {} as Record<string, typeof services>);
+  }, {} as Record<string, typeof services>), [services]);
+
+  // Filtered grouped services for search in modals
+  const [addSvcSearch, setAddSvcSearch] = useState('');
+  const [visitSvcSearch, setVisitSvcSearch] = useState('');
+
+  const filteredGroupedServices = (search: string) => {
+    const q = search.toLowerCase();
+    if (!q) return groupedServices;
+    return Object.entries(groupedServices).reduce((acc, [cat, items]) => {
+      const matched = items.filter(s => s.service_name.toLowerCase().includes(q) || cat.toLowerCase().includes(q));
+      if (matched.length > 0) acc[cat] = matched;
+      return acc;
+    }, {} as Record<string, typeof services>);
+  };
+
+  // Discount state for Add Customer modal
+  const [addFinalAmount, setAddFinalAmount] = useState<string>('');
+  // Discount state for Record Visit modal
+  const [visitFinalAmount, setVisitFinalAmount] = useState<string>('');
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,6 +157,8 @@ export default function Customers() {
     setCustomerServices([]);
     setCustomerProducts([]);
     setCustomerStaffId('');
+    setAddSvcSearch('');
+    setAddFinalAmount('');
     reset({ name: '', phone: '', dobDay: '', dobMonth: '', dobYear: '' });
     setIsCustomerModalOpen(true);
   };
@@ -217,7 +238,10 @@ export default function Customers() {
         return '';
       }).filter(Boolean);
 
-      const grandTotal = serviceTotal + productTotal;
+      const originalTotal = serviceTotal + productTotal;
+      const finalAmt = addFinalAmount !== '' ? Number(addFinalAmount) : originalTotal;
+      const discountAmt = Math.max(0, originalTotal - finalAmt);
+      const grandTotal = finalAmt;
 
       const parsedData: any = {
         name: data.name,
@@ -247,6 +271,8 @@ export default function Customers() {
           customer_id: newCust.id,
           service_total: serviceTotal,
           product_total: productTotal,
+          original_total: originalTotal,
+          discount_amount: discountAmt,
           grand_total: grandTotal,
           staff_id: customerStaffId
         }]).select().single();
@@ -313,6 +339,8 @@ export default function Customers() {
     setVisitServices([{ serviceId: '' }]);
     setVisitProducts([]);
     setVisitStaffId('');
+    setVisitSvcSearch('');
+    setVisitFinalAmount('');
     setIsRecordVisitOpen(true);
   };
 
@@ -344,7 +372,10 @@ export default function Customers() {
         return '';
       }).filter(Boolean);
 
-      const grandTotal = serviceTotal + productTotal;
+      const originalTotal = serviceTotal + productTotal;
+      const finalAmt = visitFinalAmount !== '' ? Number(visitFinalAmount) : originalTotal;
+      const discountAmt = Math.max(0, originalTotal - finalAmt);
+      const grandTotal = finalAmt;
 
       const selectedStaffMember = staff.find(s => s.id.toString() === visitStaffId.toString());
       const commissionRate = selectedStaffMember ? Number(selectedStaffMember.commission_rate || 10) : 10;
@@ -357,6 +388,8 @@ export default function Customers() {
           customer_id: visitCustomer.id,
           service_total: serviceTotal,
           product_total: productTotal,
+          original_total: originalTotal,
+          discount_amount: discountAmt,
           grand_total: grandTotal,
           staff_id: visitStaffId
         }])
@@ -711,6 +744,12 @@ export default function Customers() {
                       + Add Service
                     </button>
                   </div>
+                  {/* Service Search */}
+                  <div className="flex items-center bg-black/40 border border-white/10 rounded-xl px-3 py-2 mb-3 gap-2 focus-within:border-white/25 transition-colors">
+                    <Search className="w-4 h-4 text-white/30 shrink-0" />
+                    <input type="text" placeholder="Search services..." value={addSvcSearch} onChange={e => setAddSvcSearch(e.target.value)} className="bg-transparent outline-none text-sm text-white placeholder-white/30 flex-1" />
+                    {addSvcSearch && <button type="button" onClick={() => setAddSvcSearch('')} className="text-white/30 hover:text-white transition-colors"><X className="w-4 h-4" /></button>}
+                  </div>
                   {customerServices.length === 0 ? (
                     <div className="text-sm text-white/60/60 font-light italic p-6 bg-black/5 rounded-2xl border border-dashed border-white/10 text-center">No services added. Click above to add.</div>
                   ) : (
@@ -727,7 +766,7 @@ export default function Customers() {
                             className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40"
                           >
                             <option value="" className="text-white/60">-- Select Service --</option>
-                            {Object.entries(groupedServices).map(([category, items]) => (
+                            {Object.entries(filteredGroupedServices(addSvcSearch)).map(([category, items]) => (
                               <optgroup key={category} label={category} className="text-white/60">
                                 {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - ₹{s.price}</option>)}
                               </optgroup>
@@ -793,17 +832,36 @@ export default function Customers() {
                     )}
                   </div>
 
-                  {(customerServices.length > 0 || customerProducts.length > 0) && (
-                    <div className="mt-6 bg-black/20 p-5 rounded-xl border border-[var(--gold)]/30 flex justify-between items-center shadow-[0_0_15px_rgba(200, 157, 60,0.05)]">
-                      <span className="text-xs font-bold tracking-widest text-[var(--gold)] uppercase">Total Amount</span>
-                      <span className="text-2xl font-light text-white">
-                        ₹{(
-                          customerServices.reduce((sum, cs) => sum + Number(services.find(s => s.id.toString() === cs.serviceId.toString())?.price || 0), 0) +
-                          customerProducts.reduce((sum, cp) => sum + (Number(products.find(p => p.id.toString() === cp.productId.toString())?.selling_price || products.find(p => p.id.toString() === cp.productId.toString())?.sellingPrice || 0) * cp.quantity), 0)
-                        ).toLocaleString()}
-                      </span>
-                    </div>
-                  )}
+                  {(customerServices.length > 0 || customerProducts.length > 0) && (() => {
+                    const calcSvcTotal = customerServices.reduce((sum, cs) => sum + Number(services.find(s => s.id.toString() === cs.serviceId.toString())?.price || 0), 0);
+                    const calcProdTotal = customerProducts.reduce((sum, cp) => sum + (Number(products.find(p => p.id.toString() === cp.productId.toString())?.selling_price || products.find(p => p.id.toString() === cp.productId.toString())?.sellingPrice || 0) * cp.quantity), 0);
+                    const calcTotal = calcSvcTotal + calcProdTotal;
+                    const finalAmt = addFinalAmount !== '' ? Number(addFinalAmount) : calcTotal;
+                    const discountAmt = Math.max(0, calcTotal - finalAmt);
+                    return (
+                      <div className="mt-6 space-y-3">
+                        <div className="bg-black/20 p-5 rounded-xl border border-[var(--gold)]/30 flex justify-between items-center">
+                          <span className="text-xs font-bold tracking-widest text-[var(--gold)] uppercase">Calculated Total</span>
+                          <span className="text-2xl font-light text-white">₹{calcTotal.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Final Amount (Edit for Discount)</label>
+                          <input
+                            type="number"
+                            value={addFinalAmount}
+                            onChange={e => setAddFinalAmount(e.target.value)}
+                            placeholder={calcTotal.toString()}
+                            className="glass-input w-full px-4 py-3"
+                          />
+                          {discountAmt > 0 && (
+                            <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1">
+                              <Tag className="w-3 h-3" /> ₹{discountAmt.toLocaleString()} discount applied — Final: ₹{finalAmt.toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
               <div className="p-6 border-t border-white/10 bg-black/40 rounded-b-2xl shrink-0 flex justify-end gap-3">
@@ -862,6 +920,12 @@ export default function Customers() {
                     + Add Service
                   </button>
                 </div>
+                {/* Service Search */}
+                <div className="flex items-center bg-black/40 border border-white/10 rounded-xl px-3 py-2 mb-3 gap-2 focus-within:border-white/25 transition-colors">
+                  <Search className="w-4 h-4 text-white/30 shrink-0" />
+                  <input type="text" placeholder="Search services..." value={visitSvcSearch} onChange={e => setVisitSvcSearch(e.target.value)} className="bg-transparent outline-none text-sm text-white placeholder-white/30 flex-1" />
+                  {visitSvcSearch && <button type="button" onClick={() => setVisitSvcSearch('')} className="text-white/30 hover:text-white transition-colors"><X className="w-4 h-4" /></button>}
+                </div>
                 {visitServices.length === 0 ? (
                   <div className="text-sm text-white/40 font-light italic p-4 bg-black/5 rounded-xl border border-dashed border-white/10 text-center">No services added.</div>
                 ) : (
@@ -878,7 +942,7 @@ export default function Customers() {
                           className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40"
                         >
                           <option value="">-- Select Service --</option>
-                          {Object.entries(groupedServices).map(([category, items]) => (
+                          {Object.entries(filteredGroupedServices(visitSvcSearch)).map(([category, items]) => (
                             <optgroup key={category} label={category}>
                               {items.map(s => <option key={s.id} value={s.id}>{s.service_name} - ₹{s.price}</option>)}
                             </optgroup>
@@ -960,18 +1024,37 @@ export default function Customers() {
                 )}
               </div>
 
-              {/* Live Total */}
-              {(visitServices.some(vs => vs.serviceId) || visitProducts.some(vp => vp.productId)) && (
-                <div className="bg-black/20 p-5 rounded-xl border border-emerald-400/30 flex justify-between items-center">
-                  <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Total Amount</span>
-                  <span className="text-2xl font-light text-white">
-                    ₹{(
-                      visitServices.reduce((sum, vs) => sum + Number(services.find(s => s.id.toString() === vs.serviceId)?.price || 0), 0) +
-                      visitProducts.reduce((sum, vp) => sum + (Number(products.find(p => p.id.toString() === vp.productId)?.selling_price || 0) * vp.quantity), 0)
-                    ).toLocaleString()}
-                  </span>
-                </div>
-              )}
+              {/* Live Total + Discount */}
+              {(visitServices.some(vs => vs.serviceId) || visitProducts.some(vp => vp.productId)) && (() => {
+                const calcSvc = visitServices.reduce((sum, vs) => sum + Number(services.find(s => s.id.toString() === vs.serviceId)?.price || 0), 0);
+                const calcProd = visitProducts.reduce((sum, vp) => sum + (Number(products.find(p => p.id.toString() === vp.productId)?.selling_price || 0) * vp.quantity), 0);
+                const calcTotal = calcSvc + calcProd;
+                const finalAmt = visitFinalAmount !== '' ? Number(visitFinalAmount) : calcTotal;
+                const discountAmt = Math.max(0, calcTotal - finalAmt);
+                return (
+                  <div className="space-y-3">
+                    <div className="bg-black/20 p-5 rounded-xl border border-emerald-400/30 flex justify-between items-center">
+                      <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Calculated Total</span>
+                      <span className="text-2xl font-light text-white">₹{calcTotal.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Final Amount (Edit for Discount)</label>
+                      <input
+                        type="number"
+                        value={visitFinalAmount}
+                        onChange={e => setVisitFinalAmount(e.target.value)}
+                        placeholder={calcTotal.toString()}
+                        className="glass-input w-full px-4 py-3"
+                      />
+                      {discountAmt > 0 && (
+                        <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1">
+                          <Tag className="w-3 h-3" /> ₹{discountAmt.toLocaleString()} discount applied — Final: ₹{finalAmt.toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="p-6 border-t border-white/10 bg-black/40 rounded-b-2xl shrink-0 flex justify-end gap-3">

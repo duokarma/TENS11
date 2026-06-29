@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { PieChart as PieChartIcon, ArrowUpRight, ArrowDownRight, IndianRupee, Download, Package, Calendar } from 'lucide-react';
+import { PieChart as PieChartIcon, ArrowUpRight, ArrowDownRight, IndianRupee, Download, Package, Calendar, ChevronDown, ChevronUp, X as XIcon, Info } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -16,6 +16,9 @@ export default function Accounts() {
   const [products, setProducts] = useState<any[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [drawerType, setDrawerType] = useState<'revenue' | 'expenses' | 'inventory' | 'profit' | null>(null);
+  const [showFormula, setShowFormula] = useState(false);
+  const [drawerVisits, setDrawerVisits] = useState<any[]>([]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -117,10 +120,20 @@ export default function Accounts() {
   const totalInventoryPurchasedCost = products.reduce((sum, p) => sum + ((Number(p.purchased_quantity) || 0) * (Number(p.purchase_price) || 0)), 0);
   const totalInventorySoldRevenue = products.reduce((sum, p) => sum + ((Number(p.sold_quantity) || 0) * (Number(p.selling_price) || 0)), 0);
 
-  // We factor the inventory purchased cost into net profit to represent cash flow accurately
-  // Note: If managers manually log inventory purchases in 'expenses' table, this might double count,
-  // but the user requested explicit inventory calculation for net profit.
   const netProfit = totalRevenue - totalExpenses - totalInventoryPurchasedCost;
+
+  // Per-visit for drawer
+  const drawerVisitRows = visits.slice(0, 20);
+
+  // Category breakdown for expense drawer
+  const expenseCategoryBreakdown = useMemo(() => {
+    const breakdown: Record<string, number> = {};
+    expenses.forEach(exp => {
+      if (!breakdown[exp.category]) breakdown[exp.category] = 0;
+      breakdown[exp.category] += Number(exp.amount) || 0;
+    });
+    return Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
+  }, [expenses]);
 
   // Pie Chart Data (Category breakdown)
   const expenseData = useMemo(() => {
@@ -230,6 +243,114 @@ export default function Accounts() {
 
   return (
     <div className="space-y-6 pb-10">
+      {/* KPI Explanation Drawer */}
+      {drawerType && (
+        <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setDrawerType(null)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-md h-full glass-panel flex flex-col overflow-hidden shadow-2xl"
+            style={{ borderLeft: '1px solid rgba(212,175,55,0.15)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-6 border-b border-white/10 bg-black/40 shrink-0">
+              <h3 className="text-xl font-light text-white tracking-tight">
+                {drawerType === 'revenue' && '📈 Revenue Breakdown'}
+                {drawerType === 'expenses' && '📊 Expense Breakdown'}
+                {drawerType === 'inventory' && '📦 Inventory Cost Details'}
+                {drawerType === 'profit' && '💰 Net Profit Calculation'}
+              </h3>
+              <button onClick={() => setDrawerType(null)} className="p-2 text-white/50 hover:text-white transition-colors rounded-full hover:bg-white/5">
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4 bg-black/60">
+              {drawerType === 'revenue' && (
+                <>
+                  <p className="text-xs text-white/40 font-light">Sum of all customer visit totals in the selected period.</p>
+                  <div className="space-y-2">
+                    {drawerVisitRows.map((v, i) => (
+                      <div key={i} className="flex justify-between items-center py-2 border-b border-white/5">
+                        <span className="text-sm text-white/80">{v.customer?.name || 'Walk-in'}</span>
+                        <span className="text-sm font-bold" style={{ color: '#D4AF37' }}>+₹{Number(v.grand_total || 0).toLocaleString()}</span>
+                      </div>
+                    ))}
+                    {visits.length > 20 && <p className="text-xs text-white/30 italic text-center">...and {visits.length - 20} more visits</p>}
+                  </div>
+                  <div className="pt-4 border-t border-white/10 flex justify-between items-center">
+                    <span className="text-xs font-bold tracking-widest text-white/50 uppercase">Total Revenue</span>
+                    <span className="text-2xl font-light" style={{ color: '#D4AF37' }}>₹{totalRevenue.toLocaleString()}</span>
+                  </div>
+                </>
+              )}
+              {drawerType === 'expenses' && (
+                <>
+                  <p className="text-xs text-white/40 font-light">All recorded operating expenses in the selected period, grouped by category.</p>
+                  <div className="space-y-2">
+                    {expenseCategoryBreakdown.map(([cat, amt]) => (
+                      <div key={cat} className="flex justify-between items-center py-2 border-b border-white/5">
+                        <span className="text-sm text-white/80">{cat}</span>
+                        <span className="text-sm font-bold text-danger">-₹{amt.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pt-4 border-t border-white/10 flex justify-between items-center">
+                    <span className="text-xs font-bold tracking-widest text-white/50 uppercase">Total Expenses</span>
+                    <span className="text-2xl font-light text-danger">₹{totalExpenses.toLocaleString()}</span>
+                  </div>
+                </>
+              )}
+              {drawerType === 'inventory' && (
+                <>
+                  <p className="text-xs text-white/40 font-light">Lifetime cost of all products purchased. Calculated as: <strong className="text-white/60">Qty Purchased × Purchase Price</strong> per product.</p>
+                  <div className="space-y-2">
+                    {products.filter(p => (p.purchased_quantity || 0) > 0).map((p, i) => (
+                      <div key={i} className="flex justify-between items-center py-2 border-b border-white/5">
+                        <div>
+                          <span className="text-sm text-white/80">{p.name}</span>
+                          <span className="text-xs text-white/30 ml-2">{p.purchased_quantity}× ₹{p.purchase_price}</span>
+                        </div>
+                        <span className="text-sm font-bold" style={{ color: '#D4AF37' }}>₹{((p.purchased_quantity || 0) * (p.purchase_price || 0)).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pt-4 border-t border-white/10">
+                    <p className="text-xs text-white/30 italic mb-2">⚠️ This is the LIFETIME cost of inventory, not filtered by date.</p>
+                    <div className="flex justify-between">
+                      <span className="text-xs font-bold tracking-widest text-white/50 uppercase">Total Cost</span>
+                      <span className="text-2xl font-light" style={{ color: '#D4AF37' }}>₹{totalInventoryPurchasedCost.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+              {drawerType === 'profit' && (
+                <>
+                  <p className="text-xs text-white/40 font-light">Net Profit = Revenue − Operating Expenses − Inventory Purchased</p>
+                  <div className="space-y-3 mt-4">
+                    <div className="flex justify-between items-center p-4 rounded-xl" style={{ background: 'rgba(52,211,153,0.06)', border: '1px solid rgba(52,211,153,0.15)' }}>
+                      <span className="text-sm text-white/70">Total Revenue</span>
+                      <span className="font-bold text-emerald-400">+ ₹{totalRevenue.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-4 rounded-xl" style={{ background: 'rgba(207,102,121,0.06)', border: '1px solid rgba(207,102,121,0.15)' }}>
+                      <span className="text-sm text-white/70">Operating Expenses</span>
+                      <span className="font-bold text-danger">− ₹{totalExpenses.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center p-4 rounded-xl" style={{ background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.12)' }}>
+                      <span className="text-sm text-white/70">Inventory Purchased</span>
+                      <span className="font-bold" style={{ color: '#D4AF37' }}>− ₹{totalInventoryPurchasedCost.toLocaleString()}</span>
+                    </div>
+                    <div className="h-px" style={{ background: 'rgba(212,175,55,0.2)' }} />
+                    <div className="flex justify-between items-center p-4 rounded-xl" style={{ background: netProfit >= 0 ? 'rgba(52,211,153,0.08)' : 'rgba(207,102,121,0.08)', border: `1px solid ${netProfit >= 0 ? 'rgba(52,211,153,0.2)' : 'rgba(207,102,121,0.2)'}` }}>
+                      <span className="text-sm font-bold text-white">Net Profit</span>
+                      <span className={`text-2xl font-light ${netProfit >= 0 ? 'text-emerald-400' : 'text-danger'}`}>= ₹{netProfit.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="heading-display text-5xl tracking-tight text-white leading-none mb-1">Accounts Overview</h1>
@@ -270,7 +391,11 @@ export default function Accounts() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(17,17,17,0.6)' }}>
+            <div 
+              onClick={() => setDrawerType('revenue')}
+              className="glass-card p-6 flex flex-col justify-center cursor-pointer hover:bg-black/40 transition-colors" 
+              style={{ border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(17,17,17,0.6)' }}
+            >
               <div className="flex justify-between items-start">
                 <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Revenue</h3>
                 <div className="bg-success/10 p-2 rounded-lg border border-success/20"><ArrowUpRight className="h-5 w-5 text-success" /></div>
@@ -280,7 +405,10 @@ export default function Accounts() {
               </div>
             </div>
             
-            <div className="glass-card p-6 flex flex-col justify-center border border-danger/20 bg-danger/5">
+            <div 
+              onClick={() => setDrawerType('expenses')}
+              className="glass-card p-6 flex flex-col justify-center border border-danger/20 bg-danger/5 cursor-pointer hover:bg-danger/10 transition-colors"
+            >
               <div className="flex justify-between items-start">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-danger">Operating Expenses</h3>
                 <div className="bg-danger/10 p-2 rounded-lg border border-danger/20"><ArrowDownRight className="h-5 w-5 text-danger" /></div>
@@ -290,7 +418,11 @@ export default function Accounts() {
               </div>
             </div>
 
-            <div className="glass-card p-6 flex flex-col justify-center relative overflow-hidden" style={{ border: '1px solid rgba(212,175,55,0.2)', background: 'rgba(212,175,55,0.05)' }}>
+            <div 
+              onClick={() => setDrawerType('inventory')}
+              className="glass-card p-6 flex flex-col justify-center relative overflow-hidden cursor-pointer hover:bg-[rgba(212,175,55,0.1)] transition-colors" 
+              style={{ border: '1px solid rgba(212,175,55,0.2)', background: 'rgba(212,175,55,0.05)' }}
+            >
               <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
                  <Package className="w-24 h-24" style={{ color: '#D4AF37' }} />
               </div>
@@ -306,7 +438,11 @@ export default function Accounts() {
               </div>
             </div>
 
-            <div className="glass-card p-6 relative overflow-hidden flex flex-col justify-center group" style={{ border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(17,17,17,0.6)' }}>
+            <div 
+              onClick={() => setDrawerType('profit')}
+              className="glass-card p-6 relative overflow-hidden flex flex-col justify-center group cursor-pointer hover:bg-black/40 transition-colors" 
+              style={{ border: '1px solid rgba(212,175,55,0.1)', background: 'rgba(17,17,17,0.6)' }}
+            >
               <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
                  <IndianRupee className="w-24 h-24" style={{ color: '#D4AF37' }} />
               </div>
@@ -319,7 +455,9 @@ export default function Accounts() {
                     <IndianRupee className={`w-6 h-6 mr-1 ${netProfit >= 0 ? 'text-success/50' : 'text-danger/50'}`} />{netProfit.toLocaleString()}
                   </span>
                 </div>
-                <p className="text-xs font-light mt-2 text-white/60 italic">Rev - (Op. Exp + Inventory)</p>
+                <p className="text-xs font-light mt-2 text-white/60 italic flex items-center gap-1">
+                  <Info className="w-3 h-3" /> Rev - (Op. Exp + Inventory)
+                </p>
               </div>
             </div>
           </div>

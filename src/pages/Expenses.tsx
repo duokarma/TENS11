@@ -26,6 +26,9 @@ export default function Expenses() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   
+  const [showInventoryInfo, setShowInventoryInfo] = useState(false);
+  const [showSummaryInfo, setShowSummaryInfo] = useState(false);
+  
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
@@ -205,7 +208,26 @@ export default function Expenses() {
 
       {/* Inventory Analytics Cards */}
       <div className="glass-card p-6" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
-        <h4 className="heading-display text-2xl tracking-wide text-white mb-6 flex items-center"><Package className="w-5 h-5 mr-3" style={{ color: '#D4AF37' }}/> Inventory Accounting</h4>
+        <div className="flex justify-between items-center mb-6">
+          <h4 className="heading-display text-2xl tracking-wide text-white flex items-center"><Package className="w-5 h-5 mr-3" style={{ color: '#D4AF37' }}/> Inventory Accounting</h4>
+          <button 
+            onClick={() => setShowInventoryInfo(!showInventoryInfo)}
+            className="text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-colors hover:bg-white/5"
+            style={{ borderColor: 'rgba(212,175,55,0.3)', color: '#D4AF37' }}
+          >
+            {showInventoryInfo ? 'Hide Logic' : 'How is this calculated?'}
+          </button>
+        </div>
+        
+        {showInventoryInfo && (
+          <div className="mb-6 p-4 rounded-xl text-sm font-light leading-relaxed" style={{ background: 'rgba(212,175,55,0.05)', border: '1px dashed rgba(212,175,55,0.2)' }}>
+            <p className="text-white mb-2"><strong style={{ color: '#D4AF37' }}>Total Capital Invested:</strong> Qty Purchased × Purchase Price of all products ever bought.</p>
+            <p className="text-white mb-2"><strong style={{ color: '#D4AF37' }}>Current Stock Value:</strong> Current Qty in Stock × Purchase Price. (Value sitting on your shelves).</p>
+            <p className="text-white mb-2"><strong className="text-danger">Salon Consumption:</strong> Qty Used Internally × Purchase Price. (Products used for services, not sold to clients. This represents an indirect cost).</p>
+            <p className="text-white mb-2"><strong className="text-success">Retail Revenue:</strong> Qty Sold to Clients × Selling Price. (Money received from selling products).</p>
+            <p className="text-white"><strong className="text-success">Net Retail Profit:</strong> Retail Revenue − (Qty Sold to Clients × Purchase Price). (Actual profit made from retail sales only).</p>
+          </div>
+        )}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">Total Capital Invested</p>
@@ -231,6 +253,25 @@ export default function Expenses() {
       </div>
 
       {/* Summary Cards */}
+      <div className="flex justify-between items-end mb-2 mt-8">
+        <h4 className="heading-display text-2xl tracking-wide text-white">Operating Expenses</h4>
+        <button 
+          onClick={() => setShowSummaryInfo(!showSummaryInfo)}
+          className="text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-colors hover:bg-white/5"
+          style={{ borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}
+        >
+          {showSummaryInfo ? 'Hide Logic' : 'How is this calculated?'}
+        </button>
+      </div>
+
+      {showSummaryInfo && (
+        <div className="mb-4 p-4 rounded-xl text-sm font-light leading-relaxed bg-black/40 border border-white/5">
+          <p className="text-white mb-2"><strong className="font-medium text-white/80">Operating Expenses (OpEx):</strong> These are day-to-day running costs (Rent, Electricity, Salary, etc.) added manually in this page.</p>
+          <p className="text-white mb-2"><strong className="font-medium text-white/80">Time Filters:</strong> "Today", "This Month", and "This Year" only sum up expenses whose <em className="italic">recorded Date</em> falls within that exact timeframe.</p>
+          <p className="text-white"><strong className="text-danger font-medium">Pending Payments:</strong> Sum of all expenses marked as "Pending" or "Partially Paid". These are liabilities you owe.</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
           <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(212,175,55,0.4)' }}>Today's Expenses</p>

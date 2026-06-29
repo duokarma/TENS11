@@ -11,6 +11,7 @@ import Staff from './pages/Staff';
 import Accounts from './pages/Accounts';
 import Expenses from './pages/Expenses';
 import Packages from './pages/Packages';
+import Appointments from './pages/Appointments';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
@@ -37,6 +38,7 @@ function App() {
               <Route path="/" element={<AppLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="calendar" element={<Calendar />} />
+                <Route path="appointments" element={<Appointments />} />
                 <Route path="customers" element={<Customers />} />
                 <Route path="services" element={<Services />} />
                 <Route path="inventory" element={<Inventory />} />

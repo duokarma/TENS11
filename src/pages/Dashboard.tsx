@@ -6,11 +6,17 @@ import {
   PackageOpen, 
   TrendingUp,
   AlertTriangle,
-  Gift
+  Gift,
+  CalendarCheck,
+  Clock,
+  Check,
+  Loader2
 } from 'lucide-react';
-import { isSameDay } from 'date-fns';
+import { isSameDay, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import type { Variants } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -30,6 +36,8 @@ export default function Dashboard() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -52,6 +60,13 @@ export default function Dashboard() {
       setExpenses(expensesData || []);
       setProducts(productsData || []);
       setCustomers(customersData || []);
+
+      const { data: apptData } = await supabase
+        .from('appointments')
+        .select('*, staff:staff_id(name), appointment_services(*)')
+        .eq('is_deleted', false)
+        .eq('status', 'scheduled');
+      setAppointments(apptData || []);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -68,6 +83,7 @@ export default function Dashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, fetchData)
       .subscribe();
 
     return () => {
@@ -127,6 +143,36 @@ export default function Dashboard() {
 
   // --- Low Stock Products ---
   const lowStockProducts = products.filter(p => (Number(p.current_stock) || 0) <= 5).slice(0, 10);
+
+  // --- Today's Appointments ---
+  const todayAppointments = appointments.filter(a => a.appointment_date && isSameDay(parseISO(a.appointment_date), today));
+
+  const handleQuickCheckIn = async (appt: any) => {
+    setCheckingIn(appt.id);
+    try {
+      let customerId: number | null = null;
+      if (appt.customer_phone) {
+        const { data: existing } = await supabase.from('customers').select('id').eq('phone', appt.customer_phone).eq('is_deleted', false).maybeSingle();
+        if (existing) { customerId = existing.id; }
+        else {
+          const { data: newC } = await supabase.from('customers').insert([{ name: appt.customer_name, phone: appt.customer_phone }]).select().single();
+          if (newC) customerId = newC.id;
+        }
+      }
+      const svcList = appt.appointment_services || [];
+      const serviceTotal = svcList.reduce((s: number, x: any) => s + Number(x.price || 0), 0);
+      const { data: visitData, error: visitErr } = await supabase.from('customer_visits').insert([{
+        customer_id: customerId, service_total: serviceTotal, product_total: 0,
+        grand_total: serviceTotal, original_total: serviceTotal, discount_amount: 0, staff_id: appt.staff_id,
+      }]).select().single();
+      if (visitErr) throw visitErr;
+      if (svcList.length > 0) await supabase.from('visit_services').insert(svcList.map((s: any) => ({ visit_id: visitData.id, service_id: s.service_id, service_name: s.service_name, price: Number(s.price || 0) })));
+      await supabase.from('appointments').update({ status: 'checked_in', converted_visit_id: visitData.id }).eq('id', appt.id);
+      toast.success(`✅ Checked in — ${appt.customer_name}`);
+      fetchData();
+    } catch (err: any) { toast.error(err.message || 'Check-in failed'); }
+    finally { setCheckingIn(null); }
+  };
 
   const StatCard = ({ title, todayValue, lifetimeValue, lifetimeLabel, icon: Icon, colorClass }: any) => (
     <motion.div
@@ -252,6 +298,49 @@ export default function Dashboard() {
               icon={IndianRupee} 
             />
           </div>
+
+          {/* Today's Appointments */}
+          {todayAppointments.length > 0 && (
+            <motion.div
+              variants={itemVariants}
+              className="glass-card p-5 flex flex-col mt-6 relative overflow-hidden"
+              style={{ border: '1px solid rgba(96,165,250,0.15)', background: 'rgba(96,165,250,0.02)' }}
+            >
+              <div className="flex justify-between items-center mb-5 pb-4" style={{ borderBottom: '1px solid rgba(96,165,250,0.1)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl" style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)' }}>
+                    <CalendarCheck className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-light tracking-tight text-white" style={{ fontFamily: "'Cinzel', serif" }}>Today's Appointments</h3>
+                    <p className="text-xs text-blue-400 font-bold tracking-widest uppercase mt-0.5">{todayAppointments.length} scheduled</p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {todayAppointments.map(appt => (
+                  <div key={appt.id} className="p-4 rounded-xl" style={{ background: 'rgba(96,165,250,0.05)', border: '1px solid rgba(96,165,250,0.12)' }}>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-medium text-white">{appt.customer_name}</span>
+                      <span className="text-xs text-blue-400 flex items-center gap-1"><Clock className="w-3 h-3" />{format(parseISO(appt.appointment_date), 'hh:mm a')}</span>
+                    </div>
+                    {appt.staff?.name && <p className="text-xs text-white/40 mb-1">with {appt.staff.name}</p>}
+                    {(appt.appointment_services || []).length > 0 && (
+                      <p className="text-xs text-white/50 mb-3 truncate">{appt.appointment_services.map((s: any) => s.service_name).join(' · ')}</p>
+                    )}
+                    <button
+                      onClick={() => handleQuickCheckIn(appt)}
+                      disabled={checkingIn === appt.id}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg border transition-colors"
+                      style={{ color: '#34d399', background: 'rgba(52,211,153,0.08)', borderColor: 'rgba(52,211,153,0.25)' }}
+                    >
+                      {checkingIn === appt.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Check In
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
           {/* Low Stock Alerts */}
           <motion.div
