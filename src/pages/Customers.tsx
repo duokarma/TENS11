@@ -4,7 +4,7 @@ import type { Customer } from '../types';
 import { 
   Search, Plus, User, Scissors, Receipt, Package,
   Trash2, Edit2, X, Users, UserPlus, IndianRupee, TrendingUp, Calendar as CalendarIcon,
-  ChevronLeft, ChevronRight, Download, MessageCircle, Star
+  ChevronLeft, ChevronRight, Download, MessageCircle, Star, ClipboardList
 } from 'lucide-react';
 import { generateInvoicePDF } from '../lib/pdfGenerator';
 import { format, isThisMonth } from 'date-fns';
@@ -68,6 +68,14 @@ export default function Customers() {
   const [selectedCustomerForHistory, setSelectedCustomerForHistory] = useState<number | null>(null);
   const [selectedHistory, setSelectedHistory] = useState<any[]>([]);
   const [selectedCustomerRewards, setSelectedCustomerRewards] = useState<{points: number, membership_tier: string} | null>(null);
+
+  // Record Visit modal state
+  const [isRecordVisitOpen, setIsRecordVisitOpen] = useState(false);
+  const [visitCustomer, setVisitCustomer] = useState<Customer | null>(null);
+  const [visitServices, setVisitServices] = useState<{serviceId: string}[]>([]);
+  const [visitProducts, setVisitProducts] = useState<{productId: string, quantity: number}[]>([]);
+  const [visitStaffId, setVisitStaffId] = useState<string>('');
+  const [isSubmittingVisit, setIsSubmittingVisit] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema)
@@ -300,6 +308,122 @@ export default function Customers() {
     }
   };
 
+  const openRecordVisit = (customer: Customer) => {
+    setVisitCustomer(customer);
+    setVisitServices([{ serviceId: '' }]);
+    setVisitProducts([]);
+    setVisitStaffId('');
+    setIsRecordVisitOpen(true);
+  };
+
+  const handleRecordVisit = async () => {
+    if (!visitCustomer) return;
+    const filledServices = visitServices.filter(vs => vs.serviceId);
+    if (filledServices.length === 0) {
+      toast.error('Please select at least one service.');
+      return;
+    }
+    if (!visitStaffId) {
+      toast.error('Please select a staff member.');
+      return;
+    }
+    setIsSubmittingVisit(true);
+    try {
+      let serviceTotal = 0;
+      const parsedServiceNames = filledServices.map(vs => {
+        const s = services.find(x => x.id.toString() === vs.serviceId.toString());
+        if (s) { serviceTotal += Number(s.price); return s.service_name; }
+        return '';
+      }).filter(Boolean);
+
+      let productTotal = 0;
+      const filledProducts = visitProducts.filter(vp => vp.productId);
+      const parsedProductNames = filledProducts.map(vp => {
+        const p = products.find(x => x.id.toString() === vp.productId.toString());
+        if (p) { productTotal += Number(p.selling_price || 0) * vp.quantity; return p.name; }
+        return '';
+      }).filter(Boolean);
+
+      const grandTotal = serviceTotal + productTotal;
+
+      const selectedStaffMember = staff.find(s => s.id.toString() === visitStaffId.toString());
+      const commissionRate = selectedStaffMember ? Number(selectedStaffMember.commission_rate || 10) : 10;
+      const commissionAmount = serviceTotal * (commissionRate / 100);
+
+      // 1. Insert the visit
+      const { data: visitData, error: visitErr } = await supabase
+        .from('customer_visits')
+        .insert([{
+          customer_id: visitCustomer.id,
+          service_total: serviceTotal,
+          product_total: productTotal,
+          grand_total: grandTotal,
+          staff_id: visitStaffId
+        }])
+        .select()
+        .single();
+      if (visitErr) throw visitErr;
+
+      // 2. Insert visit_services
+      const vServicesData = filledServices.map(vs => {
+        const s = services.find(x => x.id.toString() === vs.serviceId.toString())!;
+        return { visit_id: visitData.id, service_id: s.id, service_name: s.service_name, price: Number(s.price) };
+      });
+      if (vServicesData.length > 0) {
+        const { error: vsErr } = await supabase.from('visit_services').insert(vServicesData);
+        if (vsErr) throw vsErr;
+      }
+
+      // 3. Insert visit_products & update stock
+      if (filledProducts.length > 0) {
+        const vProductsData = filledProducts.map(vp => {
+          const p = products.find(x => x.id.toString() === vp.productId.toString())!;
+          return { visit_id: visitData.id, product_id: p.id, product_name: p.name, quantity: vp.quantity, price: Number(p.selling_price || 0) * vp.quantity };
+        });
+        const { error: vpErr } = await supabase.from('visit_products').insert(vProductsData);
+        if (vpErr) throw vpErr;
+
+        for (const vp of vProductsData) {
+          const p = products.find(x => x.id === vp.product_id)!;
+          const newQty = Number(p.current_stock || 0) - vp.quantity;
+          const newSold = Number(p.sold_quantity || 0) + vp.quantity;
+          await supabase.from('products').update({ current_stock: newQty, sold_quantity: newSold }).eq('id', p.id);
+        }
+      }
+
+      // 4. Insert commission
+      const { error: commErr } = await supabase.from('staff_commissions').insert([{
+        staff_id: visitStaffId,
+        visit_id: visitData.id,
+        service_amount: serviceTotal,
+        commission_amount: commissionAmount
+      }]);
+      if (commErr) throw commErr;
+
+      // 5. Update customer aggregate: amount_paid, services_taken, staff_served
+      const updatedAmountPaid = Number(visitCustomer.amountPaid || 0) + grandTotal;
+      const existingServices = visitCustomer.services_taken || [];
+      const newServicesList = Array.from(new Set([...existingServices, ...parsedServiceNames]));
+      const existingStaff = visitCustomer.staff_served || [];
+      const staffName = selectedStaffMember?.name || '';
+      const newStaffList = staffName && !existingStaff.includes(staffName) ? [...existingStaff, staffName] : existingStaff;
+
+      await supabase.from('customers').update({
+        amount_paid: updatedAmountPaid,
+        services_taken: newServicesList,
+        staff_served: newStaffList
+      }).eq('id', visitCustomer.id);
+
+      toast.success(`Visit recorded for ${visitCustomer.name}! ₹${grandTotal.toLocaleString()}`);
+      setIsRecordVisitOpen(false);
+      loadData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to record visit');
+    } finally {
+      setIsSubmittingVisit(false);
+    }
+  };
+
   // Derived Data (no longer filtered locally)
   const selectedCustomer = customers.find(c => c.id === selectedCustomerForHistory);
 
@@ -468,6 +592,13 @@ export default function Customers() {
                       </td>
                       <td className="px-6 py-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => openRecordVisit(customer)}
+                            title="Record Visit"
+                            className="p-2 text-emerald-400 hover:bg-emerald-400/10 rounded-xl transition-colors"
+                          >
+                            <ClipboardList className="w-4 h-4" />
+                          </button>
                           <button onClick={() => setSelectedCustomerForHistory(customer.id)} className="p-2 text-white hover:bg-black/5 rounded-xl transition-colors">
                             <CalendarIcon className="w-4 h-4" />
                           </button>
@@ -682,6 +813,189 @@ export default function Customers() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Record Visit Modal */}
+      {isRecordVisitOpen && visitCustomer && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="glass-panel w-full max-w-lg flex flex-col animate-in zoom-in-95 duration-200 max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-white/10 bg-black/40 rounded-t-2xl shrink-0">
+              <div>
+                <h3 className="text-xl font-light tracking-tight text-white flex items-center gap-2">
+                  <ClipboardList className="w-5 h-5 text-emerald-400" />
+                  Record Visit
+                </h3>
+                <p className="text-sm text-white/50 mt-1 font-light">{visitCustomer.name} &middot; {visitCustomer.phone}</p>
+              </div>
+              <button onClick={() => setIsRecordVisitOpen(false)} className="p-2 hover:bg-black/5 rounded-full text-white/60 transition-colors">
+                <X className="w-5 h-5"/>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 bg-black/60 overflow-y-auto custom-scrollbar flex-1">
+              {/* Staff Selector */}
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Staff Member *</label>
+                <select
+                  value={visitStaffId}
+                  onChange={(e) => setVisitStaffId(e.target.value)}
+                  className="glass-input w-full px-4 py-3 appearance-none bg-black/40"
+                >
+                  <option value="">-- Choose Staff --</option>
+                  {staff.map(s => <option key={s.id} value={s.id}>{s.name || s.staff_name}</option>)}
+                </select>
+              </div>
+
+              {/* Services */}
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase flex items-center gap-1">
+                    <Scissors className="w-3 h-3" /> Services *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setVisitServices([...visitServices, { serviceId: '' }])}
+                    className="text-xs font-bold text-white bg-black/5 hover:bg-black/10 border border-white/10 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    + Add Service
+                  </button>
+                </div>
+                {visitServices.length === 0 ? (
+                  <div className="text-sm text-white/40 font-light italic p-4 bg-black/5 rounded-xl border border-dashed border-white/10 text-center">No services added.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {visitServices.map((vs, idx) => (
+                      <div key={idx} className="flex items-center gap-3">
+                        <select
+                          value={vs.serviceId}
+                          onChange={(e) => {
+                            const updated = [...visitServices];
+                            updated[idx].serviceId = e.target.value;
+                            setVisitServices(updated);
+                          }}
+                          className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40"
+                        >
+                          <option value="">-- Select Service --</option>
+                          {Object.entries(groupedServices).map(([category, items]) => (
+                            <optgroup key={category} label={category}>
+                              {items.map(s => <option key={s.id} value={s.id}>{s.service_name} - ₹{s.price}</option>)}
+                            </optgroup>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setVisitServices(visitServices.filter((_, i) => i !== idx))}
+                          className="p-3 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 transition-colors shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Products */}
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase flex items-center gap-1">
+                    <Package className="w-3 h-3" /> Products
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setVisitProducts([...visitProducts, { productId: '', quantity: 1 }])}
+                    className="text-xs font-bold text-[var(--gold)] bg-[var(--gold)]/10 hover:bg-[var(--gold)]/20 border border-[var(--gold)]/20 px-3 py-1.5 rounded-lg transition-colors flex items-center"
+                  >
+                    <Package className="w-3 h-3 mr-1" /> Add Product
+                  </button>
+                </div>
+                {visitProducts.length === 0 ? (
+                  <div className="text-sm text-white/40 font-light italic p-4 bg-black/5 rounded-xl border border-dashed border-white/10 text-center">No products added.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {visitProducts.map((vp, idx) => (
+                      <div key={idx} className="flex items-center gap-3">
+                        <select
+                          value={vp.productId}
+                          onChange={(e) => {
+                            const updated = [...visitProducts];
+                            updated[idx].productId = e.target.value;
+                            setVisitProducts(updated);
+                          }}
+                          className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40"
+                        >
+                          <option value="">-- Select Product --</option>
+                          {products.filter(p => p.current_stock > 0 || vp.productId === p.id.toString()).map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} - ₹{p.selling_price} (Stock: {p.current_stock})
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          min="1"
+                          max={products.find(p => p.id.toString() === vp.productId)?.current_stock || 99}
+                          value={vp.quantity || ''}
+                          onChange={(e) => {
+                            const updated = [...visitProducts];
+                            updated[idx].quantity = parseInt(e.target.value) || 1;
+                            setVisitProducts(updated);
+                          }}
+                          className="glass-input px-3 py-3 text-center bg-black/40 shrink-0"
+                          style={{ width: '80px' }}
+                          placeholder="Qty"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setVisitProducts(visitProducts.filter((_, i) => i !== idx))}
+                          className="p-3 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 transition-colors shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Live Total */}
+              {(visitServices.some(vs => vs.serviceId) || visitProducts.some(vp => vp.productId)) && (
+                <div className="bg-black/20 p-5 rounded-xl border border-emerald-400/30 flex justify-between items-center">
+                  <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Total Amount</span>
+                  <span className="text-2xl font-light text-white">
+                    ₹{(
+                      visitServices.reduce((sum, vs) => sum + Number(services.find(s => s.id.toString() === vs.serviceId)?.price || 0), 0) +
+                      visitProducts.reduce((sum, vp) => sum + (Number(products.find(p => p.id.toString() === vp.productId)?.selling_price || 0) * vp.quantity), 0)
+                    ).toLocaleString()}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-white/10 bg-black/40 rounded-b-2xl shrink-0 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsRecordVisitOpen(false)}
+                className="btn-secondary"
+                disabled={isSubmittingVisit}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRecordVisit}
+                disabled={isSubmittingVisit}
+                className="btn-primary disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSubmittingVisit ? (
+                  <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Saving...</>
+                ) : (
+                  <><ClipboardList className="w-4 h-4" /> Record Visit</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
