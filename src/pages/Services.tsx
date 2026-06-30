@@ -108,7 +108,7 @@ export default function Services() {
     <div className="space-y-8 relative max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="heading-display text-5xl tracking-tight text-white leading-none mb-1">Services</h1>
+          <h1 className="font-numbers text-5xl tracking-tight text-white leading-none mb-1">Services</h1>
           <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Manage your salon's service menu and pricing.</p>
         </div>
         <button 

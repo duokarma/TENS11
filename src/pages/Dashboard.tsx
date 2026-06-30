@@ -181,7 +181,8 @@ export default function Dashboard() {
         const { data: existing } = await supabase.from('customers').select('id').eq('phone', appt.customer_phone).eq('is_deleted', false).maybeSingle();
         if (existing) { customerId = existing.id; }
         else {
-          const { data: newC } = await supabase.from('customers').insert([{ name: appt.customer_name, phone: appt.customer_phone }]).select().single();
+          const { data: newC, error: cErr } = await supabase.from('customers').insert([{ name: appt.customer_name, phone: appt.customer_phone }]).select().single();
+          if (cErr) throw cErr;
           if (newC) customerId = newC.id;
         }
       }

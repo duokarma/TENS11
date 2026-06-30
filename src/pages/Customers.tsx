@@ -106,8 +106,8 @@ export default function Customers() {
       const [custData, srvData, stfRes, prodRes, statsData] = await Promise.all([
         customerService.getCustomers({ page, limit, search: debouncedSearch }),
         serviceService.getServices(),
-        supabase.from('staff').select('*'),
-        supabase.from('products').select('*'),
+        supabase.from('staff').select('*').eq('is_deleted', false),
+        supabase.from('products').select('*').eq('is_deleted', false),
         customerService.getCustomerStats()
       ]);
       setCustomers(custData.data);
@@ -127,6 +127,11 @@ export default function Customers() {
 
   useEffect(() => {
     loadData();
+    const channel = supabase
+      .channel('customers-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customers' }, loadData)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [page, debouncedSearch]);
 
   useEffect(() => {

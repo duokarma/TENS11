@@ -74,6 +74,11 @@ export default function Inventory() {
 
   useEffect(() => {
     loadProducts();
+    const channel = supabase
+      .channel('products-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, loadProducts)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [loadProducts]);
 
   const openAddModal = () => {
@@ -155,7 +160,7 @@ export default function Inventory() {
     <div className="space-y-8 relative max-w-7xl mx-auto pb-10">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="heading-display text-5xl tracking-tight text-white leading-none mb-1">Inventory</h1>
+          <h1 className="font-numbers text-5xl tracking-tight text-white leading-none mb-1">Inventory</h1>
           <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Manage your product stock quantities directly.</p>
         </div>
         <button onClick={openAddModal} className="btn-primary">

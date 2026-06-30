@@ -349,7 +349,7 @@ export default function Accounts() {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="heading-display text-5xl tracking-tight text-white leading-none mb-1">Accounts Overview</h1>
+          <h1 className="font-numbers text-5xl tracking-tight text-white leading-none mb-1">Accounts Overview</h1>
           <p className="font-light mt-1 tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Financial summary, P&L, and expense tracking.</p>
         </div>
         <div className="flex flex-wrap gap-3 items-center">
@@ -397,7 +397,7 @@ export default function Accounts() {
                 <div className="bg-success/10 p-2 rounded-lg border border-success/20"><ArrowUpRight className="h-5 w-5 text-success" /></div>
               </div>
               <div className="mt-4 flex items-center gap-2">
-                <span className="heading-display text-5xl font-light tracking-tight flex items-center mt-2" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }} />{totalRevenue.toLocaleString()}</span>
+                <span className="font-numbers text-5xl font-light tracking-tight flex items-center mt-2" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }} />{totalRevenue.toLocaleString()}</span>
               </div>
             </div>
             
@@ -428,7 +428,7 @@ export default function Accounts() {
                   <div className="p-2 rounded-lg" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}><Package className="h-5 w-5" style={{ color: '#D4AF37' }} /></div>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
-                  <span className="heading-display text-5xl font-light flex items-center tracking-tight mt-2" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }} />{totalInventoryPurchasedCost.toLocaleString()}</span>
+                  <span className="font-numbers text-5xl font-light flex items-center tracking-tight mt-2" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }} />{totalInventoryPurchasedCost.toLocaleString()}</span>
                 </div>
                 <p className="text-xs font-light mt-2 text-primary/70">Lifetime product cost</p>
               </div>
@@ -447,7 +447,7 @@ export default function Accounts() {
                   <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(212,175,55,0.5)' }}>Net Profit</h3>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
-                  <span className={`heading-display text-5xl font-light tracking-tight flex items-center mt-2 ${netProfit >= 0 ? 'text-success' : 'text-danger'}`}>
+                  <span className={`font-numbers text-5xl font-light tracking-tight flex items-center mt-2 ${netProfit >= 0 ? 'text-success' : 'text-danger'}`}>
                     <IndianRupee className={`w-6 h-6 mr-1 ${netProfit >= 0 ? 'text-success/50' : 'text-danger/50'}`} />{netProfit.toLocaleString()}
                   </span>
                 </div>
