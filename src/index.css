@@ -58,6 +58,7 @@
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
     color: #EAEAEA;
     min-height: 100vh;
+    font-variant-numeric: tabular-nums lining-nums;
   }
 
   /* Premium Scrollbar — Gold tinted */
@@ -288,6 +289,13 @@
     letter-spacing: 0.04em;
     color: #FFFFFF;
   }
+
+  .font-numbers {
+    font-family: 'Jost', sans-serif;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: 0.03em;
+  }
+
 
   .text-accent {
     color: var(--gold);

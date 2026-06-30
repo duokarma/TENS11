@@ -200,7 +200,7 @@ export default function Packages() {
 
               <div className="mt-auto pt-4 border-t border-white/10 flex justify-between items-center">
                 <span className="text-xs font-bold tracking-widest uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Price</span>
-                <span className="heading-display text-3xl font-light" style={{ color: '#D4AF37' }}>Rs. {pkg.price}</span>
+                <span className="font-numbers text-3xl font-light" style={{ color: '#D4AF37' }}>Rs. {pkg.price}</span>
               </div>
             </div>
           ))}

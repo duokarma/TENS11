@@ -176,7 +176,7 @@ export default function Staff() {
             const baseSalary = Number(staff.salary) || 15000;
             const totalPayable = baseSalary;
             
-            const initials = staffName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+            const initials = staffName.replace(/[^a-zA-Z\s]/g, '').trim().split(/\s+/).map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
             return (
               <div 
@@ -201,11 +201,11 @@ export default function Staff() {
                     <div className="w-14 h-14 rounded-full flex items-center justify-center shrink-0 transition-colors" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.25)' }}>
                       <span className="font-bold text-lg transition-colors" style={{ color: '#D4AF37' }}>{initials}</span>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="heading-display text-2xl font-light text-white tracking-wide">{staffName}</h3>
+                    <div className="flex-1 min-w-0 pr-2">
+                      <h3 className="heading-display text-2xl font-light text-white tracking-wide truncate">{staffName}</h3>
                       <p className="text-sm font-light text-white/60">{staff.gender}</p>
                     </div>
-                    <div className="px-3 py-1 rounded-full text-xs font-bold" style={staff.status === 'Active' ? { background: 'rgba(212,175,55,0.08)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' } : { background: 'rgba(207,102,121,0.08)', color: '#CF6679', border: '1px solid rgba(207,102,121,0.2)' }}>
+                    <div className="px-3 py-1 rounded-full text-xs font-bold shrink-0" style={staff.status === 'Active' ? { background: 'rgba(212,175,55,0.08)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' } : { background: 'rgba(207,102,121,0.08)', color: '#CF6679', border: '1px solid rgba(207,102,121,0.2)' }}>
                       {staff.status || 'Active'}
                     </div>
                   </div>
@@ -230,7 +230,7 @@ export default function Staff() {
                   <div>
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-sm font-bold tracking-widest uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Payable</span>
-                      <span className="heading-display text-3xl font-light tracking-tight" style={{ color: '#D4AF37' }}>Rs. {totalPayable.toLocaleString()}</span>
+                      <span className="font-numbers text-3xl font-light tracking-tight" style={{ color: '#D4AF37' }}>Rs. {totalPayable.toLocaleString()}</span>
                     </div>
                     <button 
                       onClick={(e) => handlePaySalary(e, staff.id, totalPayable, staffName)}

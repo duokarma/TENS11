@@ -39,6 +39,31 @@ export default function Dashboard() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+
+  const handleUpdateStock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ 
+          current_stock: editingProduct.current_stock,
+          low_stock_threshold: editingProduct.low_stock_threshold || 5
+        })
+        .eq('id', editingProduct.id);
+        
+      if (error) throw error;
+      toast.success('Stock updated successfully!');
+      setIsProductModalOpen(false);
+      setEditingProduct(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update stock');
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -196,7 +221,7 @@ export default function Dashboard() {
       </div>
       <div className="relative z-10">
         <h3 className="text-[11px] font-bold mb-2 tracking-[0.2em] uppercase" style={{ color: 'rgba(200, 157, 60,0.6)' }}>{title}</h3>
-        <p className="heading-display text-5xl font-light text-white tracking-tight mb-3">{todayValue}</p>
+        <p className="font-numbers text-5xl font-light text-white tracking-tight mb-3">{todayValue}</p>
         
         <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid rgba(200, 157, 60,0.08)' }}>
           <span className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(200, 157, 60,0.35)' }}>{lifetimeLabel || 'Lifetime'}</span>
@@ -214,7 +239,7 @@ export default function Dashboard() {
       animate="show"
     >
       <div className="mb-12 mt-6">
-        <h1 className="heading-display text-5xl mb-4 leading-none">
+        <h1 className="font-numbers text-5xl mb-4 leading-none">
           Dashboard
         </h1>
         <p className="text-sm font-medium tracking-widest uppercase" style={{ color: 'rgba(200, 157, 60,0.4)' }}>
@@ -247,7 +272,7 @@ export default function Dashboard() {
                       <Gift className="w-6 h-6" style={{ color: 'var(--gold)' }} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="heading-display text-2xl font-light text-white">{customer.name}</h3>
+                      <h3 className="font-numbers text-2xl font-light text-white">{customer.name}</h3>
                       <p className="text-[11px] tracking-[0.2em] uppercase mt-1 font-bold" style={{ color: 'rgba(200, 157, 60,0.6)' }}>Birthday Today</p>
                       
                       <button 
@@ -375,7 +400,11 @@ export default function Dashboard() {
                   {lowStockProducts.map(product => (
                     <div
                       key={product.id}
-                      className="flex flex-col p-4 rounded-xl backdrop-blur-md transition-all"
+                      onClick={() => {
+                        setEditingProduct(product);
+                        setIsProductModalOpen(true);
+                      }}
+                      className="flex flex-col p-4 rounded-xl backdrop-blur-md transition-all cursor-pointer"
                       style={{
                         background: 'rgba(207,102,121,0.04)',
                         border: '1px solid rgba(207,102,121,0.1)',
@@ -407,6 +436,65 @@ export default function Dashboard() {
             </div>
           </motion.div>
         </>
+      )}
+
+      {/* Quick Update Stock Modal */}
+      {isProductModalOpen && editingProduct && (
+        <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setIsProductModalOpen(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-md h-full glass-panel flex flex-col overflow-hidden shadow-2xl"
+            style={{ borderLeft: '1px solid rgba(212,175,55,0.15)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-6 border-b border-white/10 bg-black/40">
+              <h3 className="text-xl font-light text-white tracking-tight">Update Stock</h3>
+              <button onClick={() => setIsProductModalOpen(false)} className="p-2 text-white/50 hover:text-white transition-colors rounded-full hover:bg-white/5">
+                <XIcon className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-black/60">
+              <div className="mb-4">
+                <p className="text-sm font-bold tracking-widest text-white/50 uppercase mb-2">Product Name</p>
+                <p className="text-lg font-light text-white">{editingProduct.name}</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold tracking-widest uppercase mb-2 block" style={{ color: 'rgba(212,175,55,0.5)' }}>Current Stock</label>
+                  <input
+                    type="number"
+                    required
+                    className="glass-input w-full text-xl p-3 bg-black/40 text-white"
+                    value={editingProduct.current_stock}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, current_stock: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold tracking-widest uppercase mb-2 block" style={{ color: 'rgba(212,175,55,0.5)' }}>Low Stock Threshold</label>
+                  <input
+                    type="number"
+                    required
+                    className="glass-input w-full text-xl p-3 bg-black/40 text-white"
+                    value={editingProduct.low_stock_threshold || 5}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, low_stock_threshold: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-white/10 bg-black/40">
+              <button
+                onClick={handleUpdateStock}
+                className="w-full py-3 rounded-xl font-bold text-sm transition-all text-black"
+                style={{ background: 'linear-gradient(135deg, #D4AF37, #E5C158)', boxShadow: '0 4px 16px rgba(212,175,55,0.2)' }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </motion.div>
   );

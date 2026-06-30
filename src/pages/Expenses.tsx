@@ -194,7 +194,7 @@ export default function Expenses() {
     <div className="space-y-8 pb-10 relative max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="heading-display text-5xl tracking-tight text-white leading-none mb-1">Expense & Analytics</h1>
+          <h1 className="font-numbers text-5xl tracking-tight text-white leading-none mb-1">Expense & Analytics</h1>
           <p className="mt-2 font-light tracking-wide" style={{ color: 'rgba(212,175,55,0.4)' }}>Track expenses and monitor inventory profitability.</p>
         </div>
         <button 
@@ -209,7 +209,7 @@ export default function Expenses() {
       {/* Inventory Analytics Cards */}
       <div className="glass-card p-6" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
         <div className="flex justify-between items-center mb-6">
-          <h4 className="heading-display text-2xl tracking-wide text-white flex items-center"><Package className="w-5 h-5 mr-3" style={{ color: '#D4AF37' }}/> Inventory Accounting</h4>
+          <h4 className="font-numbers text-2xl tracking-wide text-white flex items-center"><Package className="w-5 h-5 mr-3" style={{ color: '#D4AF37' }}/> Inventory Accounting</h4>
           <button 
             onClick={() => setShowInventoryInfo(!showInventoryInfo)}
             className="text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-colors hover:bg-white/5"
@@ -231,30 +231,30 @@ export default function Expenses() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">Total Capital Invested</p>
-            <p className="heading-display text-4xl font-light text-white">Rs. {totalSpentInventory.toLocaleString()}</p>
+            <p className="font-numbers text-4xl font-light text-white">Rs. {totalSpentInventory.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">Current Stock Value</p>
-            <p className="heading-display text-4xl font-light text-white">Rs. {currentStockValue.toLocaleString()}</p>
+            <p className="font-numbers text-4xl font-light text-white">Rs. {currentStockValue.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-danger mb-1">Salon Consumption (Cost)</p>
-            <p className="heading-display text-4xl font-light text-danger">Rs. {costOfConsumed.toLocaleString()}</p>
+            <p className="font-numbers text-4xl font-light text-danger">Rs. {costOfConsumed.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-success mb-1">Retail Revenue</p>
-            <p className="heading-display text-4xl font-light text-success">Rs. {retailRevenue.toLocaleString()}</p>
+            <p className="font-numbers text-4xl font-light text-success">Rs. {retailRevenue.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-success mb-1">Net Retail Profit</p>
-            <p className="heading-display text-4xl font-light text-success font-bold">Rs. {retailProfit.toLocaleString()}</p>
+            <p className="font-numbers text-4xl font-light text-success font-bold">Rs. {retailProfit.toLocaleString()}</p>
           </div>
         </div>
       </div>
 
       {/* Summary Cards */}
       <div className="flex justify-between items-end mb-2 mt-8">
-        <h4 className="heading-display text-2xl tracking-wide text-white">Operating Expenses</h4>
+        <h4 className="font-numbers text-2xl tracking-wide text-white">Operating Expenses</h4>
         <button 
           onClick={() => setShowSummaryInfo(!showSummaryInfo)}
           className="text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-colors hover:bg-white/5"
@@ -275,19 +275,19 @@ export default function Expenses() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
           <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(212,175,55,0.4)' }}>Today's Expenses</p>
-          <p className="heading-display text-4xl font-light tracking-tight flex items-center mt-2" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }}/>{stats.todayExpenses.toLocaleString()}</p>
+          <p className="font-numbers text-4xl font-light tracking-tight flex items-center mt-2" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }}/>{stats.todayExpenses.toLocaleString()}</p>
         </div>
         <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
           <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(212,175,55,0.4)' }}>This Month</p>
-          <p className="heading-display text-4xl font-light tracking-tight flex items-center mt-2" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }}/>{stats.monthExpenses.toLocaleString()}</p>
+          <p className="font-numbers text-4xl font-light tracking-tight flex items-center mt-2" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }}/>{stats.monthExpenses.toLocaleString()}</p>
         </div>
         <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(212,175,55,0.1)' }}>
           <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(212,175,55,0.4)' }}>This Year</p>
-          <p className="heading-display text-4xl font-light tracking-tight flex items-center mt-2" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }}/>{stats.yearExpenses.toLocaleString()}</p>
+          <p className="font-numbers text-4xl font-light tracking-tight flex items-center mt-2" style={{ color: '#D4AF37' }}><IndianRupee className="w-6 h-6 mr-1" style={{ color: 'rgba(212,175,55,0.4)' }}/>{stats.yearExpenses.toLocaleString()}</p>
         </div>
         <div className="glass-card p-6 flex flex-col justify-center" style={{ border: '1px solid rgba(207,102,121,0.2)', background: 'rgba(207,102,121,0.05)' }}>
           <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: '#CF6679' }}>Pending Payments</p>
-          <p className="heading-display text-4xl font-light tracking-tight flex items-center mt-2" style={{ color: '#CF6679' }}><IndianRupee className="w-6 h-6 mr-1 opacity-70"/>{stats.pendingPayments.toLocaleString()}</p>
+          <p className="font-numbers text-4xl font-light tracking-tight flex items-center mt-2" style={{ color: '#CF6679' }}><IndianRupee className="w-6 h-6 mr-1 opacity-70"/>{stats.pendingPayments.toLocaleString()}</p>
         </div>
       </div>
 

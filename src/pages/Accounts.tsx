@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { PieChart as PieChartIcon, ArrowUpRight, ArrowDownRight, IndianRupee, Download, Package, Calendar, ChevronDown, ChevronUp, X as XIcon, Info } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -301,23 +301,19 @@ export default function Accounts() {
               )}
               {drawerType === 'inventory' && (
                 <>
-                  <p className="text-xs text-white/40 font-light">Lifetime cost of all products purchased. Calculated as: <strong className="text-white/60">Qty Purchased × Purchase Price</strong> per product.</p>
+                  <p className="text-xs text-white/40 font-light mb-4">Summary of all purchased inventory items.</p>
                   <div className="space-y-2">
                     {products.filter(p => (p.purchased_quantity || 0) > 0).map((p, i) => (
-                      <div key={i} className="flex justify-between items-center py-2 border-b border-white/5">
-                        <div>
-                          <span className="text-sm text-white/80">{p.name}</span>
-                          <span className="text-xs text-white/30 ml-2">{p.purchased_quantity}× ₹{p.purchase_price}</span>
-                        </div>
-                        <span className="text-sm font-bold" style={{ color: '#D4AF37' }}>₹{((p.purchased_quantity || 0) * (p.purchase_price || 0)).toLocaleString()}</span>
+                      <div key={i} className="flex justify-between items-center py-3 border-b border-white/5">
+                        <span className="text-sm text-white/90 font-medium">{p.name || 'Unknown Product'}</span>
+                        <span className="font-numbers text-sm font-bold ml-4" style={{ color: '#D4AF37' }}>₹{((p.purchased_quantity || 0) * (p.purchase_price || 0)).toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="pt-4 border-t border-white/10">
-                    <p className="text-xs text-white/30 italic mb-2">⚠️ This is the LIFETIME cost of inventory, not filtered by date.</p>
-                    <div className="flex justify-between">
-                      <span className="text-xs font-bold tracking-widest text-white/50 uppercase">Total Cost</span>
-                      <span className="text-2xl font-light" style={{ color: '#D4AF37' }}>₹{totalInventoryPurchasedCost.toLocaleString()}</span>
+                  <div className="pt-6 mt-4 border-t border-white/10">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold tracking-widest text-white/50 uppercase">Total Inventory Value</span>
+                      <span className="font-numbers text-3xl font-light" style={{ color: '#D4AF37' }}>₹{totalInventoryPurchasedCost.toLocaleString()}</span>
                     </div>
                   </div>
                 </>
@@ -414,7 +410,7 @@ export default function Accounts() {
                 <div className="bg-danger/10 p-2 rounded-lg border border-danger/20"><ArrowDownRight className="h-5 w-5 text-danger" /></div>
               </div>
               <div className="mt-4 flex items-center gap-2">
-                <span className="heading-display text-5xl font-light text-danger flex items-center tracking-tight mt-2"><IndianRupee className="w-6 h-6 mr-1 text-danger" />{totalExpenses.toLocaleString()}</span>
+                <span className="font-numbers text-5xl font-light text-danger flex items-center tracking-tight mt-2"> className="w-6 h-6 mr-1 text-danger" />{totalExpenses.toLocaleString()}</span>
               </div>
             </div>
 
@@ -493,6 +489,7 @@ export default function Accounts() {
                         contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(10px)' }}
                         itemStyle={{ color: '#fff' }}
                       />
+                      <Legend verticalAlign="bottom" height={36} iconType="circle" />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>

@@ -129,7 +129,7 @@ export default function Services() {
             <div className="ml-5 w-0 flex-1">
               <dl>
                 <dt className="text-xs font-bold tracking-[0.1em] uppercase" style={{ color: 'rgba(212,175,55,0.5)' }}>Total Services</dt>
-                <dd className="heading-display text-5xl font-light text-white mt-2">{services.length}</dd>
+                <dd className="font-numbers text-5xl font-light text-white mt-2">length}</dd>
               </dl>
             </div>
           </div>
