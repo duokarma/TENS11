@@ -10,7 +10,8 @@ import {
   CalendarCheck,
   Clock,
   Check,
-  Loader2
+  Loader2,
+  X as XIcon
 } from 'lucide-react';
 import { isSameDay, parseISO } from 'date-fns';
 import { format } from 'date-fns';

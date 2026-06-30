@@ -410,7 +410,7 @@ export default function Accounts() {
                 <div className="bg-danger/10 p-2 rounded-lg border border-danger/20"><ArrowDownRight className="h-5 w-5 text-danger" /></div>
               </div>
               <div className="mt-4 flex items-center gap-2">
-                <span className="font-numbers text-5xl font-light text-danger flex items-center tracking-tight mt-2"> className="w-6 h-6 mr-1 text-danger" />{totalExpenses.toLocaleString()}</span>
+                <span className="font-numbers text-5xl font-light text-danger flex items-center tracking-tight mt-2"><IndianRupee className="w-6 h-6 mr-1 text-danger" />{totalExpenses.toLocaleString()}</span>
               </div>
             </div>
 
