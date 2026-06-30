@@ -139,7 +139,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-semibold truncate" style={{ color: '#EAEAEA' }}>
-                {profile.email.split('@')[0]}
+                TEN11
               </p>
               <p className="text-[10px] uppercase tracking-wider truncate" style={{ color: 'rgba(200, 157, 60,0.5)' }}>
                 {profile.role}
