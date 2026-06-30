@@ -35,7 +35,7 @@ export default function Accounts() {
         .gte('date', sDate.toISOString()).lte('date', eDate.toISOString());
 
       // Products don't have date filtering for purchased/sold quantities, so we fetch all to show lifetime inventory impact
-      let productQuery = supabase.from('products').select('purchase_price, selling_price, purchased_quantity, sold_quantity').eq('is_deleted', false);
+      let productQuery = supabase.from('products').select('name, purchase_price, selling_price, purchased_quantity, sold_quantity').eq('is_deleted', false);
 
       // Recent Transactions Queries
       let recentVisitsQuery = supabase.from('customer_visits')

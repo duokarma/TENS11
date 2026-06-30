@@ -189,6 +189,7 @@ CREATE TABLE public.products (
     sold_quantity INTEGER NOT NULL DEFAULT 0,
     salon_consumption INTEGER NOT NULL DEFAULT 0,
     current_stock INTEGER NOT NULL DEFAULT 0 CHECK (current_stock >= 0),
+    low_stock_threshold INTEGER NOT NULL DEFAULT 5,
     is_deleted BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
