@@ -150,6 +150,58 @@ export default function Accounts() {
     return Object.entries(breakdown).map(([name, value]) => ({ name, value })).sort((a,b) => b.value - a.value);
   }, [expenses, totalInventoryPurchasedCost]);
 
+  const handleDeleteTransaction = async (id: string, type: 'income' | 'expense') => {
+    if (!window.confirm(`Are you sure you want to permanently delete this ${type}? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      if (type === 'expense') {
+        await supabase.from('expenses').update({ is_deleted: true }).eq('id', id);
+        toast.success("Expense deleted successfully");
+      } else {
+        // Income = Customer Visit
+        const { data: visit, error: vErr } = await supabase.from('customer_visits').select('*').eq('id', id).single();
+        if (vErr || !visit) throw new Error("Could not find visit");
+
+        if (visit.customer_id) {
+          const { data: cust } = await supabase.from('customers').select('amount_paid').eq('id', visit.customer_id).single();
+          if (cust) {
+            const newTotal = Math.max(0, Number(cust.amount_paid) - Number(visit.grand_total));
+            await supabase.from('customers').update({ amount_paid: newTotal }).eq('id', visit.customer_id);
+          }
+        }
+
+        const { data: vpData } = await supabase.from('visit_products').select('product_id, quantity').eq('visit_id', id);
+        if (vpData) {
+          for (const vp of vpData) {
+            const { data: p } = await supabase.from('products').select('current_stock, sold_quantity').eq('id', vp.product_id).single();
+            if (p) {
+              await supabase.from('products').update({
+                current_stock: Number(p.current_stock) + Number(vp.quantity),
+                sold_quantity: Math.max(0, Number(p.sold_quantity) - Number(vp.quantity))
+              }).eq('id', vp.product_id);
+            }
+          }
+        }
+
+        await supabase.from('visit_services').delete().eq('visit_id', id);
+        await supabase.from('visit_products').delete().eq('visit_id', id);
+        await supabase.from('staff_commissions').delete().eq('visit_id', id);
+
+        await supabase.from('appointments').update({ status: 'scheduled', converted_visit_id: null }).eq('converted_visit_id', id);
+
+        await supabase.from('customer_visits').update({ is_deleted: true }).eq('id', id);
+        toast.success("Visit completely reversed and deleted.");
+      }
+      
+      setRecentTransactions(prev => prev.filter(t => t.id !== id));
+      fetchData();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || `Failed to delete ${type}`);
+    }
+  };
+
   // CSV Exports
   const exportCustomerCSV = async () => {
     try {
@@ -513,9 +565,18 @@ export default function Accounts() {
                         <p className="font-medium text-base text-white">{tx.title}</p>
                         <p className="text-xs font-light tracking-wide text-white/60 mt-1 uppercase">{format(tx.date, 'dd MMM yyyy, hh:mm a')}</p>
                       </div>
-                      <span className={`font-bold text-sm px-3 py-1 rounded-lg border ${tx.type === 'income' ? 'text-success bg-success/10 border-success/20' : 'text-danger bg-danger/10 border-danger/20'}`}>
-                        {tx.type === 'income' ? '+' : '-'}Rs. {tx.amount.toLocaleString()}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <span className={`font-bold text-sm px-3 py-1 rounded-lg border ${tx.type === 'income' ? 'text-success bg-success/10 border-success/20' : 'text-danger bg-danger/10 border-danger/20'}`}>
+                          {tx.type === 'income' ? '+' : '-'}Rs. {tx.amount.toLocaleString()}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteTransaction(tx.id, tx.type)}
+                          className="p-1.5 hover:bg-danger/20 text-danger rounded-lg transition-colors border border-transparent hover:border-danger/30 opacity-0 group-hover:opacity-100"
+                          title={`Delete ${tx.type}`}
+                        >
+                          <XIcon className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
