@@ -530,20 +530,24 @@ export default function Appointments() {
                           >
                             <RotateCcw className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => openEditModal(appt)}
-                            className="p-2 rounded-lg border border-white/10 text-white/50 hover:text-white hover:bg-white/5 transition-colors"
-                            title="Edit Appointment"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(appt)}
-                            className="p-2 rounded-lg border border-danger/20 text-danger/70 hover:text-danger hover:bg-danger/10 transition-colors"
-                            title="Delete Appointment"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {appt.status !== 'checked_in' && (
+                            <>
+                              <button
+                                onClick={() => openEditModal(appt)}
+                                className="p-2 rounded-lg border border-white/10 text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+                                title="Edit"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(appt)}
+                                className="p-2 rounded-lg border border-white/10 text-white/50 hover:text-danger hover:bg-danger/10 transition-colors"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                           {waLink && (
                             <a
                               href={waLink}
