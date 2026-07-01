@@ -213,8 +213,8 @@ export default function Customers() {
         : null;
 
       if (!customerToEdit) {
-        if (customerServices.length === 0) {
-          toast.error("Please select at least one service.");
+        if (customerServices.length === 0 && customerProducts.length === 0) {
+          toast.error("Please select at least one service or product.");
           return;
         }
         if (!customerStaffId) {
@@ -352,8 +352,9 @@ export default function Customers() {
   const handleRecordVisit = async () => {
     if (!visitCustomer) return;
     const filledServices = visitServices.filter(vs => vs.serviceId);
-    if (filledServices.length === 0) {
-      toast.error('Please select at least one service.');
+    const filledProducts = visitProducts.filter(vp => vp.productId);
+    if (filledServices.length === 0 && filledProducts.length === 0) {
+      toast.error('Please select at least one service or product.');
       return;
     }
     if (!visitStaffId) {
@@ -370,7 +371,6 @@ export default function Customers() {
       }).filter(Boolean);
 
       let productTotal = 0;
-      const filledProducts = visitProducts.filter(vp => vp.productId);
       const parsedProductNames = filledProducts.map(vp => {
         const p = products.find(x => x.id.toString() === vp.productId.toString());
         if (p) { productTotal += Number(p.selling_price || 0) * vp.quantity; return p.name; }
