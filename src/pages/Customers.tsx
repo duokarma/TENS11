@@ -247,6 +247,11 @@ export default function Customers() {
       : [];
     setCustomerProducts(matchedProducts);
 
+    const matchedStaff = customer.staff_served && customer.staff_served.length > 0
+      ? staff.find(s => s.name === customer.staff_served[0] || (s as any).staff_name === customer.staff_served[0])
+      : null;
+    setCustomerStaffId(matchedStaff ? matchedStaff.id.toString() : '');
+
     reset({
       name: customer.name,
       phone: customer.phone,
@@ -306,10 +311,13 @@ export default function Customers() {
         dob: parsedDob,
         services_taken: parsedServices,
         products_bought: parsedProducts,
-        amountPaid: grandTotal
       };
       
-      if (!customerToEdit && customerStaffId) {
+      if (!customerToEdit) {
+        parsedData.amountPaid = grandTotal;
+      }
+      
+      if (customerStaffId) {
         parsedData.staff_served = [staff.find(s => s.id.toString() === customerStaffId.toString())?.name || ''];
       }
 
@@ -781,19 +789,17 @@ export default function Customers() {
                     </select>
                   </div>
                 </div>
-                {!customerToEdit && (
-                  <div>
-                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-3">Select Staff Member *</label>
-                    <select 
-                      value={customerStaffId} 
-                      onChange={(e) => setCustomerStaffId(e.target.value)}
-                      className="glass-input w-full px-4 py-3.5 appearance-none mb-2 bg-black/40"
-                    >
-                      <option value="" className="text-white/60">-- Choose Staff --</option>
-                      {staff.map(s => <option key={s.id} value={s.id} className="text-white">{s.name || s.staff_name}</option>)}
-                    </select>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-3">Select Staff Member *</label>
+                  <select 
+                    value={customerStaffId} 
+                    onChange={(e) => setCustomerStaffId(e.target.value)}
+                    className="glass-input w-full px-4 py-3.5 appearance-none mb-2 bg-black/40"
+                  >
+                    <option value="" className="text-white/60">-- Choose Staff --</option>
+                    {staff.map(s => <option key={s.id} value={s.id} className="text-white">{s.name || s.staff_name}</option>)}
+                  </select>
+                </div>
                 <div>
                   <div className="flex justify-between items-center mb-3">
                     <label className="block text-xs font-bold tracking-widest text-white/60 uppercase">Services Taken</label>
