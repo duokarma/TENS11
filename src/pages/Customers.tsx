@@ -157,6 +157,58 @@ export default function Customers() {
     fetchHistory();
   }, [selectedCustomerForHistory]);
 
+  const handleDeleteVisit = async (visitId: string) => {
+    if (!window.confirm("Are you sure you want to completely delete this visit? This will reverse revenue, restock products, and remove staff commissions. This action cannot be undone.")) {
+      return;
+    }
+    try {
+      // 1. Fetch visit details
+      const { data: visit, error: vErr } = await supabase.from('customer_visits').select('*').eq('id', visitId).single();
+      if (vErr || !visit) throw new Error("Could not find visit");
+
+      // 2. Subtract from customer amount_paid
+      const { data: cust } = await supabase.from('customers').select('amount_paid').eq('id', visit.customer_id).single();
+      if (cust) {
+        const newTotal = Math.max(0, Number(cust.amount_paid) - Number(visit.grand_total));
+        await supabase.from('customers').update({ amount_paid: newTotal }).eq('id', visit.customer_id);
+      }
+
+      // 3. Restock products
+      const { data: vpData } = await supabase.from('visit_products').select('product_id, quantity').eq('visit_id', visitId);
+      if (vpData) {
+        for (const vp of vpData) {
+          const { data: p } = await supabase.from('products').select('current_stock, sold_quantity').eq('id', vp.product_id).single();
+          if (p) {
+            await supabase.from('products').update({
+              current_stock: Number(p.current_stock) + Number(vp.quantity),
+              sold_quantity: Math.max(0, Number(p.sold_quantity) - Number(vp.quantity))
+            }).eq('id', vp.product_id);
+          }
+        }
+      }
+
+      // 4. Delete visit relationships
+      await supabase.from('visit_services').delete().eq('visit_id', visitId);
+      await supabase.from('visit_products').delete().eq('visit_id', visitId);
+      await supabase.from('staff_commissions').delete().eq('visit_id', visitId);
+
+      // 5. Reset appointment if exists
+      await supabase.from('appointments').update({ status: 'scheduled', converted_visit_id: null }).eq('converted_visit_id', visitId);
+
+      // 6. Delete visit (mark as deleted)
+      await supabase.from('customer_visits').update({ is_deleted: true }).eq('id', visitId);
+
+      // Update local state
+      setSelectedHistory(prev => prev.filter(v => v.id !== visitId));
+      loadData(); // Refresh customers list for amount_paid updates
+      toast.success("Visit completely reversed and deleted.");
+
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to delete visit");
+    }
+  };
+
   const openAddModal = () => {
     setCustomerToEdit(null);
     setCustomerServices([]);
@@ -1176,25 +1228,34 @@ export default function Customers() {
                             <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1 block text-right">Total</span>
                             <span className="text-2xl font-light text-white">₹{visit.grand_total}</span>
                           </div>
-                          <button
-                            onClick={() => {
-                              generateInvoicePDF({
-                                invoiceNumber: visit.id.substring(0, 8).toUpperCase(),
-                                date: visit.visit_date,
-                                customerName: selectedCustomer.name,
-                                customerPhone: selectedCustomer.phone,
-                                services: servicesList.map((s: any) => ({ name: s.service_name, quantity: 1, price: s.price || 0, amount: s.price || 0 })),
-                                products: productsList.map((p: any) => ({ name: p.product_name, quantity: p.quantity, price: p.price || 0, amount: (p.price || 0) * p.quantity })),
-                                subtotal: visit.grand_total,
-                                tax: 0,
-                                discount: 0,
-                                grandTotal: visit.grand_total
-                              });
-                            }}
-                            className="text-xs font-bold px-3 py-1.5 bg-black/5 hover:bg-black/10 text-white rounded-lg border border-white/10 transition-colors flex items-center"
-                          >
-                            <Download className="w-3 h-3 mr-1" /> Invoice
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                generateInvoicePDF({
+                                  invoiceNumber: visit.id.substring(0, 8).toUpperCase(),
+                                  date: visit.visit_date,
+                                  customerName: selectedCustomer.name,
+                                  customerPhone: selectedCustomer.phone,
+                                  services: servicesList.map((s: any) => ({ name: s.service_name, quantity: 1, price: s.price || 0, amount: s.price || 0 })),
+                                  products: productsList.map((p: any) => ({ name: p.product_name, quantity: p.quantity, price: p.price || 0, amount: (p.price || 0) * p.quantity })),
+                                  subtotal: visit.grand_total,
+                                  tax: 0,
+                                  discount: 0,
+                                  grandTotal: visit.grand_total
+                                });
+                              }}
+                              className="text-xs font-bold px-3 py-1.5 bg-black/5 hover:bg-black/10 text-white rounded-lg border border-white/10 transition-colors flex items-center"
+                            >
+                              <Download className="w-3 h-3 mr-1" /> Invoice
+                            </button>
+                            <button
+                              onClick={() => handleDeleteVisit(visit.id)}
+                              className="p-1.5 hover:bg-danger/20 text-danger rounded-lg transition-colors border border-transparent hover:border-danger/30"
+                              title="Delete Visit"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
