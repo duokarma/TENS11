@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import {
   CalendarCheck, Plus, X, Trash2, Check, RotateCcw,
   MessageCircle, Search, Clock, User, Scissors, ChevronDown,
-  CalendarDays, CheckCircle2, XCircle, Loader2
+  CalendarDays, CheckCircle2, XCircle, Loader2, Pencil
 } from 'lucide-react';
 import { format, isToday, isFuture, startOfMonth, endOfMonth, parseISO, isSameDay } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -41,6 +41,7 @@ export default function Appointments() {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [repeatData, setRepeatData] = useState<Appointment | null>(null);
+  const [editingAppt, setEditingAppt] = useState<Appointment | null>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -129,14 +130,37 @@ export default function Appointments() {
 
   const openAddModal = () => {
     setRepeatData(null);
+    setEditingAppt(null);
     setForm({ customer_name: '', customer_phone: '', date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', staff_id: '', notes: '' });
     setFormServices([{ serviceId: '' }]);
     setServiceSearch('');
     setIsModalOpen(true);
   };
 
+  const openEditModal = (appt: Appointment) => {
+    setRepeatData(null);
+    setEditingAppt(appt);
+    const dateObj = parseISO(appt.appointment_date);
+    setForm({
+      customer_name: appt.customer_name,
+      customer_phone: appt.customer_phone || '',
+      date: format(dateObj, 'yyyy-MM-dd'),
+      time: format(dateObj, 'HH:mm'),
+      staff_id: appt.staff_id || '',
+      notes: appt.notes || '',
+    });
+    if (appt.appointment_services && appt.appointment_services.length > 0) {
+      setFormServices(appt.appointment_services.map(s => ({ serviceId: s.service_id.toString() })));
+    } else {
+      setFormServices([{ serviceId: '' }]);
+    }
+    setServiceSearch('');
+    setIsModalOpen(true);
+  };
+
   const openRepeatModal = (appt: Appointment) => {
     setRepeatData(appt);
+    setEditingAppt(null);
     setForm({
       customer_name: appt.customer_name,
       customer_phone: appt.customer_phone,
@@ -158,35 +182,72 @@ export default function Appointments() {
     setIsSubmitting(true);
     try {
       const appointmentDate = new Date(`${form.date}T${form.time}:00`);
-      const { data: apptData, error: apptErr } = await supabase
-        .from('appointments')
-        .insert([{
-          customer_name: form.customer_name.trim(),
-          customer_phone: form.customer_phone.trim(),
-          appointment_date: appointmentDate.toISOString(),
-          notes: form.notes.trim(),
-          staff_id: form.staff_id || null,
-          status: 'scheduled',
-        }])
-        .select()
-        .single();
-      if (apptErr) throw apptErr;
+      
+      if (editingAppt) {
+        const { error: apptErr } = await supabase
+          .from('appointments')
+          .update({
+            customer_name: form.customer_name.trim(),
+            customer_phone: form.customer_phone.trim(),
+            appointment_date: appointmentDate.toISOString(),
+            notes: form.notes.trim(),
+            staff_id: form.staff_id || null,
+          })
+          .eq('id', editingAppt.id);
+        if (apptErr) throw apptErr;
 
-      if (filledSvcs.length > 0) {
-        const svcRows = filledSvcs.map(fs => {
-          const s = services.find(x => x.id.toString() === fs.serviceId);
-          return { appointment_id: apptData.id, service_id: s?.id, service_name: s?.service_name || '', price: Number(s?.price || 0) };
-        });
-        await supabase.from('appointment_services').insert(svcRows);
+        await supabase.from('appointment_services').delete().eq('appointment_id', editingAppt.id);
+
+        if (filledSvcs.length > 0) {
+          const svcRows = filledSvcs.map(fs => {
+            const s = services.find(x => x.id.toString() === fs.serviceId);
+            return { appointment_id: editingAppt.id, service_id: s?.id, service_name: s?.service_name || '', price: Number(s?.price || 0) };
+          });
+          await supabase.from('appointment_services').insert(svcRows);
+        }
+        toast.success(`Appointment updated for ${form.customer_name}!`);
+      } else {
+        const { data: apptData, error: apptErr } = await supabase
+          .from('appointments')
+          .insert([{
+            customer_name: form.customer_name.trim(),
+            customer_phone: form.customer_phone.trim(),
+            appointment_date: appointmentDate.toISOString(),
+            notes: form.notes.trim(),
+            staff_id: form.staff_id || null,
+            status: 'scheduled',
+          }])
+          .select()
+          .single();
+        if (apptErr) throw apptErr;
+
+        if (filledSvcs.length > 0) {
+          const svcRows = filledSvcs.map(fs => {
+            const s = services.find(x => x.id.toString() === fs.serviceId);
+            return { appointment_id: apptData.id, service_id: s?.id, service_name: s?.service_name || '', price: Number(s?.price || 0) };
+          });
+          await supabase.from('appointment_services').insert(svcRows);
+        }
+        toast.success(`Appointment booked for ${form.customer_name}!`);
       }
 
-      toast.success(`Appointment booked for ${form.customer_name}!`);
       setIsModalOpen(false);
       fetchData();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to create appointment');
+      toast.error(err.message || 'Failed to save appointment');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (appt: Appointment) => {
+    if (!window.confirm(`Are you sure you want to delete the appointment for ${appt.customer_name}?`)) return;
+    try {
+      await supabase.from('appointments').update({ is_deleted: true }).eq('id', appt.id);
+      toast.success('Appointment deleted');
+      fetchData();
+    } catch (err: any) {
+      toast.error('Failed to delete appointment');
     }
   };
 
@@ -432,6 +493,20 @@ export default function Appointments() {
                           >
                             <RotateCcw className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => openEditModal(appt)}
+                            className="p-2 rounded-lg border border-white/10 text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+                            title="Edit Appointment"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(appt)}
+                            className="p-2 rounded-lg border border-danger/20 text-danger/70 hover:text-danger hover:bg-danger/10 transition-colors"
+                            title="Delete Appointment"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                           {waLink && (
                             <a
                               href={waLink}
@@ -462,7 +537,7 @@ export default function Appointments() {
               <div>
                 <h3 className="text-xl font-light text-white flex items-center gap-2">
                   <CalendarCheck className="w-5 h-5 text-blue-400" />
-                  {repeatData ? 'Repeat Booking' : 'New Appointment'}
+                  {editingAppt ? 'Edit Appointment' : (repeatData ? 'Repeat Booking' : 'New Appointment')}
                 </h3>
                 {repeatData && <p className="text-sm text-white/40 mt-1">Pre-filled from {repeatData.customer_name}'s last booking</p>}
               </div>
@@ -626,7 +701,7 @@ export default function Appointments() {
                 disabled={isSubmitting}
                 className="btn-primary flex items-center gap-2 disabled:opacity-50"
               >
-                {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : <><CalendarCheck className="w-4 h-4" /> Book Appointment</>}
+                {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : <><CalendarCheck className="w-4 h-4" /> {editingAppt ? 'Update Appointment' : 'Book Appointment'}</>}
               </button>
             </div>
           </div>
