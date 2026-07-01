@@ -336,6 +336,35 @@ export default function Appointments() {
     } finally {
       setCheckingIn(null);
     }
+  const handleUndoCheckIn = async (appt: Appointment) => {
+    if (!window.confirm(`Undo check-in for ${appt.customer_name}? This will delete the recorded visit and commission.`)) return;
+    try {
+      if (appt.converted_visit_id) {
+        // Fetch the visit to get its grand_total and customer_id
+        const { data: visitData } = await supabase.from('customer_visits').select('customer_id, grand_total').eq('id', appt.converted_visit_id).single();
+        if (visitData && visitData.customer_id) {
+          const { data: custData } = await supabase.from('customers').select('amount_paid').eq('id', visitData.customer_id).single();
+          if (custData) {
+            const newAmount = Math.max(0, Number(custData.amount_paid || 0) - Number(visitData.grand_total || 0));
+            await supabase.from('customers').update({ amount_paid: newAmount }).eq('id', visitData.customer_id);
+          }
+        }
+        
+        // Delete child records manually just in case cascade is not set up
+        await supabase.from('visit_services').delete().eq('visit_id', appt.converted_visit_id);
+        await supabase.from('staff_commissions').delete().eq('visit_id', appt.converted_visit_id);
+        
+        // Delete the visit
+        await supabase.from('customer_visits').delete().eq('id', appt.converted_visit_id);
+      }
+      
+      // Revert appointment status
+      await supabase.from('appointments').update({ status: 'scheduled', converted_visit_id: null }).eq('id', appt.id);
+      toast.success('Check-in undone successfully');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to undo check-in');
+    }
   };
 
   const handleCancel = async (appt: Appointment) => {
@@ -482,9 +511,17 @@ export default function Appointments() {
                             </>
                           )}
                           {appt.status === 'checked_in' && (
-                            <span className="flex items-center gap-1 text-xs text-emerald-400 font-bold">
-                              <CheckCircle2 className="w-4 h-4" /> Done
-                            </span>
+                            <button
+                              onClick={() => handleUndoCheckIn(appt)}
+                              className="flex items-center justify-center gap-1.5 w-24 py-2 text-xs font-bold rounded-lg border transition-colors group"
+                              style={{ color: '#34d399', background: 'rgba(52,211,153,0.05)', borderColor: 'rgba(52,211,153,0.15)' }}
+                              title="Undo Check-In"
+                            >
+                              <CheckCircle2 className="w-4 h-4 group-hover:hidden" />
+                              <RotateCcw className="w-4 h-4 hidden group-hover:block text-orange-400" />
+                              <span className="group-hover:hidden">Done</span>
+                              <span className="hidden group-hover:block text-orange-400">Undo</span>
+                            </button>
                           )}
                           <button
                             onClick={() => openRepeatModal(appt)}
