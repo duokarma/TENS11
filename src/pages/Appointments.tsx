@@ -56,8 +56,14 @@ export default function Appointments() {
   const [serviceSearch, setServiceSearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check-in state
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
+
+  // Check-in Modal state
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [checkInAppt, setCheckInAppt] = useState<Appointment | null>(null);
+  const [checkInServices, setCheckInServices] = useState<{serviceId: string}[]>([]);
+  const [checkInProducts, setCheckInProducts] = useState<{productId: string, quantity: number}[]>([]);
+  const [checkInStaffId, setCheckInStaffId] = useState<string>('');
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -251,16 +257,27 @@ export default function Appointments() {
     }
   };
 
-  const handleCheckIn = async (appt: Appointment) => {
-    setCheckingIn(appt.id);
+  const openCheckInModal = (appt: Appointment) => {
+    setCheckInAppt(appt);
+    setCheckInServices((appt.appointment_services || []).map(s => ({ serviceId: s.service_id.toString() })));
+    setCheckInProducts([]);
+    setCheckInStaffId(appt.staff_id?.toString() || '');
+    setIsCheckInModalOpen(true);
+  };
+
+  const confirmCheckIn = async () => {
+    if (!checkInAppt) return;
+    setCheckingIn(checkInAppt.id);
+    setIsCheckInModalOpen(false);
+
     try {
       // 1. Find or create customer by phone
       let customerId: number | null = null;
-      if (appt.customer_phone) {
+      if (checkInAppt.customer_phone) {
         const { data: existing } = await supabase
           .from('customers')
           .select('id')
-          .eq('phone', appt.customer_phone)
+          .eq('phone', checkInAppt.customer_phone)
           .eq('is_deleted', false)
           .maybeSingle();
         if (existing) {
@@ -268,7 +285,7 @@ export default function Appointments() {
         } else {
           const { data: newCust, error: custErr } = await supabase
             .from('customers')
-            .insert([{ name: appt.customer_name, phone: appt.customer_phone }])
+            .insert([{ name: checkInAppt.customer_name, phone: checkInAppt.customer_phone }])
             .select()
             .single();
           if (custErr) throw custErr;
@@ -276,11 +293,22 @@ export default function Appointments() {
         }
       }
 
-      const svcList = appt.appointment_services || [];
-      const serviceTotal = svcList.reduce((sum, s) => sum + Number(s.price || 0), 0);
-      const grandTotal = serviceTotal;
+      const filledSvcs = checkInServices.filter(s => s.serviceId);
+      const filledProds = checkInProducts.filter(p => p.productId && p.quantity > 0);
 
-      const selectedStaff = staff.find(s => s.id?.toString() === appt.staff_id?.toString());
+      const serviceTotal = filledSvcs.reduce((sum, s) => {
+        const found = services.find(x => x.id.toString() === s.serviceId);
+        return sum + Number(found?.price || 0);
+      }, 0);
+
+      const productTotal = filledProds.reduce((sum, p) => {
+        const found = products.find(x => x.id.toString() === p.productId);
+        return sum + (Number(found?.selling_price || 0) * p.quantity);
+      }, 0);
+
+      const grandTotal = serviceTotal + productTotal;
+
+      const selectedStaff = staff.find(s => s.id?.toString() === checkInStaffId);
       const commissionRate = selectedStaff ? Number(selectedStaff.commission_rate || 10) : 10;
       const commissionAmount = serviceTotal * (commissionRate / 100);
 
@@ -290,53 +318,71 @@ export default function Appointments() {
         .insert([{
           customer_id: customerId,
           service_total: serviceTotal,
-          product_total: 0,
+          product_total: productTotal,
           grand_total: grandTotal,
           original_total: grandTotal,
           discount_amount: 0,
-          staff_id: appt.staff_id,
+          staff_id: checkInStaffId || null,
         }])
         .select()
         .single();
       if (visitErr) throw visitErr;
 
       // 3. Insert visit_services
-      if (svcList.length > 0) {
-        await supabase.from('visit_services').insert(
-          svcList.map(s => ({ visit_id: visitData.id, service_id: s.service_id, service_name: s.service_name, price: Number(s.price || 0) }))
-        );
+      const vServicesData = filledSvcs.map(fs => {
+        const s = services.find(x => x.id.toString() === fs.serviceId)!;
+        return { visit_id: visitData.id, service_id: s.id, service_name: s.service_name, price: Number(s.price || 0) };
+      });
+      if (vServicesData.length > 0) {
+        await supabase.from('visit_services').insert(vServicesData);
       }
 
-      // 4. Commission
-      if (appt.staff_id) {
+      // 4. Insert visit_products & update stock
+      if (filledProds.length > 0) {
+        const vProductsData = filledProds.map(cp => {
+          const p = products.find(x => x.id.toString() === cp.productId.toString())!;
+          return { visit_id: visitData.id, product_id: p.id, product_name: p.name, quantity: cp.quantity, price: Number(p.selling_price || p.sellingPrice || 0) * cp.quantity };
+        });
+        await supabase.from('visit_products').insert(vProductsData);
+
+        for (const vp of vProductsData) {
+          const p = products.find(x => x.id === vp.product_id)!;
+          const newQty = Number(p.current_stock || 0) - vp.quantity;
+          const newSold = Number(p.sold_quantity || 0) + vp.quantity;
+          await supabase.from('products').update({ current_stock: newQty, sold_quantity: newSold }).eq('id', p.id);
+        }
+      }
+
+      // 5. Commission
+      if (checkInStaffId) {
         await supabase.from('staff_commissions').insert([{
-          staff_id: appt.staff_id,
+          staff_id: checkInStaffId,
           visit_id: visitData.id,
           service_amount: serviceTotal,
           commission_amount: commissionAmount,
         }]);
       }
 
-      // 5. Update customer amount_paid if linked
+      // 6. Update customer amount_paid if linked
       if (customerId) {
         const { data: custData } = await supabase.from('customers').select('amount_paid, services_taken').eq('id', customerId).single();
         const existingPaid = Number(custData?.amount_paid || 0);
         const existingServices: string[] = custData?.services_taken || [];
-        const newServices = Array.from(new Set([...existingServices, ...svcList.map(s => s.service_name)]));
+        const newServices = Array.from(new Set([...existingServices, ...vServicesData.map(s => s.service_name)]));
         await supabase.from('customers').update({ amount_paid: existingPaid + grandTotal, services_taken: newServices }).eq('id', customerId);
       }
 
-      // 6. Mark appointment checked in
-      await supabase.from('appointments').update({ status: 'checked_in', converted_visit_id: visitData.id }).eq('id', appt.id);
+      // 7. Mark appointment checked in
+      await supabase.from('appointments').update({ status: 'checked_in', converted_visit_id: visitData.id }).eq('id', checkInAppt.id);
 
-      toast.success(`✅ Checked in! Visit recorded for ${appt.customer_name}`);
+      toast.success(`✅ Checked in! Visit recorded for ${checkInAppt.customer_name}`);
       fetchData();
     } catch (err: any) {
       toast.error(err.message || 'Check-in failed');
     } finally {
       setCheckingIn(null);
     }
-  const handleUndoCheckIn = async (appt: Appointment) => {
+  };  const handleUndoCheckIn = async (appt: Appointment) => {
     if (!window.confirm(`Undo check-in for ${appt.customer_name}? This will delete the recorded visit and commission.`)) return;
     try {
       if (appt.converted_visit_id) {
@@ -349,8 +395,22 @@ export default function Appointments() {
             await supabase.from('customers').update({ amount_paid: newAmount }).eq('id', visitData.customer_id);
           }
         }
+        // Restore product stock if any
+        const { data: vProducts } = await supabase.from('visit_products').select('product_id, quantity').eq('visit_id', appt.converted_visit_id);
+        if (vProducts && vProducts.length > 0) {
+          for (const vp of vProducts) {
+            const { data: pData } = await supabase.from('products').select('current_stock, sold_quantity').eq('id', vp.product_id).single();
+            if (pData) {
+              await supabase.from('products').update({
+                current_stock: Number(pData.current_stock || 0) + vp.quantity,
+                sold_quantity: Math.max(0, Number(pData.sold_quantity || 0) - vp.quantity)
+              }).eq('id', vp.product_id);
+            }
+          }
+        }
         
         // Delete child records manually just in case cascade is not set up
+        await supabase.from('visit_products').delete().eq('visit_id', appt.converted_visit_id);
         await supabase.from('visit_services').delete().eq('visit_id', appt.converted_visit_id);
         await supabase.from('staff_commissions').delete().eq('visit_id', appt.converted_visit_id);
         
@@ -494,7 +554,7 @@ export default function Appointments() {
                           {appt.status === 'scheduled' && (
                             <>
                               <button
-                                onClick={() => handleCheckIn(appt)}
+                                onClick={() => openCheckInModal(appt)}
                                 disabled={isCheckingThisIn}
                                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border transition-colors"
                                 style={{ color: '#34d399', background: 'rgba(52,211,153,0.08)', borderColor: 'rgba(52,211,153,0.25)' }}
@@ -743,6 +803,94 @@ export default function Appointments() {
                 className="btn-primary flex items-center gap-2 disabled:opacity-50"
               >
                 {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : <><CalendarCheck className="w-4 h-4" /> {editingAppt ? 'Update Appointment' : 'Book Appointment'}</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Finalize Check-in Modal */}
+      {isCheckInModalOpen && checkInAppt && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#111] rounded-2xl shadow-2xl w-full max-w-2xl border border-white/10 flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black/40 rounded-t-2xl shrink-0">
+              <div>
+                <h3 className="text-xl font-light text-white">Finalize Check-In</h3>
+                <p className="text-sm text-white/50 mt-1">Add any extra services or products before completing</p>
+              </div>
+              <button onClick={() => setIsCheckInModalOpen(false)} className="text-white/40 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-6">
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Customer</label>
+                <input type="text" value={checkInAppt.customer_name} disabled className="glass-input w-full px-4 py-3 opacity-50 cursor-not-allowed" />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Staff Member</label>
+                <select value={checkInStaffId} onChange={e => setCheckInStaffId(e.target.value)} className="glass-input w-full px-4 py-3 appearance-none bg-black/40">
+                  <option value="">-- No Staff (No Commission) --</option>
+                  {staff.map(s => <option key={s.id} value={s.id}>{s.name} ({s.role})</option>)}
+                </select>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="text-xs font-bold tracking-widest text-white/60 uppercase">Services Done</label>
+                  <button onClick={() => setCheckInServices([...checkInServices, { serviceId: '' }])} className="text-xs font-bold text-white bg-black/5 hover:bg-black/10 border border-white/10 px-3 py-1.5 rounded-lg">+ Add</button>
+                </div>
+                <div className="space-y-2">
+                  {checkInServices.map((cs, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <select value={cs.serviceId} onChange={e => { const updated = [...checkInServices]; updated[idx].serviceId = e.target.value; setCheckInServices(updated); }} className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40 text-sm">
+                        <option value="">-- Select Service --</option>
+                        {services.map(s => <option key={s.id} value={s.id}>{s.service_name} — ₹{s.price}</option>)}
+                      </select>
+                      <button onClick={() => setCheckInServices(checkInServices.filter((_, i) => i !== idx))} className="p-2.5 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 shrink-0"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                  {checkInServices.length === 0 && <p className="text-xs text-white/30 italic">No services added.</p>}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <label className="text-xs font-bold tracking-widest text-white/60 uppercase">Products Bought</label>
+                  <button onClick={() => setCheckInProducts([...checkInProducts, { productId: '', quantity: 1 }])} className="text-xs font-bold text-white bg-black/5 hover:bg-black/10 border border-white/10 px-3 py-1.5 rounded-lg">+ Add</button>
+                </div>
+                <div className="space-y-2">
+                  {checkInProducts.map((cp, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <select value={cp.productId} onChange={e => { const updated = [...checkInProducts]; updated[idx].productId = e.target.value; setCheckInProducts(updated); }} className="glass-input flex-[2] px-4 py-3 appearance-none bg-black/40 text-sm">
+                        <option value="">-- Select Product --</option>
+                        {products.map(p => <option key={p.id} value={p.id} disabled={Number(p.current_stock || 0) <= 0}>{p.name} (Stock: {p.current_stock}) — ₹{p.selling_price || p.sellingPrice || 0}</option>)}
+                      </select>
+                      <input type="number" min="1" value={cp.quantity} onChange={e => { const updated = [...checkInProducts]; updated[idx].quantity = parseInt(e.target.value) || 1; setCheckInProducts(updated); }} className="glass-input flex-1 px-4 py-3 bg-black/40 text-sm" placeholder="Qty" />
+                      <button onClick={() => setCheckInProducts(checkInProducts.filter((_, i) => i !== idx))} className="p-2.5 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 shrink-0"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                  {checkInProducts.length === 0 && <p className="text-xs text-white/30 italic">No products added.</p>}
+                </div>
+              </div>
+              
+              <div className="bg-black/20 p-4 rounded-xl border border-blue-400/20 flex justify-between items-center">
+                <span className="text-xs font-bold tracking-widest text-blue-400 uppercase">Final Grand Total</span>
+                <span className="text-xl font-light text-white">
+                  ₹{(
+                    checkInServices.reduce((sum, s) => sum + Number(services.find(x => x.id.toString() === s.serviceId)?.price || 0), 0) +
+                    checkInProducts.reduce((sum, p) => sum + (Number(products.find(x => x.id.toString() === p.productId)?.selling_price || products.find(x => x.id.toString() === p.productId)?.sellingPrice || 0) * p.quantity), 0)
+                  ).toLocaleString()}
+                </span>
+              </div>
+            </div>
+            
+            <div className="p-6 border-t border-white/10 bg-black/40 rounded-b-2xl shrink-0 flex justify-end gap-3">
+              <button onClick={() => setIsCheckInModalOpen(false)} className="btn-secondary">Cancel</button>
+              <button onClick={confirmCheckIn} className="btn-primary flex items-center gap-2">
+                <Check className="w-4 h-4" /> Confirm Check-In
               </button>
             </div>
           </div>
