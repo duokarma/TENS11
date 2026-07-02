@@ -13,6 +13,7 @@ export interface InvoiceData {
   tax: number;
   discount: number;
   grandTotal: number;
+  paymentMethod?: string;
 }
 
 export const generateInvoicePDF = (data: InvoiceData) => {
@@ -99,6 +100,15 @@ export const generateInvoicePDF = (data: InvoiceData) => {
   doc.text('Grand Total:', 130, startY);
   doc.setTextColor(200, 157, 60);
   doc.text(`Rs. ${data.grandTotal.toFixed(2)}`, 190, startY, { align: 'right' });
+
+  if (data.paymentMethod) {
+    startY += 8;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text('Payment Method:', 130, startY);
+    doc.text(data.paymentMethod, 190, startY, { align: 'right' });
+  }
 
   // Footer
   doc.setFontSize(10);

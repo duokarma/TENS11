@@ -98,6 +98,7 @@ export default function Customers() {
   const [visitProducts, setVisitProducts] = useState<{productId: string, quantity: number}[]>([]);
   const [visitStaffId, setVisitStaffId] = useState<string>('');
   const [isSubmittingVisit, setIsSubmittingVisit] = useState(false);
+  const [visitToEdit, setVisitToEdit] = useState<any | null>(null);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema)
@@ -449,12 +450,36 @@ export default function Customers() {
 
   const openRecordVisit = (customer: Customer) => {
     setVisitCustomer(customer);
+    setVisitToEdit(null);
     setVisitServices([{ serviceId: '' }]);
     setVisitProducts([]);
     setVisitStaffId('');
     setVisitSvcSearch('');
     setVisitFinalAmount('');
     setVisitPaymentMethod('Cash');
+    setIsRecordVisitOpen(true);
+  };
+
+  const openEditFullVisit = (visit: any) => {
+    setVisitCustomer(selectedCustomer || null);
+    setVisitToEdit(visit);
+    
+    const vServices = (visit.visit_services || []).map((vs: any) => ({
+      serviceId: services.find((s: any) => s.service_name === vs.service_name)?.id?.toString() || ''
+    })).filter((vs: any) => vs.serviceId);
+    setVisitServices(vServices.length > 0 ? vServices : [{ serviceId: '' }]);
+    
+    const vProducts = (visit.visit_products || []).map((vp: any) => ({
+      productId: products.find((p: any) => p.name === vp.product_name)?.id?.toString() || '',
+      quantity: vp.quantity || 1
+    })).filter((vp: any) => vp.productId);
+    setVisitProducts(vProducts);
+    
+    setVisitStaffId(visit.staff_id?.toString() || '');
+    setVisitFinalAmount(visit.grand_total?.toString() || '');
+    setVisitPaymentMethod(visit.payment_method || 'Cash');
+    setVisitSvcSearch('');
+    
     setIsRecordVisitOpen(true);
   };
 
@@ -495,11 +520,31 @@ export default function Customers() {
       const commissionRate = selectedStaffMember ? Number(selectedStaffMember.commission_rate || 10) : 10;
       const commissionAmount = serviceTotal * (commissionRate / 100);
 
-      // 1. Insert the visit
-      const { data: visitData, error: visitErr } = await supabase
-        .from('customer_visits')
-        .insert([{
-          customer_id: visitCustomer.id,
+      let currentVisitId = '';
+
+      if (visitToEdit) {
+        currentVisitId = visitToEdit.id;
+        // Revert old product stock
+        const { data: oldVp } = await supabase.from('visit_products').select('product_id, quantity').eq('visit_id', currentVisitId);
+        if (oldVp) {
+          for (const vp of oldVp) {
+            const p = products.find(x => x.id === vp.product_id);
+            if (p) {
+              await supabase.from('products').update({
+                current_stock: Number(p.current_stock || p.currentStock || 0) + Number(vp.quantity),
+                sold_quantity: Math.max(0, Number(p.sold_quantity || p.soldQuantity || 0) - Number(vp.quantity))
+              }).eq('id', vp.product_id);
+            }
+          }
+        }
+        
+        // Delete old relations
+        await supabase.from('visit_services').delete().eq('visit_id', currentVisitId);
+        await supabase.from('visit_products').delete().eq('visit_id', currentVisitId);
+        await supabase.from('staff_commissions').delete().eq('visit_id', currentVisitId);
+        
+        // Update visit record
+        const { error: visitErr } = await supabase.from('customer_visits').update({
           service_total: serviceTotal,
           product_total: productTotal,
           original_total: originalTotal,
@@ -507,15 +552,33 @@ export default function Customers() {
           grand_total: grandTotal,
           staff_id: visitStaffId,
           payment_method: visitPaymentMethod
-        }])
-        .select()
-        .single();
-      if (visitErr) throw visitErr;
+        }).eq('id', currentVisitId);
+        if (visitErr) throw visitErr;
+        
+      } else {
+        // 1. Insert the visit
+        const { data: visitData, error: visitErr } = await supabase
+          .from('customer_visits')
+          .insert([{
+            customer_id: visitCustomer.id,
+            service_total: serviceTotal,
+            product_total: productTotal,
+            original_total: originalTotal,
+            discount_amount: discountAmt,
+            grand_total: grandTotal,
+            staff_id: visitStaffId,
+            payment_method: visitPaymentMethod
+          }])
+          .select()
+          .single();
+        if (visitErr) throw visitErr;
+        currentVisitId = visitData.id;
+      }
 
       // 2. Insert visit_services
       const vServicesData = filledServices.map(vs => {
         const s = services.find(x => x.id.toString() === vs.serviceId.toString())!;
-        return { visit_id: visitData.id, service_id: s.id, service_name: s.service_name, price: Number(s.price) };
+        return { visit_id: currentVisitId, service_id: s.id, service_name: s.service_name, price: Number(s.price) };
       });
       if (vServicesData.length > 0) {
         const { error: vsErr } = await supabase.from('visit_services').insert(vServicesData);
@@ -526,15 +589,15 @@ export default function Customers() {
       if (filledProducts.length > 0) {
         const vProductsData = filledProducts.map(vp => {
           const p = products.find(x => x.id.toString() === vp.productId.toString())!;
-          return { visit_id: visitData.id, product_id: p.id, product_name: p.name, quantity: vp.quantity, price: Number(p.selling_price || 0) * vp.quantity };
+          return { visit_id: currentVisitId, product_id: p.id, product_name: p.name, quantity: vp.quantity, price: Number(p.selling_price || p.sellingPrice || 0) * vp.quantity };
         });
         const { error: vpErr } = await supabase.from('visit_products').insert(vProductsData);
         if (vpErr) throw vpErr;
 
         for (const vp of vProductsData) {
           const p = products.find(x => x.id === vp.product_id)!;
-          const newQty = Number(p.current_stock || 0) - vp.quantity;
-          const newSold = Number(p.sold_quantity || 0) + vp.quantity;
+          const newQty = Number(p.current_stock || p.currentStock || 0) - vp.quantity;
+          const newSold = Number(p.sold_quantity || p.soldQuantity || 0) + vp.quantity;
           await supabase.from('products').update({ current_stock: newQty, sold_quantity: newSold }).eq('id', p.id);
         }
       }
@@ -542,18 +605,19 @@ export default function Customers() {
       // 4. Insert commission
       const { error: commErr } = await supabase.from('staff_commissions').insert([{
         staff_id: visitStaffId,
-        visit_id: visitData.id,
+        visit_id: currentVisitId,
         service_amount: serviceTotal,
         commission_amount: commissionAmount
       }]);
       if (commErr) throw commErr;
 
       // 5. Update customer aggregate: amount_paid, services_taken, staff_served
-      const updatedAmountPaid = Number(visitCustomer.amountPaid || 0) + grandTotal;
+      const difference = visitToEdit ? (grandTotal - Number(visitToEdit.grand_total)) : grandTotal;
+      const updatedAmountPaid = Number(visitCustomer.amountPaid || 0) + difference;
       const existingServices = visitCustomer.services_taken || [];
       const newServicesList = Array.from(new Set([...existingServices, ...parsedServiceNames]));
       const existingStaff = visitCustomer.staff_served || [];
-      const staffName = selectedStaffMember?.name || '';
+      const staffName = selectedStaffMember?.name || selectedStaffMember?.staff_name || '';
       const newStaffList = staffName && !existingStaff.includes(staffName) ? [...existingStaff, staffName] : existingStaff;
 
       await supabase.from('customers').update({
@@ -562,7 +626,15 @@ export default function Customers() {
         staff_served: newStaffList
       }).eq('id', visitCustomer.id);
 
-      toast.success(`Visit recorded for ${visitCustomer.name}! ₹${grandTotal.toLocaleString()}`);
+      // Force history refresh if modal is open
+      if (visitToEdit && selectedCustomerForHistory) {
+        const [{ data: historyData }] = await Promise.all([
+          supabase.from('customer_visits').select('*, visit_services(*), visit_products(*)').eq('customer_id', selectedCustomerForHistory).eq('is_deleted', false).order('visit_date', { ascending: false })
+        ]);
+        setSelectedHistory(historyData || []);
+      }
+
+      toast.success(`Visit ${visitToEdit ? 'updated' : 'recorded'} for ${visitCustomer.name}! ₹${grandTotal.toLocaleString()}`);
       setIsRecordVisitOpen(false);
       loadData();
     } catch (err: any) {
@@ -845,60 +917,66 @@ export default function Customers() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-3">Select Staff Member *</label>
-                  <select 
-                    value={customerStaffId} 
-                    onChange={(e) => setCustomerStaffId(e.target.value)}
-                    className="glass-input w-full px-4 py-3.5 appearance-none mb-2 bg-black/40"
-                  >
-                    <option value="" className="text-white/60">-- Choose Staff --</option>
-                    {staff.map(s => <option key={s.id} value={s.id} className="text-white">{s.name || s.staff_name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase">Services Taken</label>
-                    <button type="button" onClick={() => setCustomerServices([...customerServices, {serviceId: ''}])} className="text-xs font-bold text-white bg-black/5 hover:bg-black/10 border border-white/10 px-3 py-1.5 rounded-lg transition-colors">
-                      + Add Service
-                    </button>
+                {!customerToEdit && (
+                  <div>
+                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-3">Select Staff Member *</label>
+                    <select 
+                      value={customerStaffId} 
+                      onChange={(e) => setCustomerStaffId(e.target.value)}
+                      className="glass-input w-full px-4 py-3.5 appearance-none mb-2 bg-black/40"
+                    >
+                      <option value="" className="text-white/60">-- Choose Staff --</option>
+                      {staff.map(s => <option key={s.id} value={s.id} className="text-white">{s.name || s.staff_name}</option>)}
+                    </select>
                   </div>
-                  {/* Service Search */}
-                  <div className="flex items-center bg-black/40 border border-white/10 rounded-xl px-3 py-2 mb-3 gap-2 focus-within:border-white/25 transition-colors">
-                    <Search className="w-4 h-4 text-white/30 shrink-0" />
-                    <input type="text" placeholder="Search services..." value={addSvcSearch} onChange={e => setAddSvcSearch(e.target.value)} className="bg-transparent outline-none text-sm text-white placeholder-white/30 flex-1" />
-                    {addSvcSearch && <button type="button" onClick={() => setAddSvcSearch('')} className="text-white/30 hover:text-white transition-colors"><X className="w-4 h-4" /></button>}
-                  </div>
-                  {customerServices.length === 0 ? (
-                    <div className="text-sm text-white/60/60 font-light italic p-6 bg-black/5 rounded-2xl border border-dashed border-white/10 text-center">No services added. Click above to add.</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {customerServices.map((cs, idx) => (
-                        <div key={idx} className="flex items-center gap-3">
-                          <select 
-                            value={cs.serviceId} 
-                            onChange={(e) => {
-                              const newSvcs = [...customerServices];
-                              newSvcs[idx].serviceId = e.target.value;
-                              setCustomerServices(newSvcs);
-                            }}
-                            className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40"
-                          >
-                            <option value="" className="text-white/60">-- Select Service --</option>
-                            {Object.entries(filteredGroupedServices(addSvcSearch)).map(([category, items]) => (
-                              <optgroup key={category} label={category} className="text-white/60">
-                                {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - ₹{s.price}</option>)}
-                              </optgroup>
-                            ))}
-                          </select>
-                          <button type="button" onClick={() => setCustomerServices(customerServices.filter((_, i) => i !== idx))} className="p-3 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 transition-colors">
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      ))}
+                )}
+                {!customerToEdit && (
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <label className="block text-xs font-bold tracking-widest text-white/60 uppercase">Services Taken</label>
+                      <button type="button" onClick={() => setCustomerServices([...customerServices, {serviceId: ''}])} className="text-xs font-bold text-white bg-black/5 hover:bg-black/10 border border-white/10 px-3 py-1.5 rounded-lg transition-colors">
+                        + Add Service
+                      </button>
                     </div>
-                  )}
-                  {/* Products Purchased Section */}
+                    {/* Service Search */}
+                    <div className="flex items-center bg-black/40 border border-white/10 rounded-xl px-3 py-2 mb-3 gap-2 focus-within:border-white/25 transition-colors">
+                      <Search className="w-4 h-4 text-white/30 shrink-0" />
+                      <input type="text" placeholder="Search services..." value={addSvcSearch} onChange={e => setAddSvcSearch(e.target.value)} className="bg-transparent outline-none text-sm text-white placeholder-white/30 flex-1" />
+                      {addSvcSearch && <button type="button" onClick={() => setAddSvcSearch('')} className="text-white/30 hover:text-white transition-colors"><X className="w-4 h-4" /></button>}
+                    </div>
+                    {customerServices.length === 0 ? (
+                      <div className="text-sm text-white/60/60 font-light italic p-6 bg-black/5 rounded-2xl border border-dashed border-white/10 text-center">No services added. Click above to add.</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {customerServices.map((cs, idx) => (
+                          <div key={idx} className="flex items-center gap-3">
+                            <select 
+                              value={cs.serviceId} 
+                              onChange={(e) => {
+                                const newSvcs = [...customerServices];
+                                newSvcs[idx].serviceId = e.target.value;
+                                setCustomerServices(newSvcs);
+                              }}
+                              className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40"
+                            >
+                              <option value="" className="text-white/60">-- Select Service --</option>
+                              {Object.entries(filteredGroupedServices(addSvcSearch)).map(([category, items]) => (
+                                <optgroup key={category} label={category} className="text-white/60">
+                                  {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - ₹{s.price}</option>)}
+                                </optgroup>
+                              ))}
+                            </select>
+                            <button type="button" onClick={() => setCustomerServices(customerServices.filter((_, i) => i !== idx))} className="p-3 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 transition-colors">
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!customerToEdit && (
+                  /* Products Purchased Section */
                   <div className="mt-5">
                     <div className="flex justify-between items-center mb-3">
                       <label className="block text-xs font-bold tracking-widest text-white/60 uppercase">Products Purchased</label>
@@ -950,8 +1028,9 @@ export default function Customers() {
                       </div>
                     )}
                   </div>
+                )}
 
-                  {(customerServices.length > 0 || customerProducts.length > 0) && (() => {
+                  {!customerToEdit && (customerServices.length > 0 || customerProducts.length > 0) && (() => {
                     const calcSvcTotal = customerServices.reduce((sum, cs) => sum + Number(services.find(s => s.id.toString() === cs.serviceId.toString())?.price || 0), 0);
                     const calcProdTotal = customerProducts.reduce((sum, cp) => sum + (Number(products.find(p => p.id.toString() === cp.productId.toString())?.selling_price || products.find(p => p.id.toString() === cp.productId.toString())?.sellingPrice || 0) * cp.quantity), 0);
                     const calcTotal = calcSvcTotal + calcProdTotal;
@@ -992,7 +1071,6 @@ export default function Customers() {
                       </div>
                     );
                   })()}
-                </div>
               </div>
               <div className="p-6 border-t border-white/10 bg-black/40 rounded-b-2xl shrink-0 flex justify-end gap-3">
                 <button type="button" onClick={() => setIsCustomerModalOpen(false)} className="btn-secondary">Cancel</button>
@@ -1311,6 +1389,11 @@ export default function Customers() {
                           <div>
                             <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1 block text-right">Total</span>
                             <span className="text-2xl font-light text-white">₹{visit.grand_total}</span>
+                            {visit.payment_method && (
+                              <span className={`text-[10px] mt-1 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider block w-max ml-auto ${visit.payment_method === 'UPI' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                                {visit.payment_method}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             <button
@@ -1325,7 +1408,8 @@ export default function Customers() {
                                   subtotal: visit.grand_total,
                                   tax: 0,
                                   discount: 0,
-                                  grandTotal: visit.grand_total
+                                  grandTotal: visit.grand_total,
+                                  paymentMethod: visit.payment_method
                                 });
                               }}
                               className="text-xs font-bold px-3 py-1.5 bg-black/5 hover:bg-black/10 text-white rounded-lg border border-white/10 transition-colors flex items-center"
@@ -1333,7 +1417,7 @@ export default function Customers() {
                               <Download className="w-3 h-3 mr-1" /> Invoice
                             </button>
                             <button
-                              onClick={() => handleEditVisit(visit.id, visit.visit_date, visit.grand_total, visit.customer_id)}
+                              onClick={() => openEditFullVisit(visit)}
                               className="p-1.5 hover:bg-white/10 text-white/60 rounded-lg transition-colors border border-transparent hover:border-white/20"
                               title="Edit Visit"
                             >
