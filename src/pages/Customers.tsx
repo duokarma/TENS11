@@ -4,10 +4,10 @@ import type { Customer } from '../types';
 import { 
   Search, Plus, User, Scissors, Receipt, Package,
   Trash2, Edit2, X, Users, UserPlus, IndianRupee, TrendingUp, Calendar as CalendarIcon,
-  ChevronLeft, ChevronRight, Download, MessageCircle, Star, ClipboardList, Tag
+  ChevronLeft, ChevronRight, Download, MessageCircle, Star, ClipboardList, Tag, Filter, SortDesc
 } from 'lucide-react';
 import { generateInvoicePDF } from '../lib/pdfGenerator';
-import { format, isThisMonth } from 'date-fns';
+import { format, isThisMonth, isToday, isYesterday, isThisWeek, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -80,6 +80,10 @@ type CustomerFormData = z.infer<typeof customerSchema>;
 
 export default function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterTime, setFilterTime] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [sortBy, setSortBy] = useState<'recent' | 'spend' | 'alphabet'>('recent');
+  const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -718,6 +722,67 @@ export default function Customers() {
   // Similarly, visit count isn't readily available without an RPC. 
   // For now we omit or leave as 'History' button. Let's omit the generic visit count in list for performance.
 
+  const processedCustomers = useMemo(() => {
+    let result = [...customers];
+    
+    if (filterTime !== 'all') {
+      result = result.filter(c => {
+        if (!c.created_at) return false;
+        const date = new Date(c.created_at);
+        if (filterTime === 'today') return isToday(date);
+        if (filterTime === 'week') return isThisWeek(date, { weekStartsOn: 1 });
+        if (filterTime === 'month') return isThisMonth(date);
+        return true;
+      });
+    }
+    
+    result.sort((a, b) => {
+      if (sortBy === 'spend') {
+        return getCustomerTotalSpend(b) - getCustomerTotalSpend(a);
+      } else if (sortBy === 'alphabet') {
+        return a.name.localeCompare(b.name);
+      } else {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dateB - dateA;
+      }
+    });
+    
+    return result;
+  }, [customers, filterTime, sortBy]);
+
+  const groupedCustomers = useMemo(() => {
+    if (sortBy === 'spend') {
+      return { 'Sorted by Spend': processedCustomers };
+    }
+    if (sortBy === 'alphabet') {
+      return processedCustomers.reduce((acc, c) => {
+        const letter = c.name.charAt(0).toUpperCase();
+        if (!acc[letter]) acc[letter] = [];
+        acc[letter].push(c);
+        return acc;
+      }, {} as Record<string, Customer[]>);
+    }
+    
+    return processedCustomers.reduce((acc, c) => {
+      if (!c.created_at) {
+        if (!acc['Unknown Date']) acc['Unknown Date'] = [];
+        acc['Unknown Date'].push(c);
+        return acc;
+      }
+      const date = new Date(c.created_at);
+      let groupKey = format(date, 'MMMM yyyy');
+      if (isToday(date)) groupKey = `Today (${format(date, 'EEEE')})`;
+      else if (isYesterday(date)) groupKey = `Yesterday (${format(date, 'EEEE')})`;
+      else if (isThisWeek(date, { weekStartsOn: 1 })) groupKey = `This Week (${format(date, 'EEEE, dd MMM')})`;
+      else groupKey = format(date, 'EEEE, dd MMM yyyy');
+      
+      if (!acc[groupKey]) acc[groupKey] = [];
+      acc[groupKey].push(c);
+      return acc;
+    }, {} as Record<string, Customer[]>);
+  }, [processedCustomers, sortBy]);
+
 
   return (
     <div className="space-y-8 relative max-w-7xl mx-auto">
@@ -791,16 +856,46 @@ export default function Customers() {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="flex items-center w-full max-w-md glass-panel px-4 py-3 focus-within:ring-1 focus-within:ring-white/30 transition-all">
-        <Search className="h-5 w-5 text-white/40 mr-3" />
-        <input
-          type="text"
-          placeholder="Search by name or phone..."
-          className="bg-transparent outline-none w-full text-sm text-white placeholder-white/40"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="flex items-center w-full max-w-md glass-panel px-4 py-3 focus-within:ring-1 focus-within:ring-white/30 transition-all">
+          <Search className="h-5 w-5 text-white/40 mr-3" />
+          <input
+            type="text"
+            placeholder="Search by name or phone..."
+            className="bg-transparent outline-none w-full text-sm text-white placeholder-white/40"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <div className="glass-panel px-3 py-2 flex items-center gap-2">
+            <Filter className="w-4 h-4 text-white/60" />
+            <select
+              value={filterTime}
+              onChange={(e) => setFilterTime(e.target.value as any)}
+              className="bg-transparent text-sm text-white outline-none border-none appearance-none pr-4 cursor-pointer"
+            >
+              <option value="all" className="bg-[#1a1a1a]">All Time</option>
+              <option value="today" className="bg-[#1a1a1a]">Today</option>
+              <option value="week" className="bg-[#1a1a1a]">This Week</option>
+              <option value="month" className="bg-[#1a1a1a]">This Month</option>
+            </select>
+          </div>
+          <div className="glass-panel px-3 py-2 flex items-center gap-2">
+            <SortDesc className="w-4 h-4 text-white/60" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-transparent text-sm text-white outline-none border-none appearance-none pr-4 cursor-pointer"
+            >
+              <option value="recent" className="bg-[#1a1a1a]">Recently Added</option>
+              <option value="spend" className="bg-[#1a1a1a]">Highest Spend</option>
+              <option value="alphabet" className="bg-[#1a1a1a]">Alphabetical</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Table */}
@@ -827,7 +922,7 @@ export default function Customers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {customers.length === 0 && (
+                {processedCustomers.length === 0 && (
                   <tr>
                     <td colSpan={4} className="text-center py-16 text-white/60">
                       <User className="h-10 w-10 mx-auto mb-4 opacity-50" />
@@ -835,66 +930,79 @@ export default function Customers() {
                     </td>
                   </tr>
                 )}
-                {customers.map((customer) => {
-                  const initials = customer.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-                  
-                  return (
-                    <tr key={customer.id} className="hover:bg-black/40 transition-colors group">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-4">
-                          <div className="h-11 w-11 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
-                            {initials}
-                          </div>
-                          <div>
-                            <div className="font-medium text-white text-base">{customer.name}</div>
-                            {customer.dob && <div className="text-xs text-white/60 mt-1 uppercase tracking-wide">DOB: {format(new Date(customer.dob), 'dd MMM yyyy')}</div>}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-white/60 font-light">
-                        <div className="flex items-center gap-2">
-                          {customer.phone}
-                          {customer.phone && (
-                            <a 
-                              href={`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello from TEN11!')}`}
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-[#25D366] hover:text-[#128C7E] transition-colors bg-[#25D366]/10 p-1.5 rounded-lg"
-                              title="Message on WhatsApp"
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-light text-white text-lg">
-                          ₹{getCustomerTotalSpend(customer).toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => openRecordVisit(customer)}
-                            title="Record Visit"
-                            className="p-2 text-emerald-400 hover:bg-emerald-400/10 rounded-xl transition-colors"
-                          >
-                            <ClipboardList className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => setSelectedCustomerForHistory(customer.id)} className="p-2 text-white hover:bg-black/5 rounded-xl transition-colors">
-                            <CalendarIcon className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => openEditModal(customer)} className="p-2 text-white/60 hover:bg-black/5 hover:text-white rounded-xl transition-colors">
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDelete(customer.id)} className="p-2 text-danger hover:bg-danger/10 rounded-xl transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                
+                {Object.entries(groupedCustomers).map(([groupName, groupCustomers]) => (
+                  <React.Fragment key={groupName}>
+                    {/* Group Header */}
+                    <tr className="bg-black/60">
+                      <td colSpan={4} className="px-6 py-3 text-xs font-bold tracking-widest text-primary uppercase border-y border-white/5">
+                        {groupName} <span className="text-white/40 ml-2">({groupCustomers.length})</span>
                       </td>
                     </tr>
-                  );
-                })}
+                    
+                    {/* Customers in this group */}
+                    {groupCustomers.map((customer) => {
+                      const initials = customer.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+                      
+                      return (
+                        <tr key={customer.id} className="hover:bg-black/40 transition-colors group">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-4">
+                              <div className="h-11 w-11 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
+                                {initials}
+                              </div>
+                              <div>
+                                <div className="font-medium text-white text-base">{customer.name}</div>
+                                {customer.dob && <div className="text-xs text-white/60 mt-1 uppercase tracking-wide">DOB: {format(new Date(customer.dob), 'dd MMM yyyy')}</div>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-white/60 font-light">
+                            <div className="flex items-center gap-2">
+                              {customer.phone}
+                              {customer.phone && (
+                                <a 
+                                  href={`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello from TEN11!')}`}
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-[#25D366] hover:text-[#128C7E] transition-colors bg-[#25D366]/10 p-1.5 rounded-lg"
+                                  title="Message on WhatsApp"
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                </a>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="font-light text-white text-lg">
+                              ₹{getCustomerTotalSpend(customer).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => openRecordVisit(customer)}
+                                title="Record Visit"
+                                className="p-2 text-emerald-400 hover:bg-emerald-400/10 rounded-xl transition-colors"
+                              >
+                                <ClipboardList className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => setSelectedCustomerForHistory(customer.id)} className="p-2 text-white hover:bg-black/5 rounded-xl transition-colors">
+                                <CalendarIcon className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => openEditModal(customer)} className="p-2 text-white/60 hover:bg-black/5 hover:text-white rounded-xl transition-colors">
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleDelete(customer.id)} className="p-2 text-danger hover:bg-danger/10 rounded-xl transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
               </tbody>
             </table>
             
