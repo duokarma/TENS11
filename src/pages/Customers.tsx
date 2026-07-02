@@ -724,8 +724,8 @@ export default function Customers() {
     
     if (filterTime !== 'all') {
       result = result.filter(c => {
-        if (!c.created_at) return false;
-        const date = new Date(c.created_at);
+        if (!c.createdAt) return false;
+        const date = new Date(c.createdAt);
         if (filterTime === 'today') return isToday(date);
         if (filterTime === 'week') return isThisWeek(date, { weekStartsOn: 1 });
         if (filterTime === 'month') return isThisMonth(date);
@@ -739,8 +739,8 @@ export default function Customers() {
       } else if (sortBy === 'alphabet') {
         return a.name.localeCompare(b.name);
       } else {
-        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return dateB - dateA;
       }
     });
@@ -762,12 +762,12 @@ export default function Customers() {
     }
     
     return processedCustomers.reduce((acc, c) => {
-      if (!c.created_at) {
+      if (!c.createdAt) {
         if (!acc['Unknown Date']) acc['Unknown Date'] = [];
         acc['Unknown Date'].push(c);
         return acc;
       }
-      const date = new Date(c.created_at);
+      const date = new Date(c.createdAt);
       let groupKey = format(date, 'MMMM yyyy');
       if (isToday(date)) groupKey = `Today (${format(date, 'EEEE')})`;
       else if (isYesterday(date)) groupKey = `Yesterday (${format(date, 'EEEE')})`;
