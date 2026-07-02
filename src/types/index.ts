@@ -10,7 +10,6 @@ export interface Customer {
   name: string;
   phone: string;
   dob?: string;
-  anniversary?: string;
   services_taken?: string[];
   products_bought?: string[];
   staff_served?: string[];

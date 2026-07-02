@@ -36,7 +36,6 @@ export const customerService = {
       name: String(d.name || 'Unknown'),
       phone: String(d.phone || ''),
       dob: d.dob ? String(d.dob) : undefined,
-      anniversary: d.anniversary ? String(d.anniversary) : undefined,
       services_taken: d.services_taken || [],
       staff_served: d.staff_served || [],
       amountPaid: Number(d.amount_paid || 0),
@@ -114,7 +113,6 @@ export const customerService = {
         name: customerData.name,
         phone: customerData.phone,
         dob: customerData.dob || null,
-        anniversary: customerData.anniversary || null,
         services_taken: customerData.services_taken || [],
         staff_served: customerData.staff_served || [],
         amount_paid: customerData.amountPaid || 0,
@@ -133,7 +131,6 @@ export const customerService = {
       name: String(data.name || 'Unknown'),
       phone: String(data.phone || ''),
       dob: data.dob ? String(data.dob) : undefined,
-      anniversary: data.anniversary ? String(data.anniversary) : undefined,
       services_taken: data.services_taken || [],
       staff_served: data.staff_served || [],
       amountPaid: Number(data.amount_paid || 0),
@@ -150,7 +147,6 @@ export const customerService = {
     if (updates.name !== undefined) payload.name = updates.name;
     if (updates.phone !== undefined) payload.phone = updates.phone;
     if (updates.dob !== undefined) payload.dob = updates.dob || null;
-    if (updates.anniversary !== undefined) payload.anniversary = updates.anniversary || null;
     if (updates.services_taken !== undefined) payload.services_taken = updates.services_taken;
     if (updates.products_bought !== undefined) payload.products_bought = updates.products_bought;
     if (updates.staff_served !== undefined) payload.staff_served = updates.staff_served;
@@ -174,7 +170,6 @@ export const customerService = {
       name: String(data.name || 'Unknown'),
       phone: String(data.phone || ''),
       dob: data.dob ? String(data.dob) : undefined,
-      anniversary: data.anniversary ? String(data.anniversary) : undefined,
       services_taken: data.services_taken || [],
       staff_served: data.staff_served || [],
       amountPaid: Number(data.amount_paid || 0),

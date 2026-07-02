@@ -10,7 +10,6 @@ interface HeaderProps {
 
 export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderProps) {
   const [birthdays, setBirthdays] = useState<any[]>([]);
-  const [anniversaries, setAnniversaries] = useState<any[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -71,34 +70,15 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
         });
         setBirthdays(birthdaysToday);
       }
-
-      const { data: aData, error: aError } = await supabase
-        .from('customers')
-        .select('id, name, phone, anniversary')
-        .eq('is_deleted', false)
-        .not('anniversary', 'is', null);
-
-      if (aError) throw aError;
-
-      if (aData) {
-        const anniversariesToday = aData.filter(c => {
-          if (!c.anniversary) return false;
-          const [year, month, day] = c.anniversary.split('-');
-          return parseInt(month, 10) === currentMonth && parseInt(day, 10) === currentDay;
-        });
-        setAnniversaries(anniversariesToday);
-      }
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
     }
   };
 
-  const sendWhatsAppGreeting = (customer: any, type: 'birthday' | 'anniversary') => {
+  const sendWhatsAppGreeting = (customer: any) => {
     if (!customer.phone) return;
     const cleanPhone = customer.phone.replace(/\D/g, '');
-    const message = type === 'birthday'
-      ? `A Very Happy Birthday from Team Ten11 Salon!!!\n\nTo make your special day even more memorable, we're delighted to offer you 50% OFF on any ONE service, valid exclusively until today.\n\nWe look forward to celebrating with you!\n\nWith love,\nTeam Ten11 Salon`
-      : `Happy Anniversary ${customer.name}! Wishing you a wonderful day from TEN11 Salon! As a gift, enjoy 10% off your next visit. We hope to see you soon!`;
+    const message = `A Very Happy Birthday from Team Ten11 Salon!!!\n\nTo make your special day even more memorable, we're delighted to offer you 50% OFF on any ONE service, valid exclusively until today.\n\nWe look forward to celebrating with you!\n\nWith love,\nTeam Ten11 Salon`;
     const url = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -147,7 +127,7 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
             }}
           >
             <Bell className="w-5 h-5" />
-            {(birthdays.length > 0 || anniversaries.length > 0) && (
+            {birthdays.length > 0 && (
               <span
                 className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full animate-pulse"
                 style={{
@@ -178,12 +158,12 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
                     border: '1px solid rgba(200, 157, 60,0.2)',
                   }}
                 >
-                  {birthdays.length + anniversaries.length} New
+                  {birthdays.length} New
                 </span>
               </div>
               
               <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                {(birthdays.length === 0 && anniversaries.length === 0) ? (
+                {birthdays.length === 0 ? (
                   <div className="p-6 text-center text-white/40 text-sm">
                     No new notifications
                   </div>
@@ -207,34 +187,7 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
                               It's <span className="font-bold" style={{ color: 'var(--gold)' }}>{customer.name}'s</span> Birthday today! {'\u{1F382}'}
                             </p>
                             <button 
-                              onClick={() => sendWhatsAppGreeting(customer, 'birthday')}
-                              className="text-xs bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-1.5 rounded-lg font-medium transition-colors mt-2"
-                            >
-                              Send WhatsApp Greeting
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {anniversaries.map((customer) => (
-                      <div
-                        key={`a-${customer.id}`}
-                        className="p-4 hover:bg-white/5 transition-colors group"
-                        style={{ borderBottom: '1px solid rgba(200, 157, 60,0.05)' }}
-                      >
-                        <div className="flex gap-3">
-                          <div
-                            className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
-                            style={{ background: 'rgba(200, 157, 60,0.1)', border: '1px solid rgba(200, 157, 60,0.2)' }}
-                          >
-                            <Gift className="w-5 h-5" style={{ color: 'var(--gold)' }} />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm text-white mb-1">
-                              It's <span className="font-bold" style={{ color: 'var(--gold)' }}>{customer.name}'s</span> Anniversary today! {'\u{1F389}'}
-                            </p>
-                            <button 
-                              onClick={() => sendWhatsAppGreeting(customer, 'anniversary')}
+                              onClick={() => sendWhatsAppGreeting(customer)}
                               className="text-xs bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-1.5 rounded-lg font-medium transition-colors mt-2"
                             >
                               Send WhatsApp Greeting

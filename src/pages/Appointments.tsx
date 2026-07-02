@@ -64,6 +64,7 @@ export default function Appointments() {
   const [checkInServices, setCheckInServices] = useState<{serviceId: string}[]>([]);
   const [checkInProducts, setCheckInProducts] = useState<{productId: string, quantity: number}[]>([]);
   const [checkInStaffId, setCheckInStaffId] = useState<string>('');
+  const [checkInPaymentMethod, setCheckInPaymentMethod] = useState<string>('Cash');
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -262,6 +263,7 @@ export default function Appointments() {
     setCheckInServices((appt.appointment_services || []).map(s => ({ serviceId: s.service_id.toString() })));
     setCheckInProducts([]);
     setCheckInStaffId(appt.staff_id?.toString() || '');
+    setCheckInPaymentMethod('Cash');
     setIsCheckInModalOpen(true);
   };
 
@@ -322,6 +324,7 @@ export default function Appointments() {
           grand_total: grandTotal,
           original_total: grandTotal,
           discount_amount: 0,
+          payment_method: checkInPaymentMethod,
           staff_id: checkInStaffId || null,
         }])
         .select()
@@ -924,6 +927,18 @@ export default function Appointments() {
                     checkInProducts.reduce((sum, p) => sum + (Number(products.find(x => x.id.toString() === p.productId)?.selling_price || products.find(x => x.id.toString() === p.productId)?.sellingPrice || 0) * p.quantity), 0)
                   ).toLocaleString()}
                 </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Payment Method</label>
+                <select
+                  value={checkInPaymentMethod}
+                  onChange={(e) => setCheckInPaymentMethod(e.target.value)}
+                  className="glass-input w-full px-4 py-3 appearance-none bg-black/40"
+                >
+                  <option value="Cash" className="text-white">Cash</option>
+                  <option value="UPI" className="text-white">UPI</option>
+                </select>
               </div>
             </div>
             
