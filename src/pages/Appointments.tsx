@@ -9,6 +9,53 @@ import { format, isToday, isFuture, startOfMonth, endOfMonth, parseISO, isSameDa
 import toast from 'react-hot-toast';
 import { serviceService } from '../lib/serviceService';
 import type { SalonService } from '../lib/serviceService';
+import Select from 'react-select';
+
+const selectStyles = {
+  control: (base: any, state: any) => ({
+    ...base,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderColor: state.isFocused ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+    borderRadius: '0.75rem',
+    padding: '0.3rem',
+    boxShadow: 'none',
+    '&:hover': {
+      borderColor: 'rgba(255, 255, 255, 0.2)',
+    }
+  }),
+  menu: (base: any) => ({
+    ...base,
+    backgroundColor: '#1a1a1a',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '0.75rem',
+    backdropFilter: 'blur(16px)',
+  }),
+  option: (base: any, state: any) => ({
+    ...base,
+    backgroundColor: state.isFocused ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+    color: 'white',
+    cursor: 'pointer',
+    '&:active': {
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    }
+  }),
+  singleValue: (base: any) => ({
+    ...base,
+    color: 'white',
+  }),
+  input: (base: any) => ({
+    ...base,
+    color: 'white',
+  }),
+  groupHeading: (base: any) => ({
+    ...base,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: '0.75rem',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+  }),
+};
 
 type AppointmentStatus = 'scheduled' | 'checked_in' | 'cancelled';
 
@@ -53,7 +100,6 @@ export default function Appointments() {
     notes: '',
   });
   const [formServices, setFormServices] = useState<{ serviceId: string }[]>([{ serviceId: '' }]);
-  const [serviceSearch, setServiceSearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
@@ -99,18 +145,23 @@ export default function Appointments() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Grouped services for search
-  const groupedServices = useMemo(() => {
-    const q = serviceSearch.toLowerCase();
-    return services.reduce((acc, svc) => {
-      if (!q || svc.service_name.toLowerCase().includes(q) || (svc.category || '').toLowerCase().includes(q)) {
-        const cat = svc.category || 'Other';
-        if (!acc[cat]) acc[cat] = [];
-        acc[cat].push(svc);
-      }
+  // Format services for React Select
+  const serviceOptions = useMemo(() => {
+    const grouped = services.reduce((acc, svc) => {
+      const cat = svc.category || 'Other';
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(svc);
       return acc;
     }, {} as Record<string, SalonService[]>);
-  }, [services, serviceSearch]);
+
+    return Object.entries(grouped).map(([category, items]) => ({
+      label: category,
+      options: items.map(s => ({
+        value: s.id.toString(),
+        label: `${s.service_name} - ₹${s.price}`
+      }))
+    }));
+  }, [services]);
 
   // Stats
   const todayCount = appointments.filter(a => a.status === 'scheduled' && isToday(parseISO(a.appointment_date))).length;
@@ -140,7 +191,6 @@ export default function Appointments() {
     setEditingAppt(null);
     setForm({ customer_name: '', customer_phone: '', date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', staff_id: '', notes: '' });
     setFormServices([{ serviceId: '' }]);
-    setServiceSearch('');
     setIsModalOpen(true);
   };
 
@@ -161,7 +211,6 @@ export default function Appointments() {
     } else {
       setFormServices([{ serviceId: '' }]);
     }
-    setServiceSearch('');
     setIsModalOpen(true);
   };
 
@@ -178,7 +227,6 @@ export default function Appointments() {
     });
     const existingSvcs = (appt.appointment_services || []).map(s => ({ serviceId: s.service_id?.toString() || '' }));
     setFormServices(existingSvcs.length > 0 ? existingSvcs : [{ serviceId: '' }]);
-    setServiceSearch('');
     setIsModalOpen(true);
   };
 
@@ -765,42 +813,24 @@ export default function Appointments() {
                   </button>
                 </div>
 
-                {/* Search bar */}
-                <div className="flex items-center bg-black/40 border border-white/10 rounded-xl px-3 py-2 mb-3 gap-2 focus-within:border-white/25 transition-colors">
-                  <Search className="w-4 h-4 text-white/30 shrink-0" />
-                  <input
-                    type="text"
-                    placeholder="Search services..."
-                    value={serviceSearch}
-                    onChange={e => setServiceSearch(e.target.value)}
-                    className="bg-transparent outline-none text-sm text-white placeholder-white/30 flex-1"
-                  />
-                  {serviceSearch && (
-                    <button onClick={() => setServiceSearch('')} className="text-white/30 hover:text-white transition-colors">
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-
                 <div className="space-y-2">
                   {formServices.map((fs, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <select
-                        value={fs.serviceId}
-                        onChange={e => {
-                          const updated = [...formServices];
-                          updated[idx].serviceId = e.target.value;
-                          setFormServices(updated);
-                        }}
-                        className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40 text-sm"
-                      >
-                        <option value="">-- Select Service --</option>
-                        {Object.entries(groupedServices).map(([cat, items]) => (
-                          <optgroup key={cat} label={cat}>
-                            {items.map(s => <option key={s.id} value={s.id}>{s.service_name} — ₹{s.price}</option>)}
-                          </optgroup>
-                        ))}
-                      </select>
+                      <div className="flex-1">
+                        <Select
+                          styles={selectStyles}
+                          options={serviceOptions}
+                          placeholder="Search & Select Service..."
+                          value={serviceOptions.flatMap(g => g.options).find(o => o.value === fs.serviceId) || null}
+                          onChange={(selected: any) => {
+                            const updated = [...formServices];
+                            updated[idx].serviceId = selected ? selected.value : '';
+                            setFormServices(updated);
+                          }}
+                          isClearable
+                          classNamePrefix="react-select"
+                        />
+                      </div>
                       <button
                         type="button"
                         onClick={() => setFormServices(formServices.filter((_, i) => i !== idx))}
@@ -810,9 +840,6 @@ export default function Appointments() {
                       </button>
                     </div>
                   ))}
-                  {Object.keys(groupedServices).length === 0 && serviceSearch && (
-                    <p className="text-sm text-white/30 italic text-center py-3">No services match "{serviceSearch}"</p>
-                  )}
                 </div>
               </div>
 
@@ -888,10 +915,21 @@ export default function Appointments() {
                 <div className="space-y-2">
                   {checkInServices.map((cs, idx) => (
                     <div key={idx} className="flex gap-2">
-                      <select value={cs.serviceId} onChange={e => { const updated = [...checkInServices]; updated[idx].serviceId = e.target.value; setCheckInServices(updated); }} className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40 text-sm">
-                        <option value="">-- Select Service --</option>
-                        {services.map(s => <option key={s.id} value={s.id}>{s.service_name} — ₹{s.price}</option>)}
-                      </select>
+                      <div className="flex-1">
+                        <Select
+                          styles={selectStyles}
+                          options={serviceOptions}
+                          placeholder="Search & Select Service..."
+                          value={serviceOptions.flatMap(g => g.options).find(o => o.value === cs.serviceId) || null}
+                          onChange={(selected: any) => {
+                            const updated = [...checkInServices];
+                            updated[idx].serviceId = selected ? selected.value : '';
+                            setCheckInServices(updated);
+                          }}
+                          isClearable
+                          classNamePrefix="react-select"
+                        />
+                      </div>
                       <button onClick={() => setCheckInServices(checkInServices.filter((_, i) => i !== idx))} className="p-2.5 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 shrink-0"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   ))}
