@@ -150,6 +150,34 @@ export default function Dashboard() {
     }
   }, [birthdayCustomers.length]);
 
+  // --- Anniversaries Today ---
+  const anniversaryCustomers = customers.filter(c => {
+    if (!c.anniversary) return false;
+    const parts = c.anniversary.split('-');
+    if (parts.length === 3) {
+      const month = Number(parts[1]);
+      const day = Number(parts[2]);
+      return day === todayDate && month === todayMonth;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (anniversaryCustomers.length > 0) {
+      const hasPlayed = sessionStorage.getItem('anniversary_sound_played');
+      if (!hasPlayed) {
+        try {
+          const audio = new Audio('/chime.mp3');
+          audio.volume = 0.3;
+          audio.play().catch(e => console.log('Audio autoplay blocked by browser', e));
+          sessionStorage.setItem('anniversary_sound_played', 'true');
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, [anniversaryCustomers.length]);
+
   // --- Row 1: Metrics ---
   const todayVisits = visits.filter(v => v.visit_date && isSameDay(new Date(v.visit_date), today));
   const uniqueCustomerIds = new Set(todayVisits.map(v => v.customer_id).filter(Boolean));
@@ -279,6 +307,48 @@ export default function Dashboard() {
                       
                       <button 
                         onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/\D/g,'')}?text=${encodeURIComponent(`Happy Birthday ${customer.name}! Wishing you a wonderful day from TEN11 Salon!`)}`, '_blank')}
+                        className="mt-4 w-full py-2 rounded-xl font-bold text-xs transition-all shadow-sm flex justify-center items-center gap-2"
+                        style={{
+                          background: 'rgba(200, 157, 60,0.15)',
+                          color: 'var(--gold)',
+                          border: '1px solid rgba(200, 157, 60,0.25)',
+                        }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(200, 157, 60,0.25)'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(200, 157, 60,0.15)'; }}
+                      >
+                        Send Wish
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Anniversary Notifications */}
+          {anniversaryCustomers.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              {anniversaryCustomers.map(customer => (
+                <motion.div
+                  key={customer.id}
+                  variants={itemVariants}
+                  className="glass-card p-5 relative overflow-hidden group"
+                  style={{ border: '1px solid rgba(200, 157, 60,0.2)', background: 'rgba(200, 157, 60,0.04)' }}
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl" style={{ background: 'rgba(200, 157, 60,0.06)' }}></div>
+                  <div className="relative z-10 flex items-start gap-4">
+                    <div
+                      className="p-3 rounded-2xl shadow-sm backdrop-blur-md"
+                      style={{ background: 'rgba(200, 157, 60,0.1)', border: '1px solid rgba(200, 157, 60,0.2)' }}
+                    >
+                      <Gift className="w-6 h-6" style={{ color: 'var(--gold)' }} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-numbers text-2xl font-light text-white">{customer.name}</h3>
+                      <p className="text-[11px] tracking-[0.2em] uppercase mt-1 font-bold" style={{ color: 'rgba(200, 157, 60,0.6)' }}>Anniversary Today</p>
+                      
+                      <button 
+                        onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/\D/g,'')}?text=${encodeURIComponent(`Happy Anniversary ${customer.name}! Wishing you a wonderful day from TEN11 Salon!`)}`, '_blank')}
                         className="mt-4 w-full py-2 rounded-xl font-bold text-xs transition-all shadow-sm flex justify-center items-center gap-2"
                         style={{
                           background: 'rgba(200, 157, 60,0.15)',

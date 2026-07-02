@@ -21,7 +21,10 @@ const customerSchema = z.object({
   phone: z.string().min(10, "Valid phone number is required"),
   dobDay: z.string().optional(),
   dobMonth: z.string().optional(),
-  dobYear: z.string().optional()
+  dobYear: z.string().optional(),
+  anniversaryDay: z.string().optional(),
+  anniversaryMonth: z.string().optional(),
+  anniversaryYear: z.string().optional()
 });
 type CustomerFormData = z.infer<typeof customerSchema>;
 
@@ -216,7 +219,7 @@ export default function Customers() {
     setCustomerStaffId('');
     setAddSvcSearch('');
     setAddFinalAmount('');
-    reset({ name: '', phone: '', dobDay: '', dobMonth: '', dobYear: '' });
+    reset({ name: '', phone: '', dobDay: '', dobMonth: '', dobYear: '', anniversaryDay: '', anniversaryMonth: '', anniversaryYear: '' });
     setIsCustomerModalOpen(true);
   };
 
@@ -228,6 +231,14 @@ export default function Customers() {
       dDay = d.substring(0, 2);
       dMonth = m;
       dYear = y !== '1900' ? y : '';
+    }
+
+    let aDay = '', aMonth = '', aYear = '';
+    if (customer.anniversary) {
+      const [y, m, d] = customer.anniversary.split('-');
+      aDay = d.substring(0, 2);
+      aMonth = m;
+      aYear = y !== '1900' ? y : '';
     }
 
     // Match existing services by name
@@ -248,7 +259,7 @@ export default function Customers() {
     setCustomerProducts(matchedProducts);
 
     const matchedStaff = customer.staff_served && customer.staff_served.length > 0
-      ? staff.find(s => s.name === customer.staff_served[0] || (s as any).staff_name === customer.staff_served[0])
+      ? staff.find(s => s.name === customer.staff_served?.[0] || (s as any).staff_name === customer.staff_served?.[0])
       : null;
     setCustomerStaffId(matchedStaff ? matchedStaff.id.toString() : '');
 
@@ -257,7 +268,10 @@ export default function Customers() {
       phone: customer.phone,
       dobDay: dDay,
       dobMonth: dMonth,
-      dobYear: dYear
+      dobYear: dYear,
+      anniversaryDay: aDay,
+      anniversaryMonth: aMonth,
+      anniversaryYear: aYear
     });
     setIsCustomerModalOpen(true);
   };
@@ -267,6 +281,11 @@ export default function Customers() {
       const yearToUse = data.dobYear || '1900';
       const parsedDob = (data.dobMonth && data.dobDay) 
         ? `${yearToUse}-${data.dobMonth}-${data.dobDay}` 
+        : null;
+
+      const aYearToUse = data.anniversaryYear || '1900';
+      const parsedAnniversary = (data.anniversaryMonth && data.anniversaryDay)
+        ? `${aYearToUse}-${data.anniversaryMonth}-${data.anniversaryDay}`
         : null;
 
       if (!customerToEdit) {
@@ -309,6 +328,7 @@ export default function Customers() {
         name: data.name,
         phone: data.phone,
         dob: parsedDob,
+        anniversary: parsedAnniversary,
         services_taken: parsedServices,
         products_bought: parsedProducts,
       };
@@ -782,6 +802,31 @@ export default function Customers() {
                       ))}
                     </select>
                     <select {...register("dobYear")} className="glass-input w-full px-4 py-3 appearance-none cursor-pointer bg-black/40">
+                      <option value="" className="text-white/60">Year</option>
+                      {Array.from({length: 100}, (_, i) => new Date().getFullYear() - i).map(y => (
+                        <option key={y} value={y} className="text-white">{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Anniversary (Optional)</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <select {...register("anniversaryDay")} className="glass-input w-full px-4 py-3 appearance-none cursor-pointer bg-black/40">
+                      <option value="" className="text-white/60">Day</option>
+                      {Array.from({length: 31}, (_, i) => i + 1).map(d => (
+                        <option key={d} value={d.toString().padStart(2, '0')} className="text-white">{d}</option>
+                      ))}
+                    </select>
+                    <select {...register("anniversaryMonth")} className="glass-input w-full px-4 py-3 appearance-none cursor-pointer bg-black/40">
+                      <option value="" className="text-white/60">Month</option>
+                      {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                        <option key={m} value={m.toString().padStart(2, '0')} className="text-white">
+                          {format(new Date(2000, m - 1, 1), 'MMM')}
+                        </option>
+                      ))}
+                    </select>
+                    <select {...register("anniversaryYear")} className="glass-input w-full px-4 py-3 appearance-none cursor-pointer bg-black/40">
                       <option value="" className="text-white/60">Year</option>
                       {Array.from({length: 100}, (_, i) => new Date().getFullYear() - i).map(y => (
                         <option key={y} value={y} className="text-white">{y}</option>

@@ -92,6 +92,7 @@ CREATE TABLE public.customers (
     name TEXT NOT NULL,
     phone TEXT,
     dob DATE,
+    anniversary DATE,
     services_taken TEXT[],
     products_bought TEXT[],
     staff_served TEXT[],
