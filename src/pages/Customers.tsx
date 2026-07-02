@@ -212,23 +212,45 @@ export default function Customers() {
     }
   };
 
-  const handleEditVisitDate = async (visitId: string, currentDate: string) => {
+  const handleEditVisit = async (visitId: string, currentDate: string, currentTotal: number, customerId: string) => {
     const rawDate = currentDate.split('T')[0];
-    const newDate = window.prompt("Enter new date for this visit (YYYY-MM-DD):", rawDate);
-    if (!newDate || newDate === rawDate) return;
+    const newDateStr = window.prompt("Enter new date for this visit (YYYY-MM-DD):", rawDate);
+    if (!newDateStr) return;
     
     // Basic date validation
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateStr)) {
       toast.error("Invalid date format. Please use YYYY-MM-DD.");
       return;
     }
 
+    const newTotalStr = window.prompt("Enter new Grand Total (₹):", String(currentTotal));
+    if (!newTotalStr) return;
+    const newTotal = Number(newTotalStr);
+    if (isNaN(newTotal) || newTotal < 0) {
+      toast.error("Invalid amount.");
+      return;
+    }
+
+    // Set time to noon UTC to avoid timezone shifting issues
+    const newDate = `${newDateStr}T12:00:00Z`;
+
     try {
-      await supabase.from('customer_visits').update({ visit_date: newDate }).eq('id', visitId);
-      setSelectedHistory(prev => prev.map(v => v.id === visitId ? { ...v, visit_date: newDate } : v));
-      toast.success("Visit date updated!");
+      // If total changed, update customer amount_paid
+      const difference = newTotal - currentTotal;
+      if (difference !== 0) {
+        const { data: cust } = await supabase.from('customers').select('amount_paid').eq('id', customerId).single();
+        if (cust) {
+           await supabase.from('customers').update({ amount_paid: Number(cust.amount_paid || 0) + difference }).eq('id', customerId);
+        }
+      }
+
+      await supabase.from('customer_visits').update({ visit_date: newDate, grand_total: newTotal }).eq('id', visitId);
+      
+      setSelectedHistory(prev => prev.map(v => v.id === visitId ? { ...v, visit_date: newDate, grand_total: newTotal } : v));
+      toast.success("Visit updated!");
+      loadData(); // refresh customers list if amount_paid changed
     } catch (err: any) {
-      toast.error(err.message || "Failed to update visit date");
+      toast.error(err.message || "Failed to update visit");
     }
   };
 
@@ -1311,9 +1333,9 @@ export default function Customers() {
                               <Download className="w-3 h-3 mr-1" /> Invoice
                             </button>
                             <button
-                              onClick={() => handleEditVisitDate(visit.id, visit.visit_date)}
+                              onClick={() => handleEditVisit(visit.id, visit.visit_date, visit.grand_total, visit.customer_id)}
                               className="p-1.5 hover:bg-white/10 text-white/60 rounded-lg transition-colors border border-transparent hover:border-white/20"
-                              title="Edit Visit Date"
+                              title="Edit Visit"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
