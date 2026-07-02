@@ -15,6 +15,58 @@ import { z } from 'zod';
 import { supabase } from '../lib/supabase';
 import { serviceService } from '../lib/serviceService';
 import type { SalonService } from '../lib/serviceService';
+import Select from 'react-select';
+
+const selectStyles = {
+  control: (base: any, state: any) => ({
+    ...base,
+    background: 'rgba(0, 0, 0, 0.4)',
+    borderColor: state.isFocused ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.1)',
+    borderRadius: '0.75rem',
+    padding: '2px',
+    boxShadow: 'none',
+    '&:hover': {
+      borderColor: 'rgba(255, 255, 255, 0.2)'
+    }
+  }),
+  menu: (base: any) => ({
+    ...base,
+    background: 'rgba(20, 20, 20, 0.95)',
+    backdropFilter: 'blur(16px)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '0.75rem',
+    overflow: 'hidden',
+    zIndex: 9999
+  }),
+  option: (base: any, state: any) => ({
+    ...base,
+    backgroundColor: state.isFocused ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+    color: state.isFocused ? '#fff' : 'rgba(255, 255, 255, 0.7)',
+    cursor: 'pointer',
+    '&:active': {
+      backgroundColor: 'rgba(255, 255, 255, 0.15)'
+    }
+  }),
+  singleValue: (base: any) => ({
+    ...base,
+    color: '#fff'
+  }),
+  input: (base: any) => ({
+    ...base,
+    color: '#fff'
+  }),
+  placeholder: (base: any) => ({
+    ...base,
+    color: 'rgba(255, 255, 255, 0.3)'
+  }),
+  groupHeading: (base: any) => ({
+    ...base,
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: '0.75rem',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase'
+  })
+};
 
 const customerSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -44,19 +96,15 @@ export default function Customers() {
     return acc;
   }, {} as Record<string, typeof services>), [services]);
 
-  // Filtered grouped services for search in modals
-  const [addSvcSearch, setAddSvcSearch] = useState('');
-  const [visitSvcSearch, setVisitSvcSearch] = useState('');
-
-  const filteredGroupedServices = (search: string) => {
-    const q = search.toLowerCase();
-    if (!q) return groupedServices;
-    return Object.entries(groupedServices).reduce((acc, [cat, items]) => {
-      const matched = items.filter(s => s.service_name.toLowerCase().includes(q) || cat.toLowerCase().includes(q));
-      if (matched.length > 0) acc[cat] = matched;
-      return acc;
-    }, {} as Record<string, typeof services>);
-  };
+  const serviceOptions = useMemo(() => {
+    return Object.entries(groupedServices).map(([category, items]) => ({
+      label: category,
+      options: items.map(s => ({
+        value: s.id.toString(),
+        label: `${s.service_name} - ₹${s.price}`
+      }))
+    }));
+  }, [groupedServices]);
 
   // Discount & Payment state for Add Customer modal
   const [addFinalAmount, setAddFinalAmount] = useState<string>('');
@@ -260,7 +308,6 @@ export default function Customers() {
     setCustomerServices([]);
     setCustomerProducts([]);
     setCustomerStaffId('');
-    setAddSvcSearch('');
     setAddFinalAmount('');
     setAddPaymentMethod('Cash');
     reset({ name: '', phone: '', dobDay: '', dobMonth: '', dobYear: '', notes: '' });
@@ -454,7 +501,6 @@ export default function Customers() {
     setVisitServices([{ serviceId: '' }]);
     setVisitProducts([]);
     setVisitStaffId('');
-    setVisitSvcSearch('');
     setVisitFinalAmount('');
     setVisitPaymentMethod('Cash');
     setIsRecordVisitOpen(true);
@@ -478,7 +524,6 @@ export default function Customers() {
     setVisitStaffId(visit.staff_id?.toString() || '');
     setVisitFinalAmount(visit.grand_total?.toString() || '');
     setVisitPaymentMethod(visit.payment_method || 'Cash');
-    setVisitSvcSearch('');
     
     setIsRecordVisitOpen(true);
   };
@@ -938,34 +983,28 @@ export default function Customers() {
                         + Add Service
                       </button>
                     </div>
-                    {/* Service Search */}
-                    <div className="flex items-center bg-black/40 border border-white/10 rounded-xl px-3 py-2 mb-3 gap-2 focus-within:border-white/25 transition-colors">
-                      <Search className="w-4 h-4 text-white/30 shrink-0" />
-                      <input type="text" placeholder="Search services..." value={addSvcSearch} onChange={e => setAddSvcSearch(e.target.value)} className="bg-transparent outline-none text-sm text-white placeholder-white/30 flex-1" />
-                      {addSvcSearch && <button type="button" onClick={() => setAddSvcSearch('')} className="text-white/30 hover:text-white transition-colors"><X className="w-4 h-4" /></button>}
-                    </div>
                     {customerServices.length === 0 ? (
                       <div className="text-sm text-white/60/60 font-light italic p-6 bg-black/5 rounded-2xl border border-dashed border-white/10 text-center">No services added. Click above to add.</div>
                     ) : (
                       <div className="space-y-3">
                         {customerServices.map((cs, idx) => (
                           <div key={idx} className="flex items-center gap-3">
-                            <select 
-                              value={cs.serviceId} 
-                              onChange={(e) => {
-                                const newSvcs = [...customerServices];
-                                newSvcs[idx].serviceId = e.target.value;
-                                setCustomerServices(newSvcs);
-                              }}
-                              className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40"
-                            >
-                              <option value="" className="text-white/60">-- Select Service --</option>
-                              {Object.entries(filteredGroupedServices(addSvcSearch)).map(([category, items]) => (
-                                <optgroup key={category} label={category} className="text-white/60">
-                                  {items.map(s => <option key={s.id} value={s.id} className="text-white">{s.service_name} - ₹{s.price}</option>)}
-                                </optgroup>
-                              ))}
-                            </select>
+                            <div className="flex-1">
+                              <Select
+                                instanceId={`customer-service-${idx}`}
+                                styles={selectStyles}
+                                options={serviceOptions}
+                                placeholder="Search & Select Service..."
+                                value={serviceOptions.flatMap(g => g.options).find(o => o.value === cs.serviceId) || null}
+                                onChange={(selected: any) => {
+                                  const newSvcs = [...customerServices];
+                                  newSvcs[idx].serviceId = selected ? selected.value : '';
+                                  setCustomerServices(newSvcs);
+                                }}
+                                isClearable
+                                classNamePrefix="react-select"
+                              />
+                            </div>
                             <button type="button" onClick={() => setCustomerServices(customerServices.filter((_, i) => i !== idx))} className="p-3 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 transition-colors">
                               <Trash2 className="w-5 h-5" />
                             </button>
@@ -1128,34 +1167,28 @@ export default function Customers() {
                     + Add Service
                   </button>
                 </div>
-                {/* Service Search */}
-                <div className="flex items-center bg-black/40 border border-white/10 rounded-xl px-3 py-2 mb-3 gap-2 focus-within:border-white/25 transition-colors">
-                  <Search className="w-4 h-4 text-white/30 shrink-0" />
-                  <input type="text" placeholder="Search services..." value={visitSvcSearch} onChange={e => setVisitSvcSearch(e.target.value)} className="bg-transparent outline-none text-sm text-white placeholder-white/30 flex-1" />
-                  {visitSvcSearch && <button type="button" onClick={() => setVisitSvcSearch('')} className="text-white/30 hover:text-white transition-colors"><X className="w-4 h-4" /></button>}
-                </div>
                 {visitServices.length === 0 ? (
                   <div className="text-sm text-white/40 font-light italic p-4 bg-black/5 rounded-xl border border-dashed border-white/10 text-center">No services added.</div>
                 ) : (
                   <div className="space-y-3">
                     {visitServices.map((vs, idx) => (
                       <div key={idx} className="flex items-center gap-3">
-                        <select
-                          value={vs.serviceId}
-                          onChange={(e) => {
-                            const updated = [...visitServices];
-                            updated[idx].serviceId = e.target.value;
-                            setVisitServices(updated);
-                          }}
-                          className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40"
-                        >
-                          <option value="">-- Select Service --</option>
-                          {Object.entries(filteredGroupedServices(visitSvcSearch)).map(([category, items]) => (
-                            <optgroup key={category} label={category}>
-                              {items.map(s => <option key={s.id} value={s.id}>{s.service_name} - ₹{s.price}</option>)}
-                            </optgroup>
-                          ))}
-                        </select>
+                        <div className="flex-1">
+                          <Select
+                            instanceId={`visit-service-${idx}`}
+                            styles={selectStyles}
+                            options={serviceOptions}
+                            placeholder="Search & Select Service..."
+                            value={serviceOptions.flatMap(g => g.options).find(o => o.value === vs.serviceId) || null}
+                            onChange={(selected: any) => {
+                              const updated = [...visitServices];
+                              updated[idx].serviceId = selected ? selected.value : '';
+                              setVisitServices(updated);
+                            }}
+                            isClearable
+                            classNamePrefix="react-select"
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={() => setVisitServices(visitServices.filter((_, i) => i !== idx))}
