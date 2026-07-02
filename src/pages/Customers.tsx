@@ -365,6 +365,23 @@ export default function Customers() {
         : null;
 
       if (!customerToEdit) {
+        // Check for existing customer to prevent duplicates
+        let existingCusts: any[] = [];
+        if (data.phone?.trim()) {
+           const { data: pData } = await supabase.from('customers').select('id, name').eq('phone', data.phone.trim()).eq('is_deleted', false);
+           existingCusts = pData || [];
+        }
+        if (existingCusts.length === 0 && data.name?.trim()) {
+           const { data: nData } = await supabase.from('customers').select('id, name').ilike('name', data.name.trim()).eq('is_deleted', false);
+           existingCusts = nData || [];
+        }
+
+        if (existingCusts.length > 0) {
+          if (!window.confirm(`⚠️ Customer "${existingCusts[0].name}" already exists in the system!\n\nIf this is the same person, please click CANCEL and use the "Record Visit" button on their existing profile.\n\nAre you absolutely sure you want to create a duplicate profile?`)) {
+            return;
+          }
+        }
+
         if (customerServices.length === 0 && customerProducts.length === 0) {
           toast.error("Please select at least one service or product.");
           return;
