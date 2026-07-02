@@ -40,6 +40,7 @@ export const customerService = {
       services_taken: d.services_taken || [],
       staff_served: d.staff_served || [],
       amountPaid: Number(d.amount_paid || 0),
+      notes: d.notes ? String(d.notes) : undefined,
       createdAt: String(d.created_at || new Date().toISOString())
     }));
 
@@ -116,7 +117,8 @@ export const customerService = {
         anniversary: customerData.anniversary || null,
         services_taken: customerData.services_taken || [],
         staff_served: customerData.staff_served || [],
-        amount_paid: customerData.amountPaid || 0
+        amount_paid: customerData.amountPaid || 0,
+        notes: customerData.notes || null
       })
       .select()
       .single();
@@ -135,6 +137,7 @@ export const customerService = {
       services_taken: data.services_taken || [],
       staff_served: data.staff_served || [],
       amountPaid: Number(data.amount_paid || 0),
+      notes: data.notes ? String(data.notes) : undefined,
       createdAt: String(data.created_at || new Date().toISOString())
     } as Customer;
   },
@@ -152,6 +155,7 @@ export const customerService = {
     if (updates.products_bought !== undefined) payload.products_bought = updates.products_bought;
     if (updates.staff_served !== undefined) payload.staff_served = updates.staff_served;
     if (updates.amountPaid !== undefined) payload.amount_paid = updates.amountPaid;
+    if (updates.notes !== undefined) payload.notes = updates.notes || null;
 
     const { data, error } = await supabase
       .from('customers')
@@ -174,6 +178,7 @@ export const customerService = {
       services_taken: data.services_taken || [],
       staff_served: data.staff_served || [],
       amountPaid: Number(data.amount_paid || 0),
+      notes: data.notes ? String(data.notes) : undefined,
       createdAt: String(data.created_at || new Date().toISOString())
     } as Customer;
   },

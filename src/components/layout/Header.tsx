@@ -97,7 +97,7 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
     if (!customer.phone) return;
     const cleanPhone = customer.phone.replace(/\D/g, '');
     const message = type === 'birthday'
-      ? `Happy Birthday ${customer.name}! Wishing you a wonderful day from TEN11 Salon! As a gift, enjoy 10% off your next visit. We hope to see you soon!`
+      ? `A Very Happy Birthday from Team Ten11 Salon! ✨\n\nTo make your special day even more memorable, we're delighted to offer you 50% OFF on any ONE service, valid exclusively until today.\n\nWe look forward to celebrating with you.\n\nWith love,\nTeam Ten11 Salon 🤍`
       : `Happy Anniversary ${customer.name}! Wishing you a wonderful day from TEN11 Salon! As a gift, enjoy 10% off your next visit. We hope to see you soon!`;
     const url = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');

@@ -97,6 +97,7 @@ CREATE TABLE public.customers (
     products_bought TEXT[],
     staff_served TEXT[],
     amount_paid NUMERIC DEFAULT 0,
+    notes TEXT,
     is_deleted BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -233,6 +234,7 @@ CREATE TABLE public.customer_visits (
     service_total NUMERIC DEFAULT 0,
     product_total NUMERIC DEFAULT 0,
     grand_total NUMERIC DEFAULT 0,
+    payment_method TEXT DEFAULT 'Cash',
     staff_id BIGINT REFERENCES public.staff(id) ON DELETE SET NULL,
     is_deleted BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,

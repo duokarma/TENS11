@@ -22,9 +22,9 @@ const customerSchema = z.object({
   dobDay: z.string().optional(),
   dobMonth: z.string().optional(),
   dobYear: z.string().optional(),
-  anniversaryDay: z.string().optional(),
   anniversaryMonth: z.string().optional(),
-  anniversaryYear: z.string().optional()
+  anniversaryYear: z.string().optional(),
+  notes: z.string().optional()
 });
 type CustomerFormData = z.infer<typeof customerSchema>;
 
@@ -60,10 +60,12 @@ export default function Customers() {
     }, {} as Record<string, typeof services>);
   };
 
-  // Discount state for Add Customer modal
+  // Discount & Payment state for Add Customer modal
   const [addFinalAmount, setAddFinalAmount] = useState<string>('');
-  // Discount state for Record Visit modal
+  const [addPaymentMethod, setAddPaymentMethod] = useState<string>('Cash');
+  // Discount & Payment state for Record Visit modal
   const [visitFinalAmount, setVisitFinalAmount] = useState<string>('');
+  const [visitPaymentMethod, setVisitPaymentMethod] = useState<string>('Cash');
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -219,7 +221,8 @@ export default function Customers() {
     setCustomerStaffId('');
     setAddSvcSearch('');
     setAddFinalAmount('');
-    reset({ name: '', phone: '', dobDay: '', dobMonth: '', dobYear: '', anniversaryDay: '', anniversaryMonth: '', anniversaryYear: '' });
+    setAddPaymentMethod('Cash');
+    reset({ name: '', phone: '', dobDay: '', dobMonth: '', dobYear: '', anniversaryDay: '', anniversaryMonth: '', anniversaryYear: '', notes: '' });
     setIsCustomerModalOpen(true);
   };
 
@@ -359,7 +362,8 @@ export default function Customers() {
           original_total: originalTotal,
           discount_amount: discountAmt,
           grand_total: grandTotal,
-          staff_id: customerStaffId
+          staff_id: customerStaffId,
+          payment_method: addPaymentMethod
         }]).select().single();
 
         if (visitErr) throw visitErr;
@@ -426,6 +430,7 @@ export default function Customers() {
     setVisitStaffId('');
     setVisitSvcSearch('');
     setVisitFinalAmount('');
+    setVisitPaymentMethod('Cash');
     setIsRecordVisitOpen(true);
   };
 
@@ -476,7 +481,8 @@ export default function Customers() {
           original_total: originalTotal,
           discount_amount: discountAmt,
           grand_total: grandTotal,
-          staff_id: visitStaffId
+          staff_id: visitStaffId,
+          payment_method: visitPaymentMethod
         }])
         .select()
         .single();
@@ -785,6 +791,11 @@ export default function Customers() {
                   {errors.phone && <p className="text-danger text-xs mt-1.5">{errors.phone.message}</p>}
                 </div>
                 <div>
+                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Personal Note (Optional)</label>
+                  <textarea {...register("notes")} className="glass-input w-full px-4 py-3 min-h-[80px]" placeholder="e.g. Likes a specific type of coffee, allergic to some products..." />
+                  {errors.notes && <p className="text-danger text-xs mt-1.5">{errors.notes.message}</p>}
+                </div>
+                <div>
                   <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Date of Birth</label>
                   <div className="grid grid-cols-3 gap-3">
                     <select {...register("dobDay")} className="glass-input w-full px-4 py-3 appearance-none cursor-pointer bg-black/40">
@@ -966,6 +977,17 @@ export default function Customers() {
                               <Tag className="w-3 h-3" /> ₹{discountAmt.toLocaleString()} discount applied — Final: ₹{finalAmt.toLocaleString()}
                             </p>
                           )}
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Payment Method</label>
+                          <select
+                            value={addPaymentMethod}
+                            onChange={(e) => setAddPaymentMethod(e.target.value)}
+                            className="glass-input w-full px-4 py-3 appearance-none bg-black/40"
+                          >
+                            <option value="Cash" className="text-white">Cash</option>
+                            <option value="UPI" className="text-white">UPI</option>
+                          </select>
                         </div>
                       </div>
                     );
@@ -1159,6 +1181,17 @@ export default function Customers() {
                           <Tag className="w-3 h-3" /> ₹{discountAmt.toLocaleString()} discount applied — Final: ₹{finalAmt.toLocaleString()}
                         </p>
                       )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Payment Method</label>
+                      <select
+                        value={visitPaymentMethod}
+                        onChange={(e) => setVisitPaymentMethod(e.target.value)}
+                        className="glass-input w-full px-4 py-3 appearance-none bg-black/40"
+                      >
+                        <option value="Cash" className="text-white">Cash</option>
+                        <option value="UPI" className="text-white">UPI</option>
+                      </select>
                     </div>
                   </div>
                 );

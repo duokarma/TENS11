@@ -125,7 +125,7 @@ export default function Appointments() {
   // Group appointments by date
   const grouped = useMemo(() => {
     const map: Record<string, Appointment[]> = {};
-    [...appointments].sort((a, b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime())
+    [...appointments].sort((a, b) => new Date(b.appointment_date).getTime() - new Date(a.appointment_date).getTime())
       .forEach(appt => {
         const key = format(parseISO(appt.appointment_date), 'yyyy-MM-dd');
         if (!map[key]) map[key] = [];
@@ -490,7 +490,7 @@ export default function Appointments() {
         </div>
       ) : (
         <div className="space-y-8">
-          {Object.entries(grouped).map(([dateKey, appts]) => {
+          {Object.entries(grouped).sort(([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime()).map(([dateKey, appts]) => {
             const dateObj = parseISO(dateKey);
             const isDateToday = isToday(dateObj);
             return (
@@ -685,12 +685,52 @@ export default function Appointments() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Time *</label>
-                  <input
-                    type="time"
-                    value={form.time}
-                    onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
-                    className="glass-input w-full px-4 py-3 bg-black/40"
-                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    <select
+                      value={(() => {
+                        const h = parseInt(form.time.split(':')[0] || '10');
+                        return h === 0 ? '12' : h > 12 ? (h - 12).toString().padStart(2, '0') : h.toString().padStart(2, '0');
+                      })()}
+                      onChange={e => {
+                        const ampm = parseInt(form.time.split(':')[0] || '10') >= 12 ? 'PM' : 'AM';
+                        let newH = parseInt(e.target.value);
+                        if (ampm === 'PM' && newH !== 12) newH += 12;
+                        if (ampm === 'AM' && newH === 12) newH = 0;
+                        setForm(f => ({ ...f, time: `${newH.toString().padStart(2, '0')}:${f.time.split(':')[1] || '00'}` }));
+                      }}
+                      className="glass-input w-full px-2 py-3 bg-black/40 text-center appearance-none"
+                    >
+                      {Array.from({length: 12}, (_, i) => (i + 1).toString().padStart(2, '0')).map(h => (
+                        <option key={h} value={h} className="text-white">{h}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={form.time.split(':')[1] || '00'}
+                      onChange={e => {
+                        setForm(f => ({ ...f, time: `${f.time.split(':')[0] || '10'}:${e.target.value}` }));
+                      }}
+                      className="glass-input w-full px-2 py-3 bg-black/40 text-center appearance-none"
+                    >
+                      {['00', '15', '30', '45'].map(m => (
+                        <option key={m} value={m} className="text-white">{m}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={parseInt(form.time.split(':')[0] || '10') >= 12 ? 'PM' : 'AM'}
+                      onChange={e => {
+                        const currentH = parseInt(form.time.split(':')[0] || '10');
+                        const isPM = e.target.value === 'PM';
+                        let newH = currentH;
+                        if (isPM && currentH < 12) newH += 12;
+                        if (!isPM && currentH >= 12) newH -= 12;
+                        setForm(f => ({ ...f, time: `${newH.toString().padStart(2, '0')}:${f.time.split(':')[1] || '00'}` }));
+                      }}
+                      className="glass-input w-full px-2 py-3 bg-black/40 text-center appearance-none"
+                    >
+                      <option value="AM" className="text-white">AM</option>
+                      <option value="PM" className="text-white">PM</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
