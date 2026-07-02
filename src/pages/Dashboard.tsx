@@ -78,7 +78,7 @@ export default function Dashboard() {
         supabase.from('customer_visits').select('*, customer:customer_id(is_deleted)').eq('is_deleted', false).order('visit_date', { ascending: false }),
         supabase.from('expenses').select('*').eq('is_deleted', false).order('date', { ascending: false }),
         supabase.from('products').select('*').eq('is_deleted', false),
-        supabase.from('customers').select('id, created_at, name, dob, phone').eq('is_deleted', false)
+        supabase.from('customers').select('id, created_at, name, dob, phone, anniversary').eq('is_deleted', false)
       ]);
 
       const validVisits = (visitsData || []).filter((v: any) => !v.customer || !v.customer.is_deleted);
