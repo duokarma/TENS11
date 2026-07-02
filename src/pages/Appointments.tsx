@@ -574,7 +574,7 @@ export default function Appointments() {
             placeholder="Search appointments by name or phone..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="glass-input w-full pl-12 pr-4 py-3"
+            className="glass-input w-full !pl-12 pr-4 py-3"
           />
         </div>
       </div>
