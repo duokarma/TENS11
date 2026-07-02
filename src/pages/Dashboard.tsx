@@ -306,7 +306,7 @@ export default function Dashboard() {
                       <p className="text-[11px] tracking-[0.2em] uppercase mt-1 font-bold" style={{ color: 'rgba(200, 157, 60,0.6)' }}>Birthday Today</p>
                       
                       <button 
-                        onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/\D/g,'')}?text=${encodeURIComponent(`A Very Happy Birthday from Team Ten11 Salon! ✨\n\nTo make your special day even more memorable, we're delighted to offer you 50% OFF on any ONE service, valid exclusively until today.\n\nWe look forward to celebrating with you.\n\nWith love,\nTeam Ten11 Salon 🤍`)}`, '_blank')}
+                        onClick={() => window.open(`https://wa.me/${customer.phone?.replace(/\D/g,'')}?text=${encodeURIComponent(`A Very Happy Birthday from Team Ten11 Salon!!!\n\nTo make your special day even more memorable, we're delighted to offer you 50% OFF on any ONE service, valid exclusively until today.\n\nWe look forward to celebrating with you!\n\nWith love,\nTeam Ten11 Salon`)}`, '_blank')}
                         className="mt-4 w-full py-2 rounded-xl font-bold text-xs transition-all shadow-sm flex justify-center items-center gap-2"
                         style={{
                           background: 'rgba(200, 157, 60,0.15)',
