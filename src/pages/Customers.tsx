@@ -117,10 +117,7 @@ export default function Customers() {
   const [visitFinalAmount, setVisitFinalAmount] = useState<string>('');
   const [visitPaymentMethod, setVisitPaymentMethod] = useState<string>('Cash');
 
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
   useEffect(() => {
