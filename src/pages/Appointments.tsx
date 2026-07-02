@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { serviceService } from '../lib/serviceService';
 import type { SalonService } from '../lib/serviceService';
 import Select from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 
 const selectStyles = {
   control: (base: any, state: any) => ({
@@ -83,6 +84,7 @@ export default function Appointments() {
   const [services, setServices] = useState<SalonService[]>([]);
   const [staff, setStaff] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Modal state
@@ -115,7 +117,7 @@ export default function Appointments() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [apptRes, svcRes, stfRes, prodRes] = await Promise.all([
+      const [apptRes, svcRes, stfRes, prodRes, custRes] = await Promise.all([
         supabase
           .from('appointments')
           .select('*, staff:staff_id(name), appointment_services(*)')
@@ -124,11 +126,13 @@ export default function Appointments() {
         serviceService.getServices(),
         supabase.from('staff').select('*').eq('is_deleted', false),
         supabase.from('products').select('*').eq('is_deleted', false),
+        supabase.from('customers').select('id, name, phone').eq('is_deleted', false)
       ]);
       if (apptRes.data) setAppointments(apptRes.data as Appointment[]);
       setServices(svcRes);
       if (stfRes.data) setStaff(stfRes.data);
       if (prodRes.data) setProducts(prodRes.data);
+      if (custRes.data) setCustomers(custRes.data);
     } catch (err) {
       toast.error('Failed to load appointments');
     } finally {
@@ -162,6 +166,15 @@ export default function Appointments() {
       }))
     }));
   }, [services]);
+
+  const customerOptions = useMemo(() => {
+    return customers.map(c => ({
+      value: c.name,
+      label: `${c.name} ${c.phone ? `- ${c.phone}` : ''}`,
+      phone: c.phone || '',
+      originalName: c.name
+    }));
+  }, [customers]);
 
   // Stats
   const todayCount = appointments.filter(a => a.status === 'scheduled' && isToday(parseISO(a.appointment_date))).length;
@@ -321,26 +334,40 @@ export default function Appointments() {
     setIsCheckInModalOpen(false);
 
     try {
-      // 1. Find or create customer by phone
+      // 1. Find or create customer by phone or name
       let customerId: number | null = null;
+      let existingCust = null;
+
       if (checkInAppt.customer_phone) {
-        const { data: existing } = await supabase
+        const { data: existingPhone } = await supabase
           .from('customers')
           .select('id')
           .eq('phone', checkInAppt.customer_phone)
           .eq('is_deleted', false)
           .maybeSingle();
-        if (existing) {
-          customerId = existing.id;
-        } else {
-          const { data: newCust, error: custErr } = await supabase
-            .from('customers')
-            .insert([{ name: checkInAppt.customer_name, phone: checkInAppt.customer_phone }])
-            .select()
-            .single();
-          if (custErr) throw custErr;
-          customerId = newCust.id;
-        }
+        existingCust = existingPhone;
+      }
+
+      if (!existingCust && checkInAppt.customer_name) {
+        const { data: existingName } = await supabase
+          .from('customers')
+          .select('id')
+          .ilike('name', checkInAppt.customer_name.trim())
+          .eq('is_deleted', false)
+          .maybeSingle();
+        existingCust = existingName;
+      }
+
+      if (existingCust) {
+        customerId = existingCust.id;
+      } else if (checkInAppt.customer_name) {
+        const { data: newCust, error: custErr } = await supabase
+          .from('customers')
+          .insert([{ name: checkInAppt.customer_name.trim(), phone: checkInAppt.customer_phone?.trim() || null }])
+          .select()
+          .single();
+        if (custErr) throw custErr;
+        customerId = newCust.id;
       }
 
       const filledSvcs = checkInServices.filter(s => s.serviceId);
@@ -703,12 +730,29 @@ export default function Appointments() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Customer Name *</label>
-                  <input
-                    type="text"
-                    value={form.customer_name}
-                    onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}
-                    className="glass-input w-full px-4 py-3"
-                    placeholder="e.g. Priya Sharma"
+                  <CreatableSelect
+                    styles={selectStyles}
+                    options={customerOptions}
+                    placeholder="Search or enter name..."
+                    value={
+                      form.customer_name
+                        ? { value: form.customer_name, label: customerOptions.find(o => o.originalName === form.customer_name)?.label || form.customer_name }
+                        : null
+                    }
+                    onChange={(selected: any) => {
+                      if (selected) {
+                        setForm(f => ({
+                          ...f,
+                          customer_name: selected.value,
+                          customer_phone: selected.phone !== undefined ? selected.phone : f.customer_phone
+                        }));
+                      } else {
+                        setForm(f => ({ ...f, customer_name: '' }));
+                      }
+                    }}
+                    formatCreateLabel={(inputValue) => `New Customer: "${inputValue}"`}
+                    isClearable
+                    classNamePrefix="react-select"
                   />
                 </div>
                 <div>
