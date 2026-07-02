@@ -105,6 +105,7 @@ export default function Appointments() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Check-in Modal state
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
@@ -187,17 +188,27 @@ export default function Appointments() {
   }).length;
   const cancelledCount = appointments.filter(a => a.status === 'cancelled').length;
 
+  // Filter appointments
+  const filteredAppointments = useMemo(() => {
+    if (!searchTerm.trim()) return appointments;
+    const lower = searchTerm.toLowerCase();
+    return appointments.filter(a => 
+      a.customer_name?.toLowerCase().includes(lower) || 
+      a.customer_phone?.includes(lower)
+    );
+  }, [appointments, searchTerm]);
+
   // Group appointments by date
   const grouped = useMemo(() => {
     const map: Record<string, Appointment[]> = {};
-    [...appointments].sort((a, b) => new Date(b.appointment_date).getTime() - new Date(a.appointment_date).getTime())
+    [...filteredAppointments].sort((a, b) => new Date(b.appointment_date).getTime() - new Date(a.appointment_date).getTime())
       .forEach(appt => {
         const key = format(parseISO(appt.appointment_date), 'yyyy-MM-dd');
         if (!map[key]) map[key] = [];
         map[key].push(appt);
       });
     return map;
-  }, [appointments]);
+  }, [filteredAppointments]);
 
   const openAddModal = () => {
     setRepeatData(null);
@@ -555,6 +566,19 @@ export default function Appointments() {
       </div>
 
       {/* Appointments List */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+          <input
+            type="text"
+            placeholder="Search appointments by name or phone..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="glass-input w-full pl-12 pr-4 py-3"
+          />
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="glass-card p-16 text-center text-white/50">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4" />
