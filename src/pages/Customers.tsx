@@ -212,6 +212,26 @@ export default function Customers() {
     }
   };
 
+  const handleEditVisitDate = async (visitId: string, currentDate: string) => {
+    const rawDate = currentDate.split('T')[0];
+    const newDate = window.prompt("Enter new date for this visit (YYYY-MM-DD):", rawDate);
+    if (!newDate || newDate === rawDate) return;
+    
+    // Basic date validation
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+      toast.error("Invalid date format. Please use YYYY-MM-DD.");
+      return;
+    }
+
+    try {
+      await supabase.from('customer_visits').update({ visit_date: newDate }).eq('id', visitId);
+      setSelectedHistory(prev => prev.map(v => v.id === visitId ? { ...v, visit_date: newDate } : v));
+      toast.success("Visit date updated!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update visit date");
+    }
+  };
+
   const openAddModal = () => {
     setCustomerToEdit(null);
     setCustomerServices([]);
@@ -1289,6 +1309,13 @@ export default function Customers() {
                               className="text-xs font-bold px-3 py-1.5 bg-black/5 hover:bg-black/10 text-white rounded-lg border border-white/10 transition-colors flex items-center"
                             >
                               <Download className="w-3 h-3 mr-1" /> Invoice
+                            </button>
+                            <button
+                              onClick={() => handleEditVisitDate(visit.id, visit.visit_date)}
+                              className="p-1.5 hover:bg-white/10 text-white/60 rounded-lg transition-colors border border-transparent hover:border-white/20"
+                              title="Edit Visit Date"
+                            >
+                              <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteVisit(visit.id)}
