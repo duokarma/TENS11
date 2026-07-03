@@ -209,6 +209,8 @@ CREATE TABLE public.expenses (
     title TEXT,
     category TEXT NOT NULL CHECK (category IN ('Electricity', 'Water', 'Rent', 'Internet', 'Salary', 'Inventory', 'Other Expenses')),
     amount NUMERIC NOT NULL DEFAULT 0,
+    payment_method TEXT DEFAULT 'Cash',
+    status TEXT DEFAULT 'Paid',
     is_deleted BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
