@@ -948,7 +948,7 @@ export default function Customers() {
                       const initials = customer.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
                       
                       return (
-                        <tr key={customer.id} className="hover:bg-black/40 transition-colors group">
+                        <tr key={`${customer.id}-${customer.createdAt}`} className="hover:bg-black/40 transition-colors group">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-4">
                               <div className="h-11 w-11 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">

@@ -10,11 +10,10 @@ export const customerService = {
    */
   async getCustomers({ page = 1, limit = 50, search = '' }: { page?: number, limit?: number, search?: string } = {}) {
     let query = supabase
-      .from('customers')
+      .from('customer_timeline')
       .select('*', { count: 'exact' })
       .eq('is_deleted', false)
-      .order('updated_at', { ascending: false, nullsFirst: false })
-      .order('created_at', { ascending: false });
+      .order('event_date', { ascending: false });
 
     if (search) {
       query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
@@ -33,7 +32,7 @@ export const customerService = {
 
     // Map snake_case to camelCase
     const mappedCustomers: Customer[] = (data || []).map((d: any) => ({
-      id: Number(d.id),
+      id: Number(d.customer_id),
       name: String(d.name || 'Unknown'),
       phone: String(d.phone || ''),
       dob: d.dob ? String(d.dob) : undefined,
@@ -42,7 +41,7 @@ export const customerService = {
       amountPaid: Number(d.amount_paid || 0),
       payment_due: Number(d.payment_due || 0),
       notes: d.notes ? String(d.notes) : undefined,
-      createdAt: String(d.updated_at || d.created_at || new Date().toISOString())
+      createdAt: String(d.event_date || d.created_at || new Date().toISOString())
     }));
 
     return { data: mappedCustomers, count: count || 0 };
