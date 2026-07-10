@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import customersData from '../customers_data.json';
 import { customerService } from '../lib/customerService';
 import type { Customer } from '../types';
 import { 
@@ -130,6 +131,27 @@ export default function Customers() {
     setPage(1);
   }, [debouncedSearch]);
   
+  const handleRestore = async () => {
+    if (!window.confirm("Restore customers data?")) return;
+    try {
+      setIsLoading(true);
+      for (let i = 0; i < customersData.length; i += 20) {
+        const batch = customersData.slice(i, i + 20);
+        const { error } = await supabase.from('customers').insert(batch);
+        if (error) {
+           console.error("Batch error:", error);
+           toast.error(error.message);
+        }
+      }
+      toast.success("Restore complete!");
+      loadData();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Modals state
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
@@ -793,13 +815,21 @@ export default function Customers() {
           <h2 className="text-4xl font-light tracking-tight text-white">Customers</h2>
           <p className="text-white/50 mt-2 font-light tracking-wide">Manage your client relationships and view their history.</p>
         </div>
-        <button 
-          onClick={openAddModal}
-          className="btn-primary"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Customer
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={handleRestore}
+            className="btn-primary bg-red-600 hover:bg-red-700"
+          >
+            Restore Data
+          </button>
+          <button 
+            onClick={openAddModal}
+            className="btn-primary"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Customer
+          </button>
+        </div>
       </div>
 
       {/* Statistics Cards */}

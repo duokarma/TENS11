@@ -1,0 +1,1415 @@
+[
+  {
+    "id": 1,
+    "name": "NITYABEN LABANA",
+    "phone": "9825782992",
+    "dob": null,
+    "services_taken": [
+      "Eyebrow + forehead",
+      "Upper lips (Threading)"
+    ],
+    "staff_served": [
+      "Priya (Beautician)"
+    ],
+    "amount_paid": 70.0,
+    "is_deleted": false,
+    "created_at": "2026-07-01 08:03:16.00113+00",
+    "updated_at": "2026-07-01 10:34:19.770071+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 2,
+    "name": "CHANDRIKA AJEDYA",
+    "phone": "7990933850",
+    "dob": null,
+    "services_taken": [],
+    "staff_served": [
+      "SONU(BEAUTION)"
+    ],
+    "amount_paid": 170.0,
+    "is_deleted": false,
+    "created_at": "2026-07-01 08:29:33.877478+00",
+    "updated_at": "2026-07-01 10:34:19.770071+00",
+    "products_bought": [
+      "CARES DERMA FACE WASH"
+    ],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 3,
+    "name": "KRUTISHAH PATEL",
+    "phone": "9328886145",
+    "dob": null,
+    "services_taken": [],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-01 09:37:34.06915+00",
+    "updated_at": "2026-07-01 10:34:19.770071+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 4,
+    "name": "DIYA CHAJED",
+    "phone": "9726066600",
+    "dob": "2005-02-11",
+    "services_taken": [
+      "Face D-Tan",
+      "Power c (Skeyndor)"
+    ],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-01 09:39:36.356568+00",
+    "updated_at": "2026-07-02 08:05:48.444621+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 5,
+    "name": "HONEY",
+    "phone": "9313007276",
+    "dob": "2000-07-02",
+    "services_taken": [
+      "Normal haircut"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)"
+    ],
+    "amount_paid": 350.0,
+    "is_deleted": false,
+    "created_at": "2026-07-01 09:52:48.720997+00",
+    "updated_at": "2026-07-01 13:45:00.979084+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 6,
+    "name": "DAKSHA PANCHAL",
+    "phone": "9428544781",
+    "dob": null,
+    "services_taken": [],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-01 10:04:15.222214+00",
+    "updated_at": "2026-07-01 10:34:19.770071+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 7,
+    "name": "hatim",
+    "phone": "8758457909",
+    "dob": null,
+    "services_taken": [
+      "Hair wash",
+      "Tong"
+    ],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-01 10:17:51.548926+00",
+    "updated_at": "2026-07-01 10:34:19.770071+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 8,
+    "name": "u.k",
+    "phone": "8758457909",
+    "dob": null,
+    "services_taken": [
+      "Basic Facial"
+    ],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-01 10:27:00.671311+00",
+    "updated_at": "2026-07-01 10:34:19.770071+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 9,
+    "name": "u.k",
+    "phone": "8758457909",
+    "dob": null,
+    "services_taken": [],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-01 10:28:38.804276+00",
+    "updated_at": "2026-07-01 10:34:19.770071+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 10,
+    "name": "UK",
+    "phone": "7623885366",
+    "dob": null,
+    "services_taken": [],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-01 10:53:46.349769+00",
+    "updated_at": "2026-07-01 10:54:53.236889+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 11,
+    "name": "DAKSHA PANCHAL",
+    "phone": "9428544781",
+    "dob": "1971-06-06",
+    "services_taken": [
+      "Normal haircut"
+    ],
+    "staff_served": [],
+    "amount_paid": 700.0,
+    "is_deleted": false,
+    "created_at": "2026-07-01 11:49:47.293194+00",
+    "updated_at": "2026-07-02 08:01:05.976519+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 12,
+    "name": "MISTHI SHAH",
+    "phone": "6354004692",
+    "dob": "2006-03-13",
+    "services_taken": [
+      "Premium hair wash"
+    ],
+    "staff_served": [],
+    "amount_paid": 500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-01 13:49:21.885101+00",
+    "updated_at": "2026-07-02 08:00:34.776515+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 13,
+    "name": "DIYA CHAJED",
+    "phone": "9726066600",
+    "dob": "2005-02-11",
+    "services_taken": [
+      "Power c (Skeyndor)",
+      "Face D-Tan",
+      "Hairfall treatment",
+      "Dandruff treatment",
+      "Global colour (Ammonia)"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 19592.0,
+    "is_deleted": false,
+    "created_at": "2026-07-02 08:01:28.882243+00",
+    "updated_at": "2026-07-03 12:36:38.354811+00",
+    "products_bought": [],
+    "notes": "18 JULY FOLLOW UP",
+    "payment_due": 0.0
+  },
+  {
+    "id": 14,
+    "name": "DIYA CHAJED",
+    "phone": "9726066600",
+    "dob": "2005-02-11",
+    "services_taken": [
+      "Dandruff treatment",
+      "Hairfall treatment"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)"
+    ],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-02 10:12:05.857408+00",
+    "updated_at": "2026-07-02 11:58:04.345061+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 15,
+    "name": "DIYA CHAJED",
+    "phone": "9726066600",
+    "dob": "2005-02-11",
+    "services_taken": [
+      "Dandruff treatment",
+      "Hairfall treatment"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)"
+    ],
+    "amount_paid": 3000.0,
+    "is_deleted": true,
+    "created_at": "2026-07-02 10:31:17.413716+00",
+    "updated_at": "2026-07-02 10:58:59.542245+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 16,
+    "name": "MEHA PATEL",
+    "phone": "6353162196",
+    "dob": "1998-08-30",
+    "services_taken": [
+      "Premium haircut",
+      "Global colour (Ammonia free)"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 7500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-02 11:24:49.798224+00",
+    "updated_at": "2026-07-02 17:54:37.685799+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 17,
+    "name": "fake hatim",
+    "phone": "8758457909",
+    "dob": "2014-12-15",
+    "services_taken": [
+      "SHINER",
+      "FILLER TREATMENT",
+      "Crimping"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 500.0,
+    "is_deleted": true,
+    "created_at": "2026-07-02 11:30:52.030799+00",
+    "updated_at": "2026-07-02 11:33:16.124986+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 18,
+    "name": "KETKII PANCHAL",
+    "phone": "8347665481",
+    "dob": null,
+    "services_taken": [
+      "Normal haircut"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)"
+    ],
+    "amount_paid": 700.0,
+    "is_deleted": false,
+    "created_at": "2026-07-02 11:40:35.831719+00",
+    "updated_at": "2026-07-02 12:33:07.732574+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 19,
+    "name": "MAHIMA PANCHAL",
+    "phone": "8154930761",
+    "dob": null,
+    "services_taken": [
+      "Hair wash",
+      "Eyebrow + forehead"
+    ],
+    "staff_served": [
+      "Priya (Beautician)"
+    ],
+    "amount_paid": 250.0,
+    "is_deleted": false,
+    "created_at": "2026-07-02 11:40:52.007244+00",
+    "updated_at": "2026-07-02 12:32:42.33557+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 20,
+    "name": "umee",
+    "phone": "8758457909",
+    "dob": null,
+    "services_taken": [
+      "Hair wash",
+      "Loreal hair spa"
+    ],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-02 12:24:59.656345+00",
+    "updated_at": "2026-07-02 12:27:33.070221+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 21,
+    "name": "umme",
+    "phone": "8758457909",
+    "dob": null,
+    "services_taken": [
+      "Normal haircut",
+      "Loreal hair spa"
+    ],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-02 12:29:20.15144+00",
+    "updated_at": "2026-07-02 12:38:36.822621+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 22,
+    "name": "LAKSHIKA RATHOD",
+    "phone": "9712900009",
+    "dob": "1991-07-16",
+    "services_taken": [
+      "Premium haircut"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 1500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-02 12:29:51.460488+00",
+    "updated_at": "2026-07-02 14:26:13.142578+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 23,
+    "name": "umme",
+    "phone": "8758457909",
+    "dob": null,
+    "services_taken": [
+      "Normal haircut",
+      "Loreal hair spa"
+    ],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-02 12:46:23.472542+00",
+    "updated_at": "2026-07-02 13:01:54.329619+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 24,
+    "name": "UMK",
+    "phone": "76238853666",
+    "dob": null,
+    "services_taken": [
+      "FILLER TREATMENT",
+      "Normal haircut"
+    ],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-02 13:05:07.394422+00",
+    "updated_at": "2026-07-02 13:08:17.809479+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 25,
+    "name": "VARSHA LAKHWANI",
+    "phone": "8200659994",
+    "dob": "1990-11-14",
+    "services_taken": [],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 10850.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 07:01:15.398173+00",
+    "updated_at": "2026-07-03 07:09:05.151962+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 26,
+    "name": "PREETY BAGADIYA",
+    "phone": "8815454510",
+    "dob": "2005-10-02",
+    "services_taken": [
+      "Premium haircut"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 1500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 08:24:09.609313+00",
+    "updated_at": "2026-07-03 09:53:20.668023+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 27,
+    "name": "HITAKSHI SARTNA",
+    "phone": "9313266406",
+    "dob": "2007-06-04",
+    "services_taken": [
+      "Premium haircut",
+      "Normal haircut"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)"
+    ],
+    "amount_paid": 700.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 08:25:05.425079+00",
+    "updated_at": "2026-07-03 09:53:39.789412+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 28,
+    "name": "PRIYA AMALYAR",
+    "phone": "7487030641",
+    "dob": "1991-06-25",
+    "services_taken": [
+      "Normal haircut"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)"
+    ],
+    "amount_paid": 450.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 08:31:25.742551+00",
+    "updated_at": "2026-07-03 08:31:25.742551+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 29,
+    "name": "BHAKTI RAMI",
+    "phone": "9328551521",
+    "dob": "2009-06-09",
+    "services_taken": [
+      "Nashi hair spa",
+      "Normal haircut",
+      "FILLER TREATMENT",
+      "Premium haircut",
+      "Dandruff treatment"
+    ],
+    "staff_served": [
+      "Priya (Beautician)"
+    ],
+    "amount_paid": 16500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 09:09:17.687777+00",
+    "updated_at": "2026-07-05 12:44:00.599978+00",
+    "products_bought": [],
+    "notes": "GEL EXTENSION 1000\nFILLER+SPA+DANDRUFF \n\nJULY 20 FOLLOW UP",
+    "payment_due": 12500.0
+  },
+  {
+    "id": 30,
+    "name": "hatim suttar",
+    "phone": "8758457909",
+    "dob": "2008-10-15",
+    "services_taken": [
+      "FILLER TREATMENT"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 4000.0,
+    "is_deleted": true,
+    "created_at": "2026-07-03 11:01:00.634493+00",
+    "updated_at": "2026-07-03 11:10:24.224771+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 31,
+    "name": "PURAV LALANI",
+    "phone": "8000040402",
+    "dob": "2013-11-28",
+    "services_taken": [
+      "Normal haircut"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 1000.0,
+    "is_deleted": true,
+    "created_at": "2026-07-03 11:20:32.497979+00",
+    "updated_at": "2026-07-03 11:23:21.740372+00",
+    "products_bought": [],
+    "notes": "300/- EXTRA",
+    "payment_due": 0.0
+  },
+  {
+    "id": 32,
+    "name": "hatim suttar",
+    "phone": "8758457909",
+    "dob": "2011-11-16",
+    "services_taken": [
+      "FILLER TREATMENT"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 4000.0,
+    "is_deleted": true,
+    "created_at": "2026-07-03 11:20:44.272599+00",
+    "updated_at": "2026-07-03 11:21:29.794999+00",
+    "products_bought": [],
+    "notes": "uk tachki",
+    "payment_due": 2000.0
+  },
+  {
+    "id": 33,
+    "name": "PURVA LALNI",
+    "phone": "8000040402",
+    "dob": "2013-11-16",
+    "services_taken": [
+      "Normal haircut"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 1000.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 11:27:46.521551+00",
+    "updated_at": "2026-07-03 13:21:31.478405+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 34,
+    "name": "MAHI PANCHAL",
+    "phone": "6353541164",
+    "dob": "2008-05-14",
+    "services_taken": [
+      "Premium haircut"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)"
+    ],
+    "amount_paid": 1500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 12:15:45.15769+00",
+    "updated_at": "2026-07-03 12:22:00.89953+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 35,
+    "name": "MAHEK PANCHAL",
+    "phone": "9016054088",
+    "dob": "2008-05-14",
+    "services_taken": [
+      "Premium haircut"
+    ],
+    "staff_served": [],
+    "amount_paid": 1500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 12:16:25.838058+00",
+    "updated_at": "2026-07-03 12:22:17.339498+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 36,
+    "name": "VANSHIKA GANAVA",
+    "phone": "9313259526",
+    "dob": "2002-02-22",
+    "services_taken": [
+      "Premium haircut"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 1500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 13:03:32.32529+00",
+    "updated_at": "2026-07-03 14:36:44.594284+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 37,
+    "name": "DR LAXHMI CHOPDA",
+    "phone": "9584794274",
+    "dob": "1993-01-01",
+    "services_taken": [
+      "Full hand Wax",
+      "Eyebrow + forehead",
+      "Upper lips (Threading)",
+      "Under arms Wax"
+    ],
+    "staff_served": [
+      "Priya (Beautician)"
+    ],
+    "amount_paid": 720.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 13:28:57.023471+00",
+    "updated_at": "2026-07-04 06:31:52.641607+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 38,
+    "name": "KHYATI MAKHIJA",
+    "phone": "7990348733",
+    "dob": "1900-12-22",
+    "services_taken": [
+      "Global colour (Ammonia free)",
+      "Global colour (Ammonia)"
+    ],
+    "staff_served": [
+      "MANAV",
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 3400.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 15:35:38.714825+00",
+    "updated_at": "2026-07-03 15:35:38.714825+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 39,
+    "name": "AMMI NANAMA",
+    "phone": "7433946814",
+    "dob": "2011-07-23",
+    "services_taken": [
+      "Premium haircut"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)"
+    ],
+    "amount_paid": 1500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 15:45:38.708083+00",
+    "updated_at": "2026-07-03 15:47:50.218563+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 40,
+    "name": "ANISHA MASIH",
+    "phone": "9098595967",
+    "dob": "2000-12-01",
+    "services_taken": [
+      "Body massage (15 min sauna & 30 min massage)"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)",
+      "Priya (Beautician)"
+    ],
+    "amount_paid": 3000.0,
+    "is_deleted": false,
+    "created_at": "2026-07-03 16:00:57.583548+00",
+    "updated_at": "2026-07-03 17:11:49.510682+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 41,
+    "name": "APEKSHA LALWANI",
+    "phone": "9426055988",
+    "dob": "1900-11-13",
+    "services_taken": [
+      "Premium hair wash"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-04 07:14:58.182567+00",
+    "updated_at": "2026-07-04 08:19:51.412393+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 42,
+    "name": "HARDVI KHANWANSI",
+    "phone": "9265308256",
+    "dob": "2005-05-15",
+    "services_taken": [],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 12550.0,
+    "is_deleted": false,
+    "created_at": "2026-07-04 07:26:20.301402+00",
+    "updated_at": "2026-07-04 07:28:19.237588+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 43,
+    "name": "NIRVIKA SONI",
+    "phone": "7861967916",
+    "dob": "2007-03-12",
+    "services_taken": [
+      "Premium haircut"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 1500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-04 07:58:59.921945+00",
+    "updated_at": "2026-07-04 09:40:06.64396+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 44,
+    "name": "MAHIMA BHANDARI",
+    "phone": "9979558558",
+    "dob": "1997-03-01",
+    "services_taken": [
+      "Premium haircut",
+      "Normal haircut",
+      "Wella hair spa"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 3000.0,
+    "is_deleted": false,
+    "created_at": "2026-07-04 09:31:16.878251+00",
+    "updated_at": "2026-07-04 12:29:27.420252+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 45,
+    "name": "DHAWNI SONI",
+    "phone": "9265101142",
+    "dob": "1900-03-17",
+    "services_taken": [
+      "Full leg Wax",
+      "Full hand Wax",
+      "Under arms Wax",
+      "Premium hair wash",
+      "Instant hair spa"
+    ],
+    "staff_served": [
+      "Priya (Beautician)"
+    ],
+    "amount_paid": 2650.0,
+    "is_deleted": false,
+    "created_at": "2026-07-04 10:03:30.994909+00",
+    "updated_at": "2026-07-04 11:43:07.947043+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 46,
+    "name": "KARUNA SONI",
+    "phone": "9016878059",
+    "dob": "1900-08-02",
+    "services_taken": [
+      "Nashi hair spa",
+      "Eyebrow + forehead"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 3050.0,
+    "is_deleted": false,
+    "created_at": "2026-07-04 10:08:39.043904+00",
+    "updated_at": "2026-07-04 11:42:31.436894+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 47,
+    "name": "AYUSHI KHANDEWAL",
+    "phone": "7622999935",
+    "dob": "1999-04-16",
+    "services_taken": [
+      "Premium hair wash"
+    ],
+    "staff_served": [
+      "Priya (Beautician)"
+    ],
+    "amount_paid": 500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-04 11:36:51.914949+00",
+    "updated_at": "2026-07-04 11:51:12.164913+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 48,
+    "name": "YAMINI CHUCHAN",
+    "phone": "9978993900",
+    "dob": null,
+    "services_taken": [
+      "Normal haircut"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)"
+    ],
+    "amount_paid": 700.0,
+    "is_deleted": true,
+    "created_at": "2026-07-04 12:43:54.19344+00",
+    "updated_at": "2026-07-04 12:49:13.582059+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 49,
+    "name": "NEETU GYAMLANI",
+    "phone": "9974564489",
+    "dob": null,
+    "services_taken": [
+      "Premium hair wash"
+    ],
+    "staff_served": [
+      "HONEY"
+    ],
+    "amount_paid": 5300.0,
+    "is_deleted": false,
+    "created_at": "2026-07-04 13:08:25.733636+00",
+    "updated_at": "2026-07-04 14:04:36.244308+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 50,
+    "name": "ANVI KHANDELWAL",
+    "phone": "9099399832",
+    "dob": "2014-06-12",
+    "services_taken": [
+      "Premium hair wash"
+    ],
+    "staff_served": [
+      "HONEY"
+    ],
+    "amount_paid": 1000.0,
+    "is_deleted": false,
+    "created_at": "2026-07-05 05:18:39.668779+00",
+    "updated_at": "2026-07-05 05:45:21.488747+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 51,
+    "name": "YAMI CHAUHAN",
+    "phone": "9978993900",
+    "dob": null,
+    "services_taken": [
+      "Normal haircut"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 300.0,
+    "is_deleted": false,
+    "created_at": "2026-07-05 05:54:11.508194+00",
+    "updated_at": "2026-07-05 06:32:57.847992+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 52,
+    "name": "HASTIKA PANCHAL",
+    "phone": "9979112167",
+    "dob": "1983-07-29",
+    "services_taken": [
+      "Premium haircut"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 1500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-05 09:04:19.872301+00",
+    "updated_at": "2026-07-05 10:36:42.008882+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 53,
+    "name": "AARCHI DESAI",
+    "phone": "9429799119",
+    "dob": "1995-11-24",
+    "services_taken": [
+      "Shea butter hair spa"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 3500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-05 09:21:02.970302+00",
+    "updated_at": "2026-07-05 11:02:47.60698+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 54,
+    "name": "HITESHA TREVEDI",
+    "phone": "8849088807",
+    "dob": "1988-04-05",
+    "services_taken": [
+      "Full leg Wax",
+      "Eyebrow + forehead"
+    ],
+    "staff_served": [
+      "HONEY"
+    ],
+    "amount_paid": 1050.0,
+    "is_deleted": false,
+    "created_at": "2026-07-05 10:43:27.109806+00",
+    "updated_at": "2026-07-05 12:26:01.205474+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 55,
+    "name": "ZAINAB CHUNA",
+    "phone": "9586035987",
+    "dob": "1996-07-04",
+    "services_taken": [
+      "Loreal hair spa"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 1500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-05 12:24:17.176654+00",
+    "updated_at": "2026-07-05 12:26:13.164515+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 56,
+    "name": "RINKAL BURYA",
+    "phone": "9586131705",
+    "dob": "1999-12-05",
+    "services_taken": [
+      "Normal haircut",
+      "Basic Clean up",
+      "Eyebrow + forehead",
+      "Premium haircut",
+      "Upper lips (Threading)"
+    ],
+    "staff_served": [
+      "HONEY"
+    ],
+    "amount_paid": 2370.0,
+    "is_deleted": false,
+    "created_at": "2026-07-05 12:59:44.735017+00",
+    "updated_at": "2026-07-05 15:47:37.412991+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 57,
+    "name": "VARSHA PANCHAL",
+    "phone": "9712820461",
+    "dob": "1973-06-25",
+    "services_taken": [
+      "Normal haircut",
+      "Premium haircut"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 6300.0,
+    "is_deleted": false,
+    "created_at": "2026-07-05 13:35:44.889867+00",
+    "updated_at": "2026-07-05 14:55:49.946775+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 58,
+    "name": "SHIVRAJ PADWAL",
+    "phone": "70165565614",
+    "dob": null,
+    "services_taken": [
+      "Normal haircut"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 1000.0,
+    "is_deleted": false,
+    "created_at": "2026-07-05 13:37:19.55866+00",
+    "updated_at": "2026-07-05 13:45:40.483503+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 59,
+    "name": "KIRTI THAKWANI",
+    "phone": "9687066038",
+    "dob": null,
+    "services_taken": [
+      "Nashi hair spa",
+      "Premium hair wash",
+      "Basic Clean up",
+      "Eyebrow + forehead"
+    ],
+    "staff_served": [
+      "HONEY"
+    ],
+    "amount_paid": 3850.0,
+    "is_deleted": false,
+    "created_at": "2026-07-05 13:51:20.954246+00",
+    "updated_at": "2026-07-05 15:34:33.83906+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 60,
+    "name": "TISHA THAKVANI",
+    "phone": "8141160406",
+    "dob": "2017-12-26",
+    "services_taken": [
+      "Hairwash with blow dry"
+    ],
+    "staff_served": [
+      "UK"
+    ],
+    "amount_paid": 500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-05 15:21:23.693601+00",
+    "updated_at": "2026-07-05 15:34:17.240097+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 61,
+    "name": "DR MEHGA NINAMA",
+    "phone": "7574841211",
+    "dob": "1994-01-29",
+    "services_taken": [
+      "Under arms Wax",
+      "Full leg Wax",
+      "Full hand Wax",
+      "Basic facial (Skeyndor)"
+    ],
+    "staff_served": [
+      "HONEY"
+    ],
+    "amount_paid": 5700.0,
+    "is_deleted": false,
+    "created_at": "2026-07-06 07:08:11.109933+00",
+    "updated_at": "2026-07-06 10:32:21.201704+00",
+    "products_bought": [],
+    "notes": "EXTRA DTAN,WAX",
+    "payment_due": 0.0
+  },
+  {
+    "id": 62,
+    "name": "APURVA MALI",
+    "phone": "7862833054",
+    "dob": "1997-06-15",
+    "services_taken": [
+      "Eyebrow + forehead",
+      "Upper lips (Threading)"
+    ],
+    "staff_served": [
+      "HONEY"
+    ],
+    "amount_paid": 70.0,
+    "is_deleted": false,
+    "created_at": "2026-07-06 11:52:47.093131+00",
+    "updated_at": "2026-07-06 12:08:13.356867+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 63,
+    "name": "NEHABEN PARMAR",
+    "phone": "8140270038",
+    "dob": "1994-07-25",
+    "services_taken": [
+      "Eyebrow + forehead"
+    ],
+    "staff_served": [
+      "HONEY"
+    ],
+    "amount_paid": 50.0,
+    "is_deleted": false,
+    "created_at": "2026-07-07 05:04:58.252082+00",
+    "updated_at": "2026-07-07 05:04:58.252082+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 64,
+    "name": "ARUNA AGRWAL",
+    "phone": "9925205589",
+    "dob": "1973-05-31",
+    "services_taken": [
+      "Basic facial (Skeyndor)",
+      "Premium haircut",
+      "Eyebrow + forehead",
+      "Upper lips (Threading)"
+    ],
+    "staff_served": [
+      "HONEY"
+    ],
+    "amount_paid": 3570.0,
+    "is_deleted": false,
+    "created_at": "2026-07-07 13:03:28.496502+00",
+    "updated_at": "2026-07-08 06:14:22.865435+00",
+    "products_bought": [],
+    "notes": "POWER EXPERT FACIAL 2500",
+    "payment_due": 0.0
+  },
+  {
+    "id": 65,
+    "name": "CHIRANGI",
+    "phone": "8128255343",
+    "dob": null,
+    "services_taken": [],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 0.0,
+    "is_deleted": false,
+    "created_at": "2026-07-08 06:47:24.813293+00",
+    "updated_at": "2026-07-08 10:57:22.583473+00",
+    "products_bought": [],
+    "notes": "COMPLIMENTARY BLOOM KIT",
+    "payment_due": 0.0
+  },
+  {
+    "id": 66,
+    "name": "SANGITA KODIYA",
+    "phone": "7984705279",
+    "dob": "1900-11-25",
+    "services_taken": [
+      "Upper lips (Threading)",
+      "Eyebrow + forehead"
+    ],
+    "staff_served": [
+      "HONEY"
+    ],
+    "amount_paid": 80.0,
+    "is_deleted": false,
+    "created_at": "2026-07-08 09:47:48.098541+00",
+    "updated_at": "2026-07-08 09:47:48.098541+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 67,
+    "name": "JENISHA PATEL",
+    "phone": "8469400044",
+    "dob": "1997-05-27",
+    "services_taken": [
+      "Full hand Wax",
+      "Full leg Wax"
+    ],
+    "staff_served": [
+      "HONEY"
+    ],
+    "amount_paid": 1500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-08 11:43:15.760767+00",
+    "updated_at": "2026-07-08 12:36:48.438617+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 68,
+    "name": "KRUTISHA PATEL",
+    "phone": "9328886145",
+    "dob": "2002-09-29",
+    "services_taken": [
+      "Premium haircut"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)"
+    ],
+    "amount_paid": 1500.0,
+    "is_deleted": false,
+    "created_at": "2026-07-08 11:47:26.900054+00",
+    "updated_at": "2026-07-08 13:21:04.261261+00",
+    "products_bought": [],
+    "notes": "1000/- ONLINE",
+    "payment_due": 0.0
+  },
+  {
+    "id": 69,
+    "name": "SRASHTI CHHAJED",
+    "phone": "9428402878",
+    "dob": "1900-08-10",
+    "services_taken": [
+      "Root touch-up (Ammonia free)"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 2000.0,
+    "is_deleted": false,
+    "created_at": "2026-07-09 13:01:01.765457+00",
+    "updated_at": "2026-07-09 14:46:01.396645+00",
+    "products_bought": [],
+    "notes": "ONLINE",
+    "payment_due": 0.0
+  },
+  {
+    "id": 70,
+    "name": "hatim suttar",
+    "phone": "9313846266",
+    "dob": "2009-11-18",
+    "services_taken": [
+      "Super white treatment"
+    ],
+    "staff_served": [
+      "MANAV"
+    ],
+    "amount_paid": 7200.0,
+    "is_deleted": true,
+    "created_at": "2026-07-09 13:14:23.715864+00",
+    "updated_at": "2026-07-09 13:14:53.466063+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 71,
+    "name": "POOJA SHARMA",
+    "phone": "8780000499",
+    "dob": null,
+    "services_taken": [],
+    "staff_served": [
+      "MANAV"
+    ],
+    "amount_paid": 769.0,
+    "is_deleted": false,
+    "created_at": "2026-07-09 14:50:57.619062+00",
+    "updated_at": "2026-07-09 14:51:14.53629+00",
+    "products_bought": [],
+    "notes": "ONLINE",
+    "payment_due": 0.0
+  },
+  {
+    "id": 72,
+    "name": "PREETY GANDHI",
+    "phone": "9426840076",
+    "dob": "1979-02-18",
+    "services_taken": [
+      "Normal haircut"
+    ],
+    "staff_served": [
+      "JATIN(HairDRESSER)"
+    ],
+    "amount_paid": 1000.0,
+    "is_deleted": false,
+    "created_at": "2026-07-09 15:05:29.313711+00",
+    "updated_at": "2026-07-09 15:05:29.313711+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 73,
+    "name": "CHETNA PANCHAL",
+    "phone": "8103219376",
+    "dob": null,
+    "services_taken": [],
+    "staff_served": [],
+    "amount_paid": 0.0,
+    "is_deleted": true,
+    "created_at": "2026-07-09 15:06:49.451873+00",
+    "updated_at": "2026-07-09 15:10:31.429632+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  },
+  {
+    "id": 74,
+    "name": "KHYATI MAKHIJA",
+    "phone": "7990348733",
+    "dob": null,
+    "services_taken": [
+      "Global colour (Ammonia)",
+      "Full leg Wax",
+      "Global colour (Ammonia free)"
+    ],
+    "staff_served": [
+      "Rahul (HAIRDRESSER)"
+    ],
+    "amount_paid": 11990.0,
+    "is_deleted": false,
+    "created_at": "2026-07-09 16:24:41.744584+00",
+    "updated_at": "2026-07-09 16:24:41.744584+00",
+    "products_bought": [],
+    "notes": null,
+    "payment_due": 0.0
+  }
+]
