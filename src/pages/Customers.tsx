@@ -132,18 +132,25 @@ export default function Customers() {
   }, [debouncedSearch]);
   
   const handleRestore = async () => {
-    if (!window.confirm("Restore customers data?")) return;
     try {
       setIsLoading(true);
-      for (let i = 0; i < customersData.length; i += 20) {
-        const batch = customersData.slice(i, i + 20);
-        const { error } = await supabase.from('customers').insert(batch);
-        if (error) {
-           console.error("Batch error:", error);
-           toast.error(error.message);
-        }
-      }
-      toast.success("Restore complete!");
+      // Fix Khyati entry (id: 38) to show up on July 3rd
+      const { error: err1 } = await supabase
+        .from('customers')
+        .update({ updated_at: '2026-07-03T15:35:38.714Z' })
+        .eq('id', 38);
+        
+      if (err1) throw err1;
+
+      // Fix Khyati entry (id: 74) to show up on July 9th
+      const { error: err2 } = await supabase
+        .from('customers')
+        .update({ updated_at: '2026-07-09T16:24:41.744Z' })
+        .eq('id', 74);
+        
+      if (err2) throw err2;
+
+      toast.success("Khyati's data fixed successfully!");
       loadData();
     } catch (e: any) {
       toast.error(e.message);
@@ -818,9 +825,9 @@ export default function Customers() {
         <div className="flex gap-2">
           <button 
             onClick={handleRestore}
-            className="btn-primary bg-red-600 hover:bg-red-700"
+            className="btn-primary bg-green-600 hover:bg-green-700"
           >
-            Restore Data
+            Fix Khyati Data
           </button>
           <button 
             onClick={openAddModal}
