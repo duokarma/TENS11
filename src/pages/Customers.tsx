@@ -1138,11 +1138,9 @@ export default function Customers() {
                               <button onClick={() => setSelectedCustomerForHistory(customer.id)} className="p-2 text-white hover:bg-black/5 rounded-xl transition-colors">
                                 <CalendarIcon className="w-4 h-4" />
                               </button>
-                              {customer.eventType !== 'visit' && (
-                                <button onClick={() => openEditModal(customer)} className="p-2 text-white/60 hover:bg-black/5 hover:text-white rounded-xl transition-colors">
-                                  <Edit2 className="w-4 h-4" />
-                                </button>
-                              )}
+                              <button onClick={() => openEditModal(customer)} className="p-2 text-white/60 hover:bg-black/5 hover:text-white rounded-xl transition-colors">
+                                <Edit2 className="w-4 h-4" />
+                              </button>
                               <button 
                                 onClick={() => {
                                   if (customer.eventType === 'visit' && customer.eventId) {
