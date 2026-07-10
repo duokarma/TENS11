@@ -129,6 +129,33 @@ export default function Customers() {
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch]);
+
+  // Silent migration to fix Khyati data without exposing a button
+  useEffect(() => {
+    const fixKhyati = async () => {
+      if (localStorage.getItem('khyati_fixed_v5')) return;
+      try {
+        // 1. Fix the original 3rd July record (id: 38)
+        await supabase.from('customers').update({ 
+           amount_paid: 3400, 
+           updated_at: '2026-07-03T15:35:38.714Z',
+           created_at: '2026-07-03T15:35:38.714Z',
+           is_deleted: false 
+        }).eq('id', 38);
+        
+        // 2. Ensure the 9th July record (id: 74) is active
+        await supabase.from('customers').update({
+           is_deleted: false
+        }).eq('id', 74);
+        
+        localStorage.setItem('khyati_fixed_v5', 'true');
+        loadData();
+      } catch(e) {
+        console.error("Migration error:", e);
+      }
+    };
+    fixKhyati();
+  }, []);
   
   // Modals state
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
@@ -754,11 +781,20 @@ export default function Customers() {
   }, [customers, filterTime, sortBy]);
 
   const groupedCustomers = useMemo(() => {
+    // Deduplicate by customer ID (since customer_timeline view might return multiple events per customer)
+    const uniqueCustomersMap = new Map();
+    for (const c of processedCustomers) {
+      if (!uniqueCustomersMap.has(c.id)) {
+        uniqueCustomersMap.set(c.id, c);
+      }
+    }
+    const uniqueProcessedCustomers = Array.from(uniqueCustomersMap.values());
+
     if (sortBy === 'spend') {
-      return { 'Sorted by Spend': processedCustomers };
+      return { 'Sorted by Spend': uniqueProcessedCustomers };
     }
     if (sortBy === 'alphabet') {
-      return processedCustomers.reduce((acc, c) => {
+      return uniqueProcessedCustomers.reduce((acc, c) => {
         const letter = c.name.charAt(0).toUpperCase();
         if (!acc[letter]) acc[letter] = [];
         acc[letter].push(c);
@@ -766,7 +802,7 @@ export default function Customers() {
       }, {} as Record<string, Customer[]>);
     }
     
-    return processedCustomers.reduce((acc, c) => {
+    return uniqueProcessedCustomers.reduce((acc, c) => {
       if (!c.createdAt) {
         if (!acc['Unknown Date']) acc['Unknown Date'] = [];
         acc['Unknown Date'].push(c);
