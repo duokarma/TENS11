@@ -1080,7 +1080,7 @@ export default function Customers() {
                       const initials = customer.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
                       
                       return (
-                        <tr key={`${customer.id}-${customer.createdAt}`} className="hover:bg-black/40 transition-colors group">
+                        <tr key={customer.eventId || `${customer.id}-${customer.createdAt}`} className="hover:bg-black/40 transition-colors group">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-4">
                               <div className="h-11 w-11 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
@@ -1138,10 +1138,22 @@ export default function Customers() {
                               <button onClick={() => setSelectedCustomerForHistory(customer.id)} className="p-2 text-white hover:bg-black/5 rounded-xl transition-colors">
                                 <CalendarIcon className="w-4 h-4" />
                               </button>
-                              <button onClick={() => openEditModal(customer)} className="p-2 text-white/60 hover:bg-black/5 hover:text-white rounded-xl transition-colors">
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => handleDelete(customer.id)} className="p-2 text-danger hover:bg-danger/10 rounded-xl transition-colors">
+                              {customer.eventType !== 'visit' && (
+                                <button onClick={() => openEditModal(customer)} className="p-2 text-white/60 hover:bg-black/5 hover:text-white rounded-xl transition-colors">
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button 
+                                onClick={() => {
+                                  if (customer.eventType === 'visit' && customer.eventId) {
+                                    handleDeleteVisit(customer.eventId);
+                                  } else {
+                                    handleDelete(customer.id);
+                                  }
+                                }} 
+                                className="p-2 text-danger hover:bg-danger/10 rounded-xl transition-colors"
+                                title={customer.eventType === 'visit' ? 'Delete this visit only' : 'Delete customer'}
+                              >
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>

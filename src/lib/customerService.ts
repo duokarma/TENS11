@@ -10,10 +10,10 @@ export const customerService = {
    */
   async getCustomers({ page = 1, limit = 50, search = '' }: { page?: number, limit?: number, search?: string } = {}) {
     let query = supabase
-      .from('customers')
+      .from('customer_timeline')
       .select('*', { count: 'exact' })
       .eq('is_deleted', false)
-      .order('created_at', { ascending: false });
+      .order('event_date', { ascending: false });
 
     if (search) {
       query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
@@ -30,9 +30,9 @@ export const customerService = {
       throw error;
     }
 
-    // Map snake_case to camelCase
-    const mappedCustomers: Customer[] = (data || []).map((d: any) => ({
-      id: Number(d.id),
+    // Map snake_case to camelCase and include event metadata
+    const allEntries: Customer[] = (data || []).map((d: any) => ({
+      id: Number(d.customer_id),
       name: String(d.name || 'Unknown'),
       phone: String(d.phone || ''),
       dob: d.dob ? String(d.dob) : undefined,
@@ -42,10 +42,30 @@ export const customerService = {
       amountPaid: Number(d.amount_paid || 0),
       payment_due: Number(d.payment_due || 0),
       notes: d.notes ? String(d.notes) : undefined,
-      createdAt: String(d.created_at || new Date().toISOString())
+      createdAt: String(d.event_date || d.created_at || new Date().toISOString()),
+      eventId: String(d.event_id || d.customer_id),
+      eventType: (d.event_type as 'creation' | 'visit') || 'creation'
     }));
 
-    return { data: mappedCustomers, count: count || 0 };
+    // Deduplicate: if a customer has both a 'creation' and a 'visit' on the same day,
+    // keep only the 'visit' row to avoid showing the same customer twice on that day
+    const visitDayKeys = new Set<string>();
+    for (const entry of allEntries) {
+      if (entry.eventType === 'visit') {
+        const dayKey = `${entry.id}-${entry.createdAt.split('T')[0]}`;
+        visitDayKeys.add(dayKey);
+      }
+    }
+    const filteredEntries = allEntries.filter(entry => {
+      if (entry.eventType === 'creation') {
+        const dayKey = `${entry.id}-${entry.createdAt.split('T')[0]}`;
+        // Remove creation event if a visit exists on the same day
+        return !visitDayKeys.has(dayKey);
+      }
+      return true;
+    });
+
+    return { data: filteredEntries, count: count || 0 };
   },
 
   /**

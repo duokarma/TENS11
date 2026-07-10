@@ -17,6 +17,8 @@ export interface Customer {
   payment_due?: number;
   notes?: string;
   createdAt: string;
+  eventId?: string;
+  eventType?: 'creation' | 'visit';
 }
 
 export interface Staff {
