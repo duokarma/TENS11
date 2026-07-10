@@ -130,31 +130,127 @@ export default function Customers() {
     setPage(1);
   }, [debouncedSearch]);
 
-  // Silent migration to fix Khyati data without exposing a button
+  // Silent migration to merge both Khyati records into one customer
   useEffect(() => {
-    const fixKhyati = async () => {
-      if (localStorage.getItem('khyati_fixed_v5')) return;
+    const mergeKhyati = async () => {
+      if (localStorage.getItem('khyati_merged_v6')) return;
       try {
-        // 1. Fix the original 3rd July record (id: 38)
-        await supabase.from('customers').update({ 
-           amount_paid: 3400, 
-           updated_at: '2026-07-03T15:35:38.714Z',
-           created_at: '2026-07-03T15:35:38.714Z',
-           is_deleted: false 
-        }).eq('id', 38);
+        // Find both Khyati customer records by phone number
+        const { data: khyatiRecords } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('phone', '7990348733')
+          .order('created_at', { ascending: true });
         
-        // 2. Ensure the 9th July record (id: 74) is active
+        if (!khyatiRecords || khyatiRecords.length < 2) {
+          // Only one record or none — nothing to merge
+          localStorage.setItem('khyati_merged_v6', 'true');
+          return;
+        }
+
+        // The OLDER record (July 3rd) and the NEWER record (July 9th)
+        const oldRecord = khyatiRecords[0]; // id: 38 (July 3rd)
+        const newRecord = khyatiRecords[1]; // id: 74 (July 9th)
+
+        // 1. Move ALL visits from old customer to new customer
+        await supabase
+          .from('customer_visits')
+          .update({ customer_id: newRecord.id })
+          .eq('customer_id', oldRecord.id);
+
+        // 2. Now find ALL visits for the merged customer
+        const { data: allVisits } = await supabase
+          .from('customer_visits')
+          .select('*')
+          .eq('customer_id', newRecord.id)
+          .eq('is_deleted', false);
+
+        // 3. Fix any visits that got recorded today but should be July 3rd
+        //    The original July 3rd visit was ₹3,400 — find it by amount
+        if (allVisits) {
+          // Check for visits dated today that are ₹3,400 (these were our broken restores)
+          const today = new Date().toISOString().split('T')[0]; // '2026-07-10'
+          const brokenVisits = allVisits.filter(v => {
+            const vDate = v.visit_date.split('T')[0];
+            return vDate === today && Number(v.grand_total) === 3400;
+          });
+
+          if (brokenVisits.length > 0) {
+            // Keep only one of these and fix its date to July 3rd
+            const keepVisit = brokenVisits[0];
+            await supabase.from('customer_visits').update({
+              visit_date: '2026-07-03T12:00:00Z'
+            }).eq('id', keepVisit.id);
+
+            // Delete any extra duplicate ₹3,400 visits from today
+            for (let i = 1; i < brokenVisits.length; i++) {
+              await supabase.from('customer_visits').update({
+                is_deleted: true
+              }).eq('id', brokenVisits[i].id);
+            }
+          } else {
+            // No broken visits today — check if there's already a July 3rd visit
+            const jul3Visits = allVisits.filter(v => v.visit_date.split('T')[0] === '2026-07-03');
+            if (jul3Visits.length === 0) {
+              // The original July 3rd visit is completely gone — recreate it
+              await supabase.from('customer_visits').insert({
+                customer_id: newRecord.id,
+                visit_date: '2026-07-03T12:00:00Z',
+                service_total: 0,
+                product_total: 3400,
+                original_total: 3400,
+                discount_amount: 0,
+                grand_total: 3400,
+                payment_method: 'Cash'
+              });
+            }
+          }
+        }
+
+        // 4. Recalculate total amount_paid from all active visits
+        const { data: finalVisits } = await supabase
+          .from('customer_visits')
+          .select('grand_total')
+          .eq('customer_id', newRecord.id)
+          .eq('is_deleted', false);
+        
+        const totalPaid = (finalVisits || []).reduce((sum, v) => sum + Number(v.grand_total || 0), 0);
+
+        // 5. Update the surviving customer with correct total and merge any data
+        const mergedServices = Array.from(new Set([
+          ...(oldRecord.services_taken || []),
+          ...(newRecord.services_taken || [])
+        ]));
+        const mergedProducts = Array.from(new Set([
+          ...(oldRecord.products_bought || []),
+          ...(newRecord.products_bought || [])
+        ]));
+        const mergedStaff = Array.from(new Set([
+          ...(oldRecord.staff_served || []),
+          ...(newRecord.staff_served || [])
+        ]));
+
         await supabase.from('customers').update({
-           is_deleted: false
-        }).eq('id', 74);
-        
-        localStorage.setItem('khyati_fixed_v5', 'true');
+          amount_paid: totalPaid,
+          services_taken: mergedServices,
+          products_bought: mergedProducts,
+          staff_served: mergedStaff,
+          is_deleted: false
+        }).eq('id', newRecord.id);
+
+        // 6. Soft-delete the old duplicate customer record
+        await supabase.from('customers').update({
+          is_deleted: true
+        }).eq('id', oldRecord.id);
+
+        localStorage.setItem('khyati_merged_v6', 'true');
         loadData();
+        console.log('Khyati records merged successfully');
       } catch(e) {
         console.error("Migration error:", e);
       }
     };
-    fixKhyati();
+    mergeKhyati();
   }, []);
   
   // Modals state
