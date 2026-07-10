@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import customersData from '../customers_data.json';
 import { customerService } from '../lib/customerService';
 import type { Customer } from '../types';
 import { 
@@ -131,34 +130,6 @@ export default function Customers() {
     setPage(1);
   }, [debouncedSearch]);
   
-  const handleRestore = async () => {
-    try {
-      setIsLoading(true);
-      // Fix Khyati entry (id: 38) to show up on July 3rd
-      const { error: err1 } = await supabase
-        .from('customers')
-        .update({ updated_at: '2026-07-03T15:35:38.714Z' })
-        .eq('id', 38);
-        
-      if (err1) throw err1;
-
-      // Fix Khyati entry (id: 74) to show up on July 9th
-      const { error: err2 } = await supabase
-        .from('customers')
-        .update({ updated_at: '2026-07-09T16:24:41.744Z' })
-        .eq('id', 74);
-        
-      if (err2) throw err2;
-
-      toast.success("Khyati's data fixed successfully!");
-      loadData();
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Modals state
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
@@ -822,21 +793,13 @@ export default function Customers() {
           <h2 className="text-4xl font-light tracking-tight text-white">Customers</h2>
           <p className="text-white/50 mt-2 font-light tracking-wide">Manage your client relationships and view their history.</p>
         </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={handleRestore}
-            className="btn-primary bg-green-600 hover:bg-green-700"
-          >
-            Fix Khyati Data
-          </button>
-          <button 
-            onClick={openAddModal}
-            className="btn-primary"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Customer
-          </button>
-        </div>
+        <button 
+          onClick={openAddModal}
+          className="btn-primary"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add Customer
+        </button>
       </div>
 
       {/* Statistics Cards */}
