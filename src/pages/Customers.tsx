@@ -876,7 +876,7 @@ export default function Customers() {
     return result;
   }, [customers, filterTime, sortBy]);
 
-  const groupedCustomers = useMemo(() => {
+  const groupedCustomers = useMemo((): Record<string, any[]> => {
     // Deduplicate by customer ID (since customer_timeline view might return multiple events per customer)
     const uniqueCustomersMap = new Map();
     for (const c of processedCustomers) {
@@ -1066,7 +1066,7 @@ export default function Customers() {
                   </tr>
                 )}
                 
-                {Object.entries(groupedCustomers).map(([groupName, groupCustomers]) => (
+                {Object.entries(groupedCustomers).map(([groupName, groupCustomers]: [string, any[]]) => (
                   <React.Fragment key={groupName}>
                     {/* Group Header */}
                     <tr className="bg-black/60">
@@ -1076,7 +1076,7 @@ export default function Customers() {
                     </tr>
                     
                     {/* Customers in this group */}
-                    {groupCustomers.map((customer) => {
+                    {groupCustomers.map((customer: any) => {
                       const initials = customer.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
                       
                       return (
