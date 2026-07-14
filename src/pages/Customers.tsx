@@ -1127,7 +1127,7 @@ export default function Customers() {
                             )}
                           </td>
                           <td className="px-6 py-4 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center justify-end gap-2 transition-opacity">
                               <button
                                 onClick={() => openRecordVisit(customer)}
                                 title="Record Visit"
@@ -1138,11 +1138,9 @@ export default function Customers() {
                               <button onClick={() => setSelectedCustomerForHistory(customer.id)} className="p-2 text-white hover:bg-black/5 rounded-xl transition-colors">
                                 <CalendarIcon className="w-4 h-4" />
                               </button>
-                              {customer.eventType !== 'visit' && (
-                                <button onClick={() => openEditModal(customer)} className="p-2 text-white/60 hover:bg-black/5 hover:text-white rounded-xl transition-colors">
+                              <button onClick={() => openEditModal(customer)} className="p-2 text-white/60 hover:bg-black/5 hover:text-white rounded-xl transition-colors">
                                   <Edit2 className="w-4 h-4" />
                                 </button>
-                              )}
                               <button 
                                 onClick={() => {
                                   if (customer.eventType === 'visit' && customer.eventId) {
