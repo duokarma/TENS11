@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar as CalendarIcon, Bell, Gift, Menu, ChevronLeft } from 'lucide-react';
+import { Calendar as CalendarIcon, Bell, Gift, Menu, ChevronLeft, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { format } from 'date-fns';
 
 interface HeaderProps {
   toggleSidebar?: () => void;
@@ -83,6 +82,8 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
     window.open(url, '_blank');
   };
 
+  const totalNotifications = birthdays.length + 1; // Birthdays + 1 Pinned Yearly Maintenance Fee notice
+
   return (
     <header
       className="flex h-24 shrink-0 items-center justify-between px-4 md:px-8 sticky top-0 z-20 backdrop-blur-md"
@@ -127,15 +128,13 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
             }}
           >
             <Bell className="w-5 h-5" />
-            {birthdays.length > 0 && (
-              <span
-                className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full animate-pulse"
-                style={{
-                  background: 'var(--gold)',
-                  boxShadow: '0 0 10px rgba(200, 157, 60,0.8)',
-                }}
-              ></span>
-            )}
+            <span
+              className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full animate-pulse"
+              style={{
+                background: 'var(--gold)',
+                boxShadow: '0 0 10px rgba(200, 157, 60,0.8)',
+              }}
+            ></span>
           </button>
 
           {isDropdownOpen && (
@@ -158,46 +157,80 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
                     border: '1px solid rgba(200, 157, 60,0.2)',
                   }}
                 >
-                  {birthdays.length} New
+                  {totalNotifications} New
                 </span>
               </div>
               
               <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                {birthdays.length === 0 ? (
-                  <div className="p-6 text-center text-white/40 text-sm">
-                    No new notifications
-                  </div>
-                ) : (
-                  <>
-                    {birthdays.map((customer) => (
-                      <div
-                        key={`b-${customer.id}`}
-                        className="p-4 hover:bg-white/5 transition-colors group"
-                        style={{ borderBottom: '1px solid rgba(200, 157, 60,0.05)' }}
-                      >
-                        <div className="flex gap-3">
-                          <div
-                            className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
-                            style={{ background: 'rgba(200, 157, 60,0.1)', border: '1px solid rgba(200, 157, 60,0.2)' }}
-                          >
-                            <Gift className="w-5 h-5" style={{ color: 'var(--gold)' }} />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm text-white mb-1">
-                              It's <span className="font-bold" style={{ color: 'var(--gold)' }}>{customer.name}'s</span> Birthday today! {'\u{1F382}'}
-                            </p>
-                            <button 
-                              onClick={() => sendWhatsAppGreeting(customer)}
-                              className="text-xs bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-1.5 rounded-lg font-medium transition-colors mt-2"
-                            >
-                              Send WhatsApp Greeting
-                            </button>
-                          </div>
-                        </div>
+                {/* Pinned Maintenance Fee Notification */}
+                <div
+                  className="p-4 transition-colors"
+                  style={{
+                    borderBottom: '1px solid rgba(200, 157, 60,0.1)',
+                    background: 'rgba(200, 157, 60,0.06)',
+                  }}
+                >
+                  <div className="flex gap-3">
+                    <div
+                      className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{
+                        background: 'rgba(200, 157, 60,0.15)',
+                        border: '1px solid rgba(200, 157, 60,0.3)',
+                      }}
+                    >
+                      <AlertTriangle className="w-5 h-5" style={{ color: 'var(--gold)' }} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--gold)' }}>
+                          Yearly Maintenance Fee
+                        </p>
+                        <span
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase"
+                          style={{
+                            background: 'rgba(200, 157, 60, 0.2)',
+                            color: 'var(--gold)',
+                            border: '1px solid rgba(200, 157, 60, 0.4)',
+                          }}
+                        >
+                          PINNED
+                        </span>
                       </div>
-                    ))}
-                  </>
-                )}
+                      <p className="text-xs text-white/90 leading-snug">
+                        Friendly reminder: A yearly maintenance fee of ₹4,000 is pending and should be paid before July.
+                      </p>
+                      <p className="text-[10px] text-white/40 mt-1">Admin Notice &bull; Persistent</p>
+                    </div>
+                  </div>
+                </div>
+
+                {birthdays.length > 0 && birthdays.map((customer) => (
+                  <div
+                    key={`b-${customer.id}`}
+                    className="p-4 hover:bg-white/5 transition-colors group"
+                    style={{ borderBottom: '1px solid rgba(200, 157, 60,0.05)' }}
+                  >
+                    <div className="flex gap-3">
+                      <div
+                        className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                        style={{ background: 'rgba(200, 157, 60,0.1)', border: '1px solid rgba(200, 157, 60,0.2)' }}
+                      >
+                        <Gift className="w-5 h-5" style={{ color: 'var(--gold)' }} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-white mb-1">
+                          It's <span className="font-bold" style={{ color: 'var(--gold)' }}>{customer.name}'s</span> Birthday today! {'\u{1F382}'}
+                        </p>
+                        <button 
+                          onClick={() => sendWhatsAppGreeting(customer)}
+                          className="text-xs bg-green-500/20 text-green-400 hover:bg-green-500/30 px-3 py-1.5 rounded-lg font-medium transition-colors mt-2"
+                        >
+                          Send WhatsApp Greeting
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
