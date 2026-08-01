@@ -82,7 +82,7 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
     window.open(url, '_blank');
   };
 
-  const totalNotifications = birthdays.length + 1; // Birthdays + 1 Pinned Yearly Maintenance Fee notice
+  const totalNotifications = birthdays.length;
 
   return (
     <header
@@ -113,6 +113,20 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
             {isSidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         )}
+      </div>
+
+      {/* Persistent Reminder Banner */}
+      <div 
+        className="flex flex-1 max-w-2xl mx-2 md:mx-4 items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-xl shadow-sm"
+        style={{
+          background: 'rgba(200, 157, 60, 0.1)',
+          border: '1px solid rgba(200, 157, 60, 0.2)',
+        }}
+      >
+        <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 shrink-0" style={{ color: 'var(--gold)' }} />
+        <p className="text-[10px] md:text-sm text-white/90 leading-snug">
+          Friendly reminder: A yearly maintenance fee of ₹4,000 is pending and should be paid before July.
+        </p>
       </div>
 
       <div className="flex items-center gap-6">
@@ -162,48 +176,11 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
               </div>
               
               <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                {/* Pinned Maintenance Fee Notification */}
-                <div
-                  className="p-4 transition-colors"
-                  style={{
-                    borderBottom: '1px solid rgba(200, 157, 60,0.1)',
-                    background: 'rgba(200, 157, 60,0.06)',
-                  }}
-                >
-                  <div className="flex gap-3">
-                    <div
-                      className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
-                      style={{
-                        background: 'rgba(200, 157, 60,0.15)',
-                        border: '1px solid rgba(200, 157, 60,0.3)',
-                      }}
-                    >
-                      <AlertTriangle className="w-5 h-5" style={{ color: 'var(--gold)' }} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between gap-1 mb-1">
-                        <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--gold)' }}>
-                          Yearly Maintenance Fee
-                        </p>
-                        <span
-                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase"
-                          style={{
-                            background: 'rgba(200, 157, 60, 0.2)',
-                            color: 'var(--gold)',
-                            border: '1px solid rgba(200, 157, 60, 0.4)',
-                          }}
-                        >
-                          PINNED
-                        </span>
-                      </div>
-                      <p className="text-xs text-white/90 leading-snug">
-                        Friendly reminder: A yearly maintenance fee of ₹4,000 is pending and should be paid before July.
-                      </p>
-                      <p className="text-[10px] text-white/40 mt-1">Admin Notice &bull; Persistent</p>
-                    </div>
+                {birthdays.length === 0 && (
+                  <div className="p-4 text-center text-sm text-white/60">
+                    No new notifications
                   </div>
-                </div>
-
+                )}
                 {birthdays.length > 0 && birthdays.map((customer) => (
                   <div
                     key={`b-${customer.id}`}
