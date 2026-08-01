@@ -115,19 +115,7 @@ export default function Header({ toggleSidebar, isSidebarOpen = true }: HeaderPr
         )}
       </div>
 
-      {/* Persistent Reminder Banner */}
-      <div 
-        className="flex flex-1 max-w-2xl mx-2 md:mx-4 items-center gap-2 md:gap-3 px-3 py-2 md:px-4 md:py-3 rounded-xl shadow-sm"
-        style={{
-          background: 'rgba(200, 157, 60, 0.1)',
-          border: '1px solid rgba(200, 157, 60, 0.2)',
-        }}
-      >
-        <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 shrink-0" style={{ color: 'var(--gold)' }} />
-        <p className="text-[10px] md:text-sm text-white/90 leading-snug">
-          Friendly reminder: A yearly maintenance fee of ₹4,000 is pending and should be paid before July.
-        </p>
-      </div>
+
 
       <div className="flex items-center gap-6">
         
