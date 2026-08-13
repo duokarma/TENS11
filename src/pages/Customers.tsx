@@ -259,6 +259,7 @@ export default function Customers() {
   const [customerServices, setCustomerServices] = useState<{serviceId: string}[]>([]);
   const [customerProducts, setCustomerProducts] = useState<{productId: string, quantity: number}[]>([]);
   const [customerStaffId, setCustomerStaffId] = useState<string>('');
+  const [customerStaffIds, setCustomerStaffIds] = useState<string[]>([]);
   
   const [selectedCustomerForHistory, setSelectedCustomerForHistory] = useState<number | null>(null);
   const [selectedHistory, setSelectedHistory] = useState<any[]>([]);
@@ -270,6 +271,7 @@ export default function Customers() {
   const [visitServices, setVisitServices] = useState<{serviceId: string}[]>([]);
   const [visitProducts, setVisitProducts] = useState<{productId: string, quantity: number}[]>([]);
   const [visitStaffId, setVisitStaffId] = useState<string>('');
+  const [visitStaffIds, setVisitStaffIds] = useState<string[]>([]);
   const [isSubmittingVisit, setIsSubmittingVisit] = useState(false);
   const [visitToEdit, setVisitToEdit] = useState<any | null>(null);
 
@@ -430,9 +432,10 @@ export default function Customers() {
 
   const openAddModal = () => {
     setCustomerToEdit(null);
-    setCustomerServices([]);
+    setCustomerServices([{ serviceId: '' }]);
     setCustomerProducts([]);
     setCustomerStaffId('');
+    setCustomerStaffIds([]);
     setAddFinalAmount('');
     setAddPaymentMethod('Cash');
     reset({ name: '', phone: '', dobDay: '', dobMonth: '', dobYear: '', payment_due: '', notes: '' });
@@ -470,6 +473,7 @@ export default function Customers() {
       ? staff.find(s => s.name === customer.staff_served?.[0] || (s as any).staff_name === customer.staff_served?.[0])
       : null;
     setCustomerStaffId(matchedStaff ? matchedStaff.id.toString() : '');
+    setCustomerStaffIds(matchedStaff ? [matchedStaff.id.toString()] : []);
 
     reset({
       name: customer.name,
@@ -508,12 +512,8 @@ export default function Customers() {
           }
         }
 
-        if (customerServices.length === 0 && customerProducts.length === 0) {
-          toast.error("Please select at least one service or product.");
-          return;
-        }
-        if (!customerStaffId) {
-          toast.error("Please select a staff member.");
+        if (customerServices.some(s => s.serviceId) && !customerStaffId && customerStaffIds.length === 0) {
+          toast.error("Please select a staff member for the service.");
           return;
         }
       }
@@ -557,7 +557,9 @@ export default function Customers() {
         parsedData.amountPaid = grandTotal;
       }
       
-      if (customerStaffId) {
+      if (customerStaffIds.length > 0) {
+        parsedData.staff_served = customerStaffIds.map(id => staff.find(s => s.id.toString() === id.toString())?.name || '').filter(Boolean);
+      } else if (customerStaffId) {
         parsedData.staff_served = [staff.find(s => s.id.toString() === customerStaffId.toString())?.name || ''];
       }
 
@@ -568,10 +570,6 @@ export default function Customers() {
         const newCust = await customerService.addCustomer(parsedData);
         
         // --- Create Visit & Commission automatically ---
-        const selectedStaffMember = staff.find(s => s.id.toString() === customerStaffId.toString());
-        const commissionRate = selectedStaffMember ? Number(selectedStaffMember.commission_rate || 10) : 10;
-        const commissionAmount = serviceTotal * (commissionRate / 100);
-        
         const { data: visitData, error: visitErr } = await supabase.from('customer_visits').insert([{
           customer_id: newCust.id,
           service_total: serviceTotal,
@@ -579,7 +577,8 @@ export default function Customers() {
           original_total: originalTotal,
           discount_amount: discountAmt,
           grand_total: grandTotal,
-          staff_id: customerStaffId,
+          staff_id: customerStaffIds.length > 0 ? customerStaffIds[0] : (customerStaffId || null),
+          staff_ids: customerStaffIds.length > 0 ? customerStaffIds : (customerStaffId ? [customerStaffId] : []),
           payment_method: addPaymentMethod
         }]).select().single();
 
@@ -613,12 +612,21 @@ export default function Customers() {
           }
         }
 
-        await supabase.from('staff_commissions').insert([{
-          staff_id: customerStaffId,
-          visit_id: visitData.id,
-          service_amount: serviceTotal,
-          commission_amount: commissionAmount
-        }]);
+        const effectiveStaffIds = customerStaffIds.length > 0 ? customerStaffIds : (customerStaffId ? [customerStaffId] : []);
+        if (effectiveStaffIds.length > 0 && serviceTotal > 0) {
+          const amountPerStaff = serviceTotal / effectiveStaffIds.length;
+          const commissionInserts = effectiveStaffIds.map(staffId => {
+            const sm = staff.find(s => s.id.toString() === staffId.toString());
+            const cRate = sm ? Number(sm.commission_rate || 10) : 10;
+            return {
+              staff_id: staffId,
+              visit_id: visitData.id,
+              service_amount: amountPerStaff,
+              commission_amount: amountPerStaff * (cRate / 100)
+            };
+          });
+          await supabase.from('staff_commissions').insert(commissionInserts);
+        }
 
         toast.success('Customer added and visit recorded successfully!');
       }
@@ -646,6 +654,7 @@ export default function Customers() {
     setVisitServices([{ serviceId: '' }]);
     setVisitProducts([]);
     setVisitStaffId('');
+    setVisitStaffIds([]);
     setVisitFinalAmount('');
     setVisitPaymentMethod('Cash');
     setIsRecordVisitOpen(true);
@@ -667,6 +676,7 @@ export default function Customers() {
     setVisitProducts(vProducts);
     
     setVisitStaffId(visit.staff_id?.toString() || '');
+    setVisitStaffIds(visit.staff_ids || (visit.staff_id ? [visit.staff_id.toString()] : []));
     setVisitFinalAmount(visit.grand_total?.toString() || '');
     setVisitPaymentMethod(visit.payment_method || 'Cash');
     
@@ -681,8 +691,8 @@ export default function Customers() {
       toast.error('Please select at least one service or product.');
       return;
     }
-    if (!visitStaffId) {
-      toast.error('Please select a staff member.');
+    if (visitStaffIds.length === 0) {
+      toast.error('Please select a staff member');
       return;
     }
     setIsSubmittingVisit(true);
@@ -705,10 +715,6 @@ export default function Customers() {
       const finalAmt = visitFinalAmount !== '' ? Number(visitFinalAmount) : originalTotal;
       const discountAmt = Math.max(0, originalTotal - finalAmt);
       const grandTotal = finalAmt;
-
-      const selectedStaffMember = staff.find(s => s.id.toString() === visitStaffId.toString());
-      const commissionRate = selectedStaffMember ? Number(selectedStaffMember.commission_rate || 10) : 10;
-      const commissionAmount = serviceTotal * (commissionRate / 100);
 
       let currentVisitId = '';
 
@@ -740,7 +746,8 @@ export default function Customers() {
           original_total: originalTotal,
           discount_amount: discountAmt,
           grand_total: grandTotal,
-          staff_id: visitStaffId,
+          staff_id: visitStaffIds.length > 0 ? visitStaffIds[0] : null,
+          staff_ids: visitStaffIds,
           payment_method: visitPaymentMethod
         }).eq('id', currentVisitId);
         if (visitErr) throw visitErr;
@@ -756,7 +763,8 @@ export default function Customers() {
             original_total: originalTotal,
             discount_amount: discountAmt,
             grand_total: grandTotal,
-            staff_id: visitStaffId,
+            staff_id: visitStaffIds.length > 0 ? visitStaffIds[0] : null,
+            staff_ids: visitStaffIds,
             payment_method: visitPaymentMethod
           }])
           .select()
@@ -793,13 +801,20 @@ export default function Customers() {
       }
 
       // 4. Insert commission
-      const { error: commErr } = await supabase.from('staff_commissions').insert([{
-        staff_id: visitStaffId,
-        visit_id: currentVisitId,
-        service_amount: serviceTotal,
-        commission_amount: commissionAmount
-      }]);
-      if (commErr) throw commErr;
+      if (visitStaffIds.length > 0 && serviceTotal > 0) {
+        const amountPerStaff = serviceTotal / visitStaffIds.length;
+        const commissionInserts = visitStaffIds.map(staffId => {
+          const sm = staff.find(s => s.id.toString() === staffId.toString());
+          const cRate = sm ? Number(sm.commission_rate || 10) : 10;
+          return {
+            staff_id: staffId,
+            visit_id: currentVisitId,
+            service_amount: amountPerStaff,
+            commission_amount: amountPerStaff * (cRate / 100)
+          };
+        });
+        await supabase.from('staff_commissions').insert(commissionInserts);
+      }
 
       // 5. Update customer aggregate: amount_paid, services_taken, staff_served
       const difference = visitToEdit ? (grandTotal - Number(visitToEdit.grand_total)) : grandTotal;
@@ -807,8 +822,8 @@ export default function Customers() {
       const existingServices = visitCustomer.services_taken || [];
       const newServicesList = Array.from(new Set([...existingServices, ...parsedServiceNames]));
       const existingStaff = visitCustomer.staff_served || [];
-      const staffName = selectedStaffMember?.name || selectedStaffMember?.staff_name || '';
-      const newStaffList = staffName && !existingStaff.includes(staffName) ? [...existingStaff, staffName] : existingStaff;
+      const newStaffNames = visitStaffIds.map(id => staff.find(s => s.id.toString() === id.toString())?.name || '').filter(Boolean);
+      const newStaffList = Array.from(new Set([...existingStaff, ...newStaffNames]));
 
       await supabase.from('customers').update({
         amount_paid: updatedAmountPaid,
@@ -818,7 +833,7 @@ export default function Customers() {
       }).eq('id', visitCustomer.id);
 
       // Force history refresh if modal is open
-      if (visitToEdit && selectedCustomerForHistory) {
+      if (selectedCustomerForHistory) {
         const [{ data: historyData }] = await Promise.all([
           supabase.from('customer_visits').select('*, visit_services(*), visit_products(*)').eq('customer_id', selectedCustomerForHistory).eq('is_deleted', false).order('visit_date', { ascending: false })
         ]);
@@ -890,6 +905,7 @@ export default function Customers() {
       return { 'Sorted by Spend': uniqueProcessedCustomers };
     }
     if (sortBy === 'alphabet') {
+      uniqueProcessedCustomers.sort((a, b) => a.name.localeCompare(b.name));
       return uniqueProcessedCustomers.reduce((acc, c) => {
         const letter = c.name.charAt(0).toUpperCase();
         if (!acc[letter]) acc[letter] = [];
@@ -1252,15 +1268,16 @@ export default function Customers() {
 
                 {!customerToEdit && (
                   <div>
-                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-3">Select Staff Member *</label>
-                    <select 
-                      value={customerStaffId} 
-                      onChange={(e) => setCustomerStaffId(e.target.value)}
-                      className="glass-input w-full px-4 py-3.5 appearance-none mb-2 bg-black/40"
-                    >
-                      <option value="" className="text-white/60">-- Choose Staff --</option>
-                      {staff.map(s => <option key={s.id} value={s.id} className="text-white">{s.name || s.staff_name}</option>)}
-                    </select>
+                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Staff Members</label>
+                    <Select
+                      isMulti
+                      styles={selectStyles}
+                      options={staff.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
+                      value={staff.filter(s => customerStaffIds.includes(s.id.toString())).map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
+                      onChange={(selected: any) => setCustomerStaffIds(selected.map((item: any) => item.value))}
+                      placeholder="Select Staff..."
+                      classNamePrefix="react-select"
+                    />
                   </div>
                 )}
                 {!customerToEdit && (
@@ -1430,15 +1447,16 @@ export default function Customers() {
             <div className="p-6 space-y-6 bg-black/60 overflow-y-auto custom-scrollbar flex-1">
               {/* Staff Selector */}
               <div>
-                <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Staff Member *</label>
-                <select
-                  value={visitStaffId}
-                  onChange={(e) => setVisitStaffId(e.target.value)}
-                  className="glass-input w-full px-4 py-3 appearance-none bg-black/40"
-                >
-                  <option value="">-- Choose Staff --</option>
-                  {staff.map(s => <option key={s.id} value={s.id}>{s.name || s.staff_name}</option>)}
-                </select>
+                <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Staff Members</label>
+                <Select
+                  isMulti
+                  styles={selectStyles}
+                  options={staff.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
+                  value={staff.filter(s => visitStaffIds.includes(s.id.toString())).map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
+                  onChange={(selected: any) => setVisitStaffIds(selected.map((item: any) => item.value))}
+                  placeholder="Select Staff..."
+                  classNamePrefix="react-select"
+                />
               </div>
 
               {/* Services */}

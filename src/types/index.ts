@@ -94,6 +94,7 @@ export interface CustomerVisit {
   product_total: number;
   grand_total: number;
   staff_id: string;
+  staff_ids?: string[];
   created_at: string;
   
   // Joins (optional based on API response)

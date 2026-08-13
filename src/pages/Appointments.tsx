@@ -68,6 +68,7 @@ interface Appointment {
   notes: string;
   status: AppointmentStatus;
   staff_id: string | null;
+  staff_ids?: string[];
   converted_visit_id: string | null;
   payment_due?: number;
   staff?: { name: string } | null;
@@ -100,6 +101,7 @@ export default function Appointments() {
     date: format(new Date(), 'yyyy-MM-dd'),
     time: '10:00',
     staff_id: '',
+    staff_ids: [] as string[],
     payment_due: '',
     notes: '',
   });
@@ -115,6 +117,7 @@ export default function Appointments() {
   const [checkInServices, setCheckInServices] = useState<{serviceId: string}[]>([]);
   const [checkInProducts, setCheckInProducts] = useState<{productId: string, quantity: number}[]>([]);
   const [checkInStaffId, setCheckInStaffId] = useState<string>('');
+  const [checkInStaffIds, setCheckInStaffIds] = useState<string[]>([]);
   const [checkInPaymentMethod, setCheckInPaymentMethod] = useState<string>('Cash');
 
   const fetchData = async () => {
@@ -215,7 +218,7 @@ export default function Appointments() {
   const openAddModal = () => {
     setRepeatData(null);
     setEditingAppt(null);
-    setForm({ customer_name: '', customer_phone: '', date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', staff_id: '', payment_due: '', notes: '' });
+    setForm({ customer_name: '', customer_phone: '', date: format(new Date(), 'yyyy-MM-dd'), time: '10:00', staff_id: '', staff_ids: [], payment_due: '', notes: '' });
     setFormServices([{ serviceId: '' }]);
     setIsModalOpen(true);
   };
@@ -230,6 +233,7 @@ export default function Appointments() {
       date: format(dateObj, 'yyyy-MM-dd'),
       time: format(dateObj, 'HH:mm'),
       staff_id: appt.staff_id || '',
+      staff_ids: appt.staff_ids || (appt.staff_id ? [appt.staff_id] : []),
       payment_due: appt.payment_due ? appt.payment_due.toString() : '',
       notes: appt.notes || '',
     });
@@ -250,6 +254,7 @@ export default function Appointments() {
       date: format(new Date(), 'yyyy-MM-dd'),
       time: format(parseISO(appt.appointment_date), 'HH:mm'),
       staff_id: appt.staff_id || '',
+      staff_ids: appt.staff_ids || (appt.staff_id ? [appt.staff_id] : []),
       payment_due: appt.payment_due ? appt.payment_due.toString() : '',
       notes: appt.notes || '',
     });
@@ -275,7 +280,8 @@ export default function Appointments() {
             appointment_date: appointmentDate.toISOString(),
             payment_due: form.payment_due ? Number(form.payment_due) : 0,
             notes: form.notes.trim(),
-            staff_id: form.staff_id || null,
+            staff_id: form.staff_ids.length > 0 ? form.staff_ids[0] : null,
+            staff_ids: form.staff_ids,
           })
           .eq('id', editingAppt.id);
         if (apptErr) throw apptErr;
@@ -299,7 +305,8 @@ export default function Appointments() {
             appointment_date: appointmentDate.toISOString(),
             payment_due: form.payment_due ? Number(form.payment_due) : 0,
             notes: form.notes.trim(),
-            staff_id: form.staff_id || null,
+            staff_id: form.staff_ids.length > 0 ? form.staff_ids[0] : null,
+            staff_ids: form.staff_ids,
             status: 'scheduled',
           }])
           .select()
@@ -341,6 +348,7 @@ export default function Appointments() {
     setCheckInServices((appt.appointment_services || []).map(s => ({ serviceId: s.service_id.toString() })));
     setCheckInProducts([]);
     setCheckInStaffId(appt.staff_id?.toString() || '');
+    setCheckInStaffIds(appt.staff_ids || (appt.staff_id ? [appt.staff_id.toString()] : []));
     setCheckInPaymentMethod('Cash');
     setIsCheckInModalOpen(true);
   };
@@ -417,7 +425,8 @@ export default function Appointments() {
           original_total: grandTotal,
           discount_amount: 0,
           payment_method: checkInPaymentMethod,
-          staff_id: checkInStaffId || null,
+          staff_id: checkInStaffIds.length > 0 ? checkInStaffIds[0] : null,
+          staff_ids: checkInStaffIds,
         }])
         .select()
         .single();
@@ -449,13 +458,19 @@ export default function Appointments() {
       }
 
       // 5. Commission
-      if (checkInStaffId) {
-        await supabase.from('staff_commissions').insert([{
-          staff_id: checkInStaffId,
-          visit_id: visitData.id,
-          service_amount: serviceTotal,
-          commission_amount: commissionAmount,
-        }]);
+      if (checkInStaffIds.length > 0 && serviceTotal > 0) {
+        const amountPerStaff = serviceTotal / checkInStaffIds.length;
+        const commissionInserts = checkInStaffIds.map(staffId => {
+          const selectedStaff = staff.find(s => s.id?.toString() === staffId);
+          const commissionRate = selectedStaff ? Number(selectedStaff.commission_rate || 10) : 10;
+          return {
+            staff_id: staffId,
+            visit_id: visitData.id,
+            service_amount: amountPerStaff,
+            commission_amount: amountPerStaff * (commissionRate / 100),
+          };
+        });
+        await supabase.from('staff_commissions').insert(commissionInserts);
       }
 
       // 6. Update customer amount_paid if linked
@@ -639,7 +654,13 @@ export default function Appointments() {
                           </div>
                           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1.5 text-sm text-white/50">
                             {appt.customer_phone && <span className="flex items-center gap-1"><User className="w-3 h-3" />{appt.customer_phone}</span>}
-                            {appt.staff?.name && <span className="flex items-center gap-1"><Scissors className="w-3 h-3" />{appt.staff.name}</span>}
+                            {(() => {
+                              const staffNames = (appt.staff_ids || (appt.staff_id ? [appt.staff_id] : []))
+                                .map(id => staff.find(s => s.id?.toString() === id?.toString())?.name)
+                                .filter(Boolean)
+                                .join(', ');
+                              return staffNames ? <span className="flex items-center gap-1"><Scissors className="w-3 h-3" />{staffNames}</span> : null;
+                            })()}
                             {svcs.length > 0 && (
                               <span className="flex items-center gap-1">
                                 {svcs.map(s => s.service_name).join(' · ')}
@@ -866,15 +887,16 @@ export default function Appointments() {
 
               {/* Staff */}
               <div>
-                <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Staff Member</label>
-                <select
-                  value={form.staff_id}
-                  onChange={e => setForm(f => ({ ...f, staff_id: e.target.value }))}
-                  className="glass-input w-full px-4 py-3 appearance-none bg-black/40"
-                >
-                  <option value="">-- Any Staff --</option>
-                  {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Staff Members</label>
+                <Select
+                  isMulti
+                  styles={selectStyles}
+                  options={staff.map(s => ({ value: s.id.toString(), label: s.name }))}
+                  value={staff.filter(s => form.staff_ids.includes(s.id.toString())).map(s => ({ value: s.id.toString(), label: s.name }))}
+                  onChange={(selected: any) => setForm(f => ({ ...f, staff_ids: selected.map((item: any) => item.value) }))}
+                  placeholder="Select Staff..."
+                  classNamePrefix="react-select"
+                />
               </div>
 
               {/* Services with search */}
@@ -991,11 +1013,16 @@ export default function Appointments() {
               </div>
               
               <div>
-                <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Staff Member</label>
-                <select value={checkInStaffId} onChange={e => setCheckInStaffId(e.target.value)} className="glass-input w-full px-4 py-3 appearance-none bg-black/40">
-                  <option value="">-- No Staff (No Commission) --</option>
-                  {staff.map(s => <option key={s.id} value={s.id}>{s.name} ({s.role})</option>)}
-                </select>
+                <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Staff Members</label>
+                <Select
+                  isMulti
+                  styles={selectStyles}
+                  options={staff.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
+                  value={staff.filter(s => checkInStaffIds.includes(s.id.toString())).map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
+                  onChange={(selected: any) => setCheckInStaffIds(selected.map((item: any) => item.value))}
+                  placeholder="Select Staff..."
+                  classNamePrefix="react-select"
+                />
               </div>
 
               <div>
