@@ -65,7 +65,7 @@ export default function CalendarView() {
       const serviceTotal = svcList.reduce((s: number, x: any) => s + Number(x.price || 0), 0);
       const { data: visitData, error: visitErr } = await supabase.from('customer_visits').insert([{
         customer_id: customerId, service_total: serviceTotal, product_total: 0,
-        grand_total: serviceTotal, original_total: serviceTotal, discount_amount: 0, staff_id: appt.staff_id,
+        grand_total: serviceTotal, original_total: serviceTotal, discount_amount: 0, staff_id: appt.staff_ids?.length > 0 ? appt.staff_ids[0] : (appt.staff_id || null), staff_ids: appt.staff_ids || (appt.staff_id ? [appt.staff_id] : []),
       }]).select().single();
       if (visitErr) throw visitErr;
       if (svcList.length > 0) {
