@@ -1171,15 +1171,9 @@ export default function Customers() {
                                 <Edit2 className="w-4 h-4" />
                               </button>
                               <button 
-                                onClick={() => {
-                                  if (customer.eventType === 'visit' && customer.eventId) {
-                                    handleDeleteVisit(customer.eventId);
-                                  } else {
-                                    handleDelete(customer.id);
-                                  }
-                                }} 
+                                onClick={() => handleDelete(customer.id)} 
                                 className="p-2 text-danger hover:bg-danger/10 rounded-xl transition-colors"
-                                title={customer.eventType === 'visit' ? 'Delete this visit only' : 'Delete customer'}
+                                title="Delete customer"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
