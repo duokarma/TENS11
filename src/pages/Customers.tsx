@@ -84,6 +84,7 @@ export default function Customers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTime, setFilterTime] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'spend' | 'alphabet'>('recent');
+  const [showPaymentDue, setShowPaymentDue] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -865,6 +866,10 @@ export default function Customers() {
   const processedCustomers = useMemo(() => {
     let result = [...customers];
     
+    if (showPaymentDue) {
+      result = result.filter(c => c.payment_due && c.payment_due > 0);
+    }
+    
     if (filterTime !== 'all') {
       result = result.filter(c => {
         if (!c.createdAt) return false;
@@ -889,7 +894,7 @@ export default function Customers() {
     });
     
     return result;
-  }, [customers, filterTime, sortBy]);
+  }, [customers, filterTime, sortBy, showPaymentDue]);
 
   const groupedCustomers = useMemo((): Record<string, any[]> => {
     // Deduplicate by customer ID (since customer_timeline view might return multiple events per customer)
@@ -1020,6 +1025,14 @@ export default function Customers() {
         </div>
         
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowPaymentDue(!showPaymentDue)}
+            className={`glass-panel px-3 py-2 flex items-center gap-2 text-sm transition-colors ${showPaymentDue ? 'bg-danger/20 text-danger border-danger/30' : 'text-white/60 hover:text-white'}`}
+            title="Filter by payment due"
+          >
+            <IndianRupee className="w-4 h-4" />
+            Due
+          </button>
           <div className="glass-panel px-3 py-2 flex items-center gap-2">
             <Filter className="w-4 h-4 text-white/60" />
             <select
