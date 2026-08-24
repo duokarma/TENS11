@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { customerService } from '../lib/customerService';
-import type { Customer } from '../types';
+import type { Customer, CustomerNote } from '../types';
 import { 
   Search, Plus, User, Scissors, Receipt, Package,
   Trash2, Edit2, X, Users, UserPlus, IndianRupee, TrendingUp, Calendar as CalendarIcon,
-  ChevronLeft, ChevronRight, Download, MessageCircle, Star, ClipboardList, Tag, Filter, SortDesc
+  ChevronLeft, ChevronRight, Download, MessageCircle, Star, ClipboardList, Tag, Filter, SortDesc,
+  NotebookPen, Save, PlusCircle
 } from 'lucide-react';
 import { generateInvoicePDF } from '../lib/pdfGenerator';
-import { format, isThisMonth, isToday, isYesterday, isThisWeek, parseISO } from 'date-fns';
+import { format, isThisMonth, isToday, isYesterday, isThisWeek } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -266,6 +267,17 @@ export default function Customers() {
   const [selectedHistory, setSelectedHistory] = useState<any[]>([]);
   const [selectedCustomerRewards, setSelectedCustomerRewards] = useState<{points: number, membership_tier: string} | null>(null);
 
+  // Notes state
+  const [customerNotes, setCustomerNotes] = useState<CustomerNote[]>([]);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(false);
+  const [showAddNote, setShowAddNote] = useState(false);
+  const [newNoteText, setNewNoteText] = useState('');
+  const [newNoteDate, setNewNoteDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editNoteText, setEditNoteText] = useState('');
+  const [editNoteDate, setEditNoteDate] = useState('');
+
   // Record Visit modal state
   const [isRecordVisitOpen, setIsRecordVisitOpen] = useState(false);
   const [visitCustomer, setVisitCustomer] = useState<Customer | null>(null);
@@ -317,7 +329,8 @@ export default function Customers() {
   useEffect(() => {
     const fetchHistory = async () => {
       if (selectedCustomerForHistory) {
-        const [{ data: historyData }, { data: rewardsData }] = await Promise.all([
+        setIsLoadingNotes(true);
+        const [{ data: historyData }, { data: rewardsData }, notes] = await Promise.all([
           supabase
             .from('customer_visits')
             .select('*, visit_services(*), visit_products(*)')
@@ -328,14 +341,62 @@ export default function Customers() {
             .from('customer_rewards')
             .select('*')
             .eq('customer_id', selectedCustomerForHistory)
-            .maybeSingle()
+            .maybeSingle(),
+          customerService.getCustomerNotes(selectedCustomerForHistory).catch(() => [] as CustomerNote[])
         ]);
         setSelectedHistory(historyData || []);
         setSelectedCustomerRewards(rewardsData || { points: 0, membership_tier: 'Standard' });
+        setCustomerNotes(notes);
+        setIsLoadingNotes(false);
       }
     };
     fetchHistory();
   }, [selectedCustomerForHistory]);
+
+  const handleAddNote = async () => {
+    if (!newNoteText.trim() || !selectedCustomerForHistory) return;
+    setIsSavingNote(true);
+    try {
+      const added = await customerService.addCustomerNote(selectedCustomerForHistory, newNoteText, newNoteDate);
+      setCustomerNotes(prev => [added, ...prev].sort((a, b) => b.note_date.localeCompare(a.note_date)));
+      setNewNoteText('');
+      setNewNoteDate(new Date().toISOString().split('T')[0]);
+      setShowAddNote(false);
+      toast.success('Note added!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add note');
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  const handleUpdateNote = async (noteId: number) => {
+    if (!editNoteText.trim()) return;
+    setIsSavingNote(true);
+    try {
+      const updated = await customerService.updateCustomerNote(noteId, editNoteText, editNoteDate);
+      setCustomerNotes(prev =>
+        prev.map(n => n.id === noteId ? updated : n).sort((a, b) => b.note_date.localeCompare(a.note_date))
+      );
+      setEditingNoteId(null);
+      toast.success('Note updated!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update note');
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: number) => {
+    if (!window.confirm('Delete this note permanently?')) return;
+    try {
+      await customerService.deleteCustomerNote(noteId);
+      setCustomerNotes(prev => prev.filter(n => n.id !== noteId));
+      toast.success('Note deleted.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete note');
+    }
+  };
 
   const handleDeleteVisit = async (visitId: string) => {
     if (!window.confirm("Are you sure you want to completely delete this visit? This will reverse revenue, restock products, and remove staff commissions. This action cannot be undone.")) {
@@ -1149,9 +1210,9 @@ export default function Customers() {
                               </div>
                             ) : null}
                             {customer.notes && (
-                              <div className="text-xs text-white/70 italic flex items-start gap-1">
-                                <div className="w-3 h-3 border-l border-b border-white/20 mt-0.5 shrink-0" />
-                                {customer.notes}
+                              <div className="text-xs text-white/50 italic flex items-start gap-1 mt-1">
+                                <NotebookPen className="w-3 h-3 mt-0.5 shrink-0 text-white/30" />
+                                <span className="line-clamp-1">{customer.notes}</span>
                               </div>
                             )}
                           </td>
@@ -1678,111 +1739,262 @@ export default function Customers() {
                 <X className="w-6 h-6"/>
               </button>
             </div>
-            <div className="p-8 overflow-y-auto bg-black/60 flex-1 custom-scrollbar">
-              <h4 className="text-xs font-bold tracking-[0.2em] text-white/60 uppercase mb-6 flex items-center">
-                <Receipt className="w-4 h-4 mr-2" /> Visit History
-              </h4>
-              {selectedHistory.length === 0 ? (
-                <div className="text-center py-12 text-white/60/60 bg-black/5 rounded-2xl border border-dashed border-white/10">
-                  <CalendarIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-base font-light tracking-wide">No past visits recorded.</p>
+            <div className="p-8 overflow-y-auto bg-black/60 flex-1 custom-scrollbar space-y-10">
+
+              {/* ── Personal Notes Section ─────────────────────────────── */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-xs font-bold tracking-[0.2em] text-white/60 uppercase flex items-center">
+                    <NotebookPen className="w-4 h-4 mr-2 text-amber-400" /> Personal Notes
+                  </h4>
+                  <button
+                    onClick={() => { setShowAddNote(v => !v); setNewNoteDate(new Date().toISOString().split('T')[0]); setNewNoteText(''); }}
+                    className="flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/20 px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" /> Add Note
+                  </button>
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  {selectedHistory.map((visit: any, index) => {
-                    const servicesList = visit.visit_services || [];
-                    const productsList = visit.visit_products || [];
-                    
-                    return (
-                      <div key={visit.id} className="bg-black/40 p-6 rounded-2xl border border-white/10 shadow-sm flex flex-col md:flex-row gap-6 relative overflow-hidden group">
-                        <div className="absolute top-0 left-0 w-1 h-full bg-primary/40 group-hover:bg-primary transition-colors"></div>
-                        <div className="shrink-0 flex flex-col justify-center w-32 border-r border-white/10 pr-6">
-                          <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1">Date</span>
-                          <span className="text-lg font-light text-white">{format(new Date(visit.visit_date), 'dd MMM')}</span>
-                          <span className="text-sm text-white/60">{format(new Date(visit.visit_date), 'yyyy')}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          {servicesList.length > 0 && (
-                            <div className="mb-4">
-                              <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-2 flex items-center">
-                                <Scissors className="w-3 h-3 mr-1" /> Services
-                              </span>
-                              <div className="flex flex-wrap gap-2">
-                                {servicesList.map((vs: any, idx: number) => (
-                                  <span key={idx} className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-black/5 text-white border border-white/10">
-                                    {vs.service_name}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {productsList.length > 0 && (
+
+                {/* Add Note Form */}
+                {showAddNote && (
+                  <div className="mb-4 bg-amber-400/5 border border-amber-400/20 rounded-2xl p-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <label className="block text-xs font-bold tracking-widest text-white/50 uppercase mb-1.5">Note Date</label>
+                        <input
+                          type="date"
+                          value={newNoteDate}
+                          onChange={e => setNewNoteDate(e.target.value)}
+                          className="glass-input w-full px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold tracking-widest text-white/50 uppercase mb-1.5">Note</label>
+                      <textarea
+                        value={newNoteText}
+                        onChange={e => setNewNoteText(e.target.value)}
+                        placeholder="e.g. Prefers lighter shampoo, allergic to certain dyes..."
+                        className="glass-input w-full px-3 py-2 text-sm min-h-[80px] resize-none"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => setShowAddNote(false)} className="btn-secondary text-xs px-3 py-1.5">Cancel</button>
+                      <button
+                        onClick={handleAddNote}
+                        disabled={isSavingNote || !newNoteText.trim()}
+                        className="flex items-center gap-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-black px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        <Save className="w-3.5 h-3.5" />{isSavingNote ? 'Saving...' : 'Save Note'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Legacy note migration notice */}
+                {selectedCustomer?.notes && customerNotes.length === 0 && !isLoadingNotes && (
+                  <div className="mb-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-start gap-2">
+                    <NotebookPen className="w-3.5 h-3.5 text-white/30 mt-0.5 shrink-0" />
+                    <p className="text-xs text-white/50 italic">
+                      Legacy note: &ldquo;{selectedCustomer.notes}&rdquo;
+                      <span className="block mt-1 text-white/30 not-italic">Add a new dated note above to begin the timeline.</span>
+                    </p>
+                  </div>
+                )}
+
+                {/* Notes Timeline */}
+                {isLoadingNotes ? (
+                  <div className="text-center py-6 text-white/40 text-sm">Loading notes...</div>
+                ) : customerNotes.length === 0 && !selectedCustomer?.notes ? (
+                  <div className="text-center py-8 bg-black/5 rounded-2xl border border-dashed border-white/10">
+                    <NotebookPen className="w-8 h-8 mx-auto mb-2 text-white/20" />
+                    <p className="text-sm text-white/40 font-light">No personal notes yet.</p>
+                    <p className="text-xs text-white/25 mt-1">Click "Add Note" to record observations about this customer.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {customerNotes.map(note => (
+                      <div key={note.id} className="bg-black/30 border border-white/10 rounded-xl overflow-hidden group">
+                        {editingNoteId === note.id ? (
+                          /* Edit mode */
+                          <div className="p-4 space-y-3">
                             <div>
-                              <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-2 flex items-center">
-                                <Package className="w-3 h-3 mr-1" /> Products
-                              </span>
-                              <div className="flex flex-wrap gap-2">
-                                {productsList.map((vp: any, idx: number) => (
-                                  <span key={idx} className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-black/5 text-white border border-white/10">
-                                    {vp.quantity}x {vp.product_name}
-                                  </span>
-                                ))}
+                              <label className="block text-xs font-bold tracking-widest text-white/50 uppercase mb-1.5">Date</label>
+                              <input
+                                type="date"
+                                value={editNoteDate}
+                                onChange={e => setEditNoteDate(e.target.value)}
+                                className="glass-input w-full px-3 py-2 text-sm max-w-[180px]"
+                              />
+                            </div>
+                            <textarea
+                              value={editNoteText}
+                              onChange={e => setEditNoteText(e.target.value)}
+                              className="glass-input w-full px-3 py-2 text-sm min-h-[80px] resize-none"
+                              autoFocus
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => setEditingNoteId(null)} className="btn-secondary text-xs px-3 py-1.5">Cancel</button>
+                              <button
+                                onClick={() => handleUpdateNote(note.id)}
+                                disabled={isSavingNote || !editNoteText.trim()}
+                                className="flex items-center gap-1.5 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-black px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                <Save className="w-3.5 h-3.5" />{isSavingNote ? 'Saving...' : 'Save'}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* View mode */
+                          <div className="flex items-start gap-4 p-4">
+                            <div className="shrink-0 text-center">
+                              <div className="bg-amber-400/10 border border-amber-400/20 rounded-lg px-2.5 py-1.5 min-w-[60px]">
+                                <div className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">
+                                  {format(new Date(note.note_date + 'T00:00:00'), 'MMM')}
+                                </div>
+                                <div className="text-lg font-light text-white leading-tight">
+                                  {format(new Date(note.note_date + 'T00:00:00'), 'dd')}
+                                </div>
+                                <div className="text-[10px] text-white/40">
+                                  {format(new Date(note.note_date + 'T00:00:00'), 'yyyy')}
+                                </div>
                               </div>
                             </div>
-                          )}
-                        </div>
-                        <div className="shrink-0 flex flex-col justify-center items-end pl-6 border-l border-white/10 min-w-[120px] gap-3">
-                          <div>
-                            <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1 block text-right">Total</span>
-                            <span className="text-2xl font-light text-white">₹{visit.grand_total}</span>
-                            {visit.payment_method && (
-                              <span className={`text-[10px] mt-1 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider block w-max ml-auto ${visit.payment_method === 'UPI' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                                {visit.payment_method}
-                              </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{note.note}</p>
+                            </div>
+                            <div className="shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => { setEditingNoteId(note.id); setEditNoteText(note.note); setEditNoteDate(note.note_date); }}
+                                className="p-1.5 hover:bg-white/10 text-white/50 hover:text-white rounded-lg transition-colors"
+                                title="Edit note"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteNote(note.id)}
+                                className="p-1.5 hover:bg-danger/20 text-danger/60 hover:text-danger rounded-lg transition-colors"
+                                title="Delete note"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Visit History Section ──────────────────────────────── */}
+              <div>
+                <h4 className="text-xs font-bold tracking-[0.2em] text-white/60 uppercase mb-6 flex items-center">
+                  <Receipt className="w-4 h-4 mr-2" /> Visit History
+                </h4>
+                {selectedHistory.length === 0 ? (
+                  <div className="text-center py-12 text-white/60/60 bg-black/5 rounded-2xl border border-dashed border-white/10">
+                    <CalendarIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p className="text-base font-light tracking-wide">No past visits recorded.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {selectedHistory.map((visit: any) => {
+                      const servicesList = visit.visit_services || [];
+                      const productsList = visit.visit_products || [];
+                      
+                      return (
+                        <div key={visit.id} className="bg-black/40 p-6 rounded-2xl border border-white/10 shadow-sm flex flex-col md:flex-row gap-6 relative overflow-hidden group">
+                          <div className="absolute top-0 left-0 w-1 h-full bg-primary/40 group-hover:bg-primary transition-colors"></div>
+                          <div className="shrink-0 flex flex-col justify-center w-32 border-r border-white/10 pr-6">
+                            <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1">Date</span>
+                            <span className="text-lg font-light text-white">{format(new Date(visit.visit_date), 'dd MMM')}</span>
+                            <span className="text-sm text-white/60">{format(new Date(visit.visit_date), 'yyyy')}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            {servicesList.length > 0 && (
+                              <div className="mb-4">
+                                <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-2 flex items-center">
+                                  <Scissors className="w-3 h-3 mr-1" /> Services
+                                </span>
+                                <div className="flex flex-wrap gap-2">
+                                  {servicesList.map((vs: any, idx: number) => (
+                                    <span key={idx} className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-black/5 text-white border border-white/10">
+                                      {vs.service_name}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {productsList.length > 0 && (
+                              <div>
+                                <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-2 flex items-center">
+                                  <Package className="w-3 h-3 mr-1" /> Products
+                                </span>
+                                <div className="flex flex-wrap gap-2">
+                                  {productsList.map((vp: any, idx: number) => (
+                                    <span key={idx} className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-black/5 text-white border border-white/10">
+                                      {vp.quantity}x {vp.product_name}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                generateInvoicePDF({
-                                  invoiceNumber: visit.id.substring(0, 8).toUpperCase(),
-                                  date: visit.visit_date,
-                                  customerName: selectedCustomer.name,
-                                  customerPhone: selectedCustomer.phone,
-                                  services: servicesList.map((s: any) => ({ name: s.service_name, quantity: 1, price: s.price || 0, amount: s.price || 0 })),
-                                  products: productsList.map((p: any) => ({ name: p.product_name, quantity: p.quantity, price: p.price || 0, amount: (p.price || 0) * p.quantity })),
-                                  subtotal: visit.grand_total,
-                                  tax: 0,
-                                  discount: 0,
-                                  grandTotal: visit.grand_total,
-                                  paymentMethod: visit.payment_method
-                                });
-                              }}
-                              className="text-xs font-bold px-3 py-1.5 bg-black/5 hover:bg-black/10 text-white rounded-lg border border-white/10 transition-colors flex items-center"
-                            >
-                              <Download className="w-3 h-3 mr-1" /> Invoice
-                            </button>
-                            <button
-                              onClick={() => openEditFullVisit(visit)}
-                              className="p-1.5 hover:bg-white/10 text-white/60 rounded-lg transition-colors border border-transparent hover:border-white/20"
-                              title="Edit Visit"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteVisit(visit.id)}
-                              className="p-1.5 hover:bg-danger/20 text-danger rounded-lg transition-colors border border-transparent hover:border-danger/30"
-                              title="Delete Visit"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                          <div className="shrink-0 flex flex-col justify-center items-end pl-6 border-l border-white/10 min-w-[120px] gap-3">
+                            <div>
+                              <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1 block text-right">Total</span>
+                              <span className="text-2xl font-light text-white">₹{visit.grand_total}</span>
+                              {visit.payment_method && (
+                                <span className={`text-[10px] mt-1 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider block w-max ml-auto ${visit.payment_method === 'UPI' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                                  {visit.payment_method}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  generateInvoicePDF({
+                                    invoiceNumber: visit.id.substring(0, 8).toUpperCase(),
+                                    date: visit.visit_date,
+                                    customerName: selectedCustomer.name,
+                                    customerPhone: selectedCustomer.phone,
+                                    services: servicesList.map((s: any) => ({ name: s.service_name, quantity: 1, price: s.price || 0, amount: s.price || 0 })),
+                                    products: productsList.map((p: any) => ({ name: p.product_name, quantity: p.quantity, price: p.price || 0, amount: (p.price || 0) * p.quantity })),
+                                    subtotal: visit.grand_total,
+                                    tax: 0,
+                                    discount: 0,
+                                    grandTotal: visit.grand_total,
+                                    paymentMethod: visit.payment_method
+                                  });
+                                }}
+                                className="text-xs font-bold px-3 py-1.5 bg-black/5 hover:bg-black/10 text-white rounded-lg border border-white/10 transition-colors flex items-center"
+                              >
+                                <Download className="w-3 h-3 mr-1" /> Invoice
+                              </button>
+                              <button
+                                onClick={() => openEditFullVisit(visit)}
+                                className="p-1.5 hover:bg-white/10 text-white/60 rounded-lg transition-colors border border-transparent hover:border-white/20"
+                                title="Edit Visit"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteVisit(visit.id)}
+                                className="p-1.5 hover:bg-danger/20 text-danger rounded-lg transition-colors border border-transparent hover:border-danger/30"
+                                title="Delete Visit"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

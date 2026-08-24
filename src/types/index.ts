@@ -21,6 +21,15 @@ export interface Customer {
   eventType?: 'creation' | 'visit';
 }
 
+export interface CustomerNote {
+  id: number;
+  customer_id: number;
+  note: string;
+  note_date: string; // YYYY-MM-DD
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Staff {
   id: string;
   name: string;

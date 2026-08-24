@@ -239,5 +239,89 @@ export const customerService = {
     }
 
     return true;
-  }
+  },
+
+  // ─── Customer Notes (Date-wise) ──────────────────────────────────────────
+
+  /**
+   * Get all notes for a customer, newest date first
+   */
+  async getCustomerNotes(customerId: number) {
+    const { data, error } = await supabase
+      .from('customer_notes')
+      .select('*')
+      .eq('customer_id', customerId)
+      .order('note_date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching customer notes:', error);
+      throw error;
+    }
+
+    return (data || []) as import('../types').CustomerNote[];
+  },
+
+  /**
+   * Add a new dated note for a customer
+   */
+  async addCustomerNote(customerId: number, note: string, noteDate?: string) {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabase
+      .from('customer_notes')
+      .insert({
+        customer_id: customerId,
+        note: note.trim(),
+        note_date: noteDate || today,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding customer note:', error);
+      throw error;
+    }
+
+    return data as import('../types').CustomerNote;
+  },
+
+  /**
+   * Update an existing note's text and/or date
+   */
+  async updateCustomerNote(noteId: number, note: string, noteDate?: string) {
+    const payload: Record<string, string> = { note: note.trim() };
+    if (noteDate) payload.note_date = noteDate;
+
+    const { data, error } = await supabase
+      .from('customer_notes')
+      .update(payload)
+      .eq('id', noteId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating customer note:', error);
+      throw error;
+    }
+
+    return data as import('../types').CustomerNote;
+  },
+
+  /**
+   * Delete a note permanently
+   */
+  async deleteCustomerNote(noteId: number) {
+    const { error } = await supabase
+      .from('customer_notes')
+      .delete()
+      .eq('id', noteId);
+
+    if (error) {
+      console.error('Error deleting customer note:', error);
+      throw error;
+    }
+
+    return true;
+  },
 };
+
