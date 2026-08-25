@@ -1903,92 +1903,108 @@ export default function Customers() {
                     {selectedHistory.map((visit: any) => {
                       const servicesList = visit.visit_services || [];
                       const productsList = visit.visit_products || [];
+                      const visitDateStr = visit.visit_date ? visit.visit_date.split('T')[0] : '';
+                      const visitNotes = customerNotes.filter(n => n.note_date === visitDateStr);
                       
                       return (
-                        <div key={visit.id} className="bg-black/40 p-6 rounded-2xl border border-white/10 shadow-sm flex flex-col md:flex-row gap-6 relative overflow-hidden group">
+                        <div key={visit.id} className="bg-black/40 rounded-2xl border border-white/10 shadow-sm relative overflow-hidden group flex flex-col">
                           <div className="absolute top-0 left-0 w-1 h-full bg-primary/40 group-hover:bg-primary transition-colors"></div>
-                          <div className="shrink-0 flex flex-col justify-center w-32 border-r border-white/10 pr-6">
-                            <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1">Date</span>
-                            <span className="text-lg font-light text-white">{format(new Date(visit.visit_date), 'dd MMM')}</span>
-                            <span className="text-sm text-white/60">{format(new Date(visit.visit_date), 'yyyy')}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            {servicesList.length > 0 && (
-                              <div className="mb-4">
-                                <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-2 flex items-center">
-                                  <Scissors className="w-3 h-3 mr-1" /> Services
-                                </span>
-                                <div className="flex flex-wrap gap-2">
-                                  {servicesList.map((vs: any, idx: number) => (
-                                    <span key={idx} className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-black/5 text-white border border-white/10">
-                                      {vs.service_name}
-                                    </span>
-                                  ))}
+                          <div className="p-6 flex flex-col md:flex-row gap-6">
+                            <div className="shrink-0 flex flex-col justify-center w-32 border-r border-white/10 pr-6">
+                              <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1">Date</span>
+                              <span className="text-lg font-light text-white">{format(new Date(visit.visit_date), 'dd MMM')}</span>
+                              <span className="text-sm text-white/60">{format(new Date(visit.visit_date), 'yyyy')}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              {servicesList.length > 0 && (
+                                <div className="mb-4">
+                                  <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-2 flex items-center">
+                                    <Scissors className="w-3 h-3 mr-1" /> Services
+                                  </span>
+                                  <div className="flex flex-wrap gap-2">
+                                    {servicesList.map((vs: any, idx: number) => (
+                                      <span key={idx} className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-black/5 text-white border border-white/10">
+                                        {vs.service_name}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            {productsList.length > 0 && (
-                              <div>
-                                <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-2 flex items-center">
-                                  <Package className="w-3 h-3 mr-1" /> Products
-                                </span>
-                                <div className="flex flex-wrap gap-2">
-                                  {productsList.map((vp: any, idx: number) => (
-                                    <span key={idx} className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-black/5 text-white border border-white/10">
-                                      {vp.quantity}x {vp.product_name}
-                                    </span>
-                                  ))}
+                              )}
+                              {productsList.length > 0 && (
+                                <div>
+                                  <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-2 flex items-center">
+                                    <Package className="w-3 h-3 mr-1" /> Products
+                                  </span>
+                                  <div className="flex flex-wrap gap-2">
+                                    {productsList.map((vp: any, idx: number) => (
+                                      <span key={idx} className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-black/5 text-white border border-white/10">
+                                        {vp.quantity}x {vp.product_name}
+                                      </span>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
-                          <div className="shrink-0 flex flex-col justify-center items-end pl-6 border-l border-white/10 min-w-[120px] gap-3">
-                            <div>
-                              <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1 block text-right">Total</span>
-                              <span className="text-2xl font-light text-white">₹{visit.grand_total}</span>
-                              {visit.payment_method && (
-                                <span className={`text-[10px] mt-1 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider block w-max ml-auto ${visit.payment_method === 'UPI' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                                  {visit.payment_method}
-                                </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => {
-                                  generateInvoicePDF({
-                                    invoiceNumber: visit.id.substring(0, 8).toUpperCase(),
-                                    date: visit.visit_date,
-                                    customerName: selectedCustomer.name,
-                                    customerPhone: selectedCustomer.phone,
-                                    services: servicesList.map((s: any) => ({ name: s.service_name, quantity: 1, price: s.price || 0, amount: s.price || 0 })),
-                                    products: productsList.map((p: any) => ({ name: p.product_name, quantity: p.quantity, price: p.price || 0, amount: (p.price || 0) * p.quantity })),
-                                    subtotal: visit.grand_total,
-                                    tax: 0,
-                                    discount: 0,
-                                    grandTotal: visit.grand_total,
-                                    paymentMethod: visit.payment_method
-                                  });
-                                }}
-                                className="text-xs font-bold px-3 py-1.5 bg-black/5 hover:bg-black/10 text-white rounded-lg border border-white/10 transition-colors flex items-center"
-                              >
-                                <Download className="w-3 h-3 mr-1" /> Invoice
-                              </button>
-                              <button
-                                onClick={() => openEditFullVisit(visit)}
-                                className="p-1.5 hover:bg-white/10 text-white/60 rounded-lg transition-colors border border-transparent hover:border-white/20"
-                                title="Edit Visit"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteVisit(visit.id)}
-                                className="p-1.5 hover:bg-danger/20 text-danger rounded-lg transition-colors border border-transparent hover:border-danger/30"
-                                title="Delete Visit"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                            <div className="shrink-0 flex flex-col justify-center items-end pl-6 border-l border-white/10 min-w-[120px] gap-3">
+                              <div>
+                                <span className="text-xs font-bold tracking-widest text-white/60 uppercase mb-1 block text-right">Total</span>
+                                <span className="text-2xl font-light text-white">₹{visit.grand_total}</span>
+                                {visit.payment_method && (
+                                  <span className={`text-[10px] mt-1 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider block w-max ml-auto ${visit.payment_method === 'UPI' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                                    {visit.payment_method}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    generateInvoicePDF({
+                                      invoiceNumber: visit.id.substring(0, 8).toUpperCase(),
+                                      date: visit.visit_date,
+                                      customerName: selectedCustomer.name,
+                                      customerPhone: selectedCustomer.phone,
+                                      services: servicesList.map((s: any) => ({ name: s.service_name, quantity: 1, price: s.price || 0, amount: s.price || 0 })),
+                                      products: productsList.map((p: any) => ({ name: p.product_name, quantity: p.quantity, price: p.price || 0, amount: (p.price || 0) * p.quantity })),
+                                      subtotal: visit.grand_total,
+                                      tax: 0,
+                                      discount: 0,
+                                      grandTotal: visit.grand_total,
+                                      paymentMethod: visit.payment_method
+                                    });
+                                  }}
+                                  className="text-xs font-bold px-3 py-1.5 bg-black/5 hover:bg-black/10 text-white rounded-lg border border-white/10 transition-colors flex items-center"
+                                >
+                                  <Download className="w-3 h-3 mr-1" /> Invoice
+                                </button>
+                                <button
+                                  onClick={() => openEditFullVisit(visit)}
+                                  className="p-1.5 hover:bg-white/10 text-white/60 rounded-lg transition-colors border border-transparent hover:border-white/20"
+                                  title="Edit Visit"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteVisit(visit.id)}
+                                  className="p-1.5 hover:bg-danger/20 text-danger rounded-lg transition-colors border border-transparent hover:border-danger/30"
+                                  title="Delete Visit"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
                           </div>
+
+                          {/* Personal notes matching this visit date */}
+                          {visitNotes.length > 0 && (
+                            <div className="border-t border-amber-400/15 bg-amber-400/5 px-6 py-3 flex flex-col gap-2">
+                              {visitNotes.map(note => (
+                                <div key={note.id} className="flex items-start gap-2">
+                                  <NotebookPen className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                                  <p className="text-xs text-amber-200/80 leading-relaxed whitespace-pre-wrap">{note.note}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
