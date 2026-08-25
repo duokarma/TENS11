@@ -1900,10 +1900,11 @@ export default function Customers() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {selectedHistory.map((visit: any) => {
+                    {[...selectedHistory].sort((a: any, b: any) => new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime()).map((visit: any) => {
                       const servicesList = visit.visit_services || [];
                       const productsList = visit.visit_products || [];
-                      const visitDateStr = visit.visit_date ? visit.visit_date.split('T')[0] : '';
+                      // Robust date match: take first 10 chars of visit_date regardless of timezone suffix
+                      const visitDateStr = visit.visit_date ? visit.visit_date.substring(0, 10) : '';
                       const visitNotes = customerNotes.filter(n => n.note_date === visitDateStr);
                       
                       return (
