@@ -235,7 +235,6 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   // ══════════════════════════════════════════════════════════════════
   y += 8;
 
-  // Combine services and products
   const allItems: { name: string; sac: string; qty: number; unitPrice: number; amount: number }[] = [];
 
   data.services.forEach(s => {
@@ -258,28 +257,24 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
     });
   });
 
-  // ── STRICT FORWARD CALCULATION LOGIC ──
-  const subtotal = allItems.reduce((sum, item) => sum + item.amount, 0);
+  // ── INCLUSIVE GST CALCULATION LOGIC ──
+  const grossTotal = allItems.reduce((sum, item) => sum + item.amount, 0);
   
-  // Calculate GST based purely on the subtotal
-  const cgstAmount = Math.round(subtotal * CGST_RATE * 100) / 100;
-  const sgstAmount = Math.round(subtotal * SGST_RATE * 100) / 100;
-  const totalGST = cgstAmount + sgstAmount;
+  // Taxable Value = Gross Total / 1.05
+  // If there's a discount, apply it before GST extraction
+  const discountAmount = data.discount > 0 ? data.discount : 0;
+  const netCustomerTotal = grossTotal - discountAmount;
   
-  // Strict grand total calculation
-  let calculatedGrandTotal = subtotal + totalGST;
+  const taxableValue = Math.round((netCustomerTotal / (1 + GST_RATE)) * 100) / 100;
   
-  // Check if there is an explicit discount passed from the frontend
-  let discountAmount = 0;
-  if (data.discount > 0) {
-    discountAmount = data.discount;
-    calculatedGrandTotal -= discountAmount;
-  }
+  // Total GST = Net Total - Taxable Value (this prevents 1 cent floating point rounding errors)
+  const totalGST = Math.round((netCustomerTotal - taxableValue) * 100) / 100;
   
-  // Validation check as requested:
-  // If we wanted to throw an error, we could do it here. 
-  // However, since we are dynamically calculating everything from the line items as requested, 
-  // the math is guaranteed to be 100% accurate.
+  // Split into CGST and SGST
+  const cgstAmount = Math.round((totalGST / 2) * 100) / 100;
+  const sgstAmount = Math.round((totalGST / 2) * 100) / 100;
+  
+  const grandTotal = netCustomerTotal;
 
   const itemRows: any[] = allItems.map((item, idx) => {
     return [
@@ -296,18 +291,22 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   //  TOTALS & GST BREAKDOWN (merged into the same table)
   // ══════════════════════════════════════════════════════════════════
   
-  // We append the totals directly to the itemRows so they align perfectly
-  itemRows.push([
-    { content: 'Subtotal:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
-    { content: subtotal.toFixed(2), styles: { halign: 'right' } }
-  ]);
-  
   if (discountAmount > 0) {
+    itemRows.push([
+      { content: 'Gross Total:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+      { content: grossTotal.toFixed(2), styles: { halign: 'right' } }
+    ]);
     itemRows.push([
       { content: 'Discount:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
       { content: `-${discountAmount.toFixed(2)}`, styles: { halign: 'right', textColor: [200, 0, 0] } }
     ]);
   }
+
+  // We append the totals directly to the itemRows so they align perfectly
+  itemRows.push([
+    { content: 'Subtotal:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: taxableValue.toFixed(2), styles: { halign: 'right' } }
+  ]);
   
   itemRows.push([
     { content: `CGST @ ${(CGST_RATE * 100).toFixed(1)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
@@ -315,7 +314,7 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   ]);
   
   itemRows.push([
-    { content: `SGST @ ${(SGST_RATE * 100).toFixed(1)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: `SGST @ ${(CGST_RATE * 100).toFixed(1)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
     { content: sgstAmount.toFixed(2), styles: { halign: 'right' } }
   ]);
   
@@ -326,7 +325,7 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   
   itemRows.push([
     { content: 'Grand Total:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } },
-    { content: calculatedGrandTotal.toFixed(2), styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } }
+    { content: grandTotal.toFixed(2), styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } }
   ]);
 
   if (itemRows.length > 0) {
@@ -362,25 +361,22 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
     y = (doc as any).lastAutoTable.finalY;
   }
 
-  y = (doc as any).lastAutoTable.finalY + 6;
+  y = (doc as any).lastAutoTable.finalY + 8;
 
   // ══════════════════════════════════════════════════════════════════
-  //  AMOUNT IN WORDS
+  //  AMOUNT IN WORDS & PAYMENT METHOD
   // ══════════════════════════════════════════════════════════════════
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   doc.text(`Amount in Words: `, leftMargin, y);
   doc.setFont('helvetica', 'normal');
-  const wordsText = numberToWords(calculatedGrandTotal);
-  // Wrap long text
+  const wordsText = numberToWords(grandTotal);
   const wordsLines = doc.splitTextToSize(wordsText, rightEdge - leftMargin - 32);
   doc.text(wordsLines, leftMargin + 32, y);
-  y += wordsLines.length * 4 + 4;
+  
+  y += wordsLines.length * 5;
 
-  // ══════════════════════════════════════════════════════════════════
-  //  PAYMENT METHOD
-  // ══════════════════════════════════════════════════════════════════
   if (data.paymentMethod) {
     doc.setFont('helvetica', 'bold');
     doc.text('Payment Method: ', leftMargin, y);
