@@ -1864,20 +1864,24 @@ export default function Customers() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => {
-                                    generateInvoicePDF({
-                                      invoiceNumber: visit.id.substring(0, 8).toUpperCase(),
-                                      date: visit.visit_date,
-                                      customerName: selectedCustomer.name,
-                                      customerPhone: selectedCustomer.phone,
-                                      services: servicesList.map((s: any) => ({ name: s.service_name, quantity: 1, price: s.price || 0, amount: s.price || 0 })),
-                                      products: productsList.map((p: any) => ({ name: p.product_name, quantity: p.quantity, price: p.price || 0, amount: (p.price || 0) * p.quantity })),
-                                      subtotal: visit.grand_total,
-                                      tax: 0,
-                                      discount: 0,
-                                      grandTotal: visit.grand_total,
-                                      paymentMethod: visit.payment_method
-                                    });
+                                  onClick={async () => {
+                                    try {
+                                      await generateInvoicePDF({
+                                        invoiceNumber: visit.id.substring(0, 8).toUpperCase(),
+                                        date: visit.visit_date,
+                                        customerName: selectedCustomer.name,
+                                        customerPhone: selectedCustomer.phone,
+                                        services: servicesList.map((s: any) => ({ name: s.service_name, quantity: 1, price: s.price || 0, amount: s.price || 0 })),
+                                        products: productsList.map((p: any) => ({ name: p.product_name, quantity: p.quantity, price: p.price || 0, amount: (p.price || 0) * p.quantity })),
+                                        subtotal: visit.grand_total,
+                                        tax: 0,
+                                        discount: 0,
+                                        grandTotal: visit.grand_total,
+                                        paymentMethod: visit.payment_method
+                                      });
+                                    } catch (err) {
+                                      toast.error('Failed to generate invoice');
+                                    }
                                   }}
                                   className="text-xs font-bold px-3 py-1.5 bg-black/5 hover:bg-black/10 text-white rounded-lg border border-white/10 transition-colors flex items-center"
                                 >
