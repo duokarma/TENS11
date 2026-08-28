@@ -2,19 +2,19 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 
-const GSTIN = '24ABCDE1234F1Z1'; // Replace with actual GSTIN
-const PLACE_OF_SUPPLY = 'Gujarat (24)'; // Replace with actual state
-const GST_RATE = 0.05; // 5% GST
-const CGST_RATE = 0.025; // 2.5% CGST
-const SGST_RATE = 0.025; // 2.5% SGST
+const GSTIN = '24ABCDE1234F1Z1'; 
+const PLACE_OF_SUPPLY = 'Gujarat (24)'; 
+const GST_RATE = 0.05; 
+const CGST_RATE = 0.025; 
+const SGST_RATE = 0.025; 
 
-// Map of services to SAC codes
 const SAC_MAP: Record<string, string> = {
   'Haircut & Styling': '999722',
   'Skin Hydration Facial': '999721',
   'KENPEKI CLEANUP': '998721',
   'HEEL PEEL': '998721',
-  // Default SAC code for beauty treatments
+  'RETINOL': '998721',
+  'Body massage': '998721',
   default: '998721',
 };
 
@@ -27,7 +27,6 @@ function getSACCode(serviceName: string): string {
   return SAC_MAP.default;
 }
 
-/** Convert a number into Indian Rupees in words */
 function numberToWords(num: number): string {
   if (num === 0) return 'Zero';
 
@@ -200,7 +199,7 @@ export const generateInvoicePDF = async (data: {
   data.products.forEach(p => {
     allItems.push({
       name: `${p.name} (Product)`,
-      sac: '998721', // Default SAC for products if no HSN is provided
+      sac: '998721', 
       qty: p.quantity,
       unitPrice: p.price,
       amount: Math.round(p.quantity * p.price * 100) / 100,
@@ -210,21 +209,21 @@ export const generateInvoicePDF = async (data: {
   // ── INCLUSIVE GST CALCULATION LOGIC ──
   const grossTotal = allItems.reduce((sum, item) => sum + item.amount, 0);
   
-  // If there's a discount, apply it before GST extraction
   const discountAmount = data.discount > 0 ? data.discount : 0;
-  const netCustomerTotal = grossTotal - discountAmount;
   
-  // Taxable Value = Net Total / 1.05
-  const taxableValue = Math.round((netCustomerTotal / (1 + GST_RATE)) * 100) / 100;
+  // Grand Total is exactly the Gross Customer Total minus discount
+  const grandTotal = grossTotal - discountAmount;
   
-  // Total GST = Net Total - Taxable Value (prevents 1 cent floating point errors)
-  const totalGST = Math.round((netCustomerTotal - taxableValue) * 100) / 100;
+  // Taxable Value is strictly extracted from the Grand Total
+  // Taxable Value = Grand Total / 1.05
+  const taxableValue = Math.round((grandTotal / (1 + GST_RATE)) * 100) / 100;
   
-  // Split into CGST and SGST
+  // Total GST is the exact remainder
+  const totalGST = Math.round((grandTotal - taxableValue) * 100) / 100;
+  
+  // Split CGST & SGST safely to ensure they add up perfectly to totalGST
   const cgstAmount = Math.round((totalGST / 2) * 100) / 100;
-  const sgstAmount = Math.round((totalGST / 2) * 100) / 100;
-  
-  const grandTotal = netCustomerTotal;
+  const sgstAmount = Math.round((totalGST - cgstAmount) * 100) / 100;
 
   const itemRows: any[] = allItems.map((item, idx) => {
     return [
@@ -350,20 +349,25 @@ export const generateInvoicePDF = async (data: {
   y += 6;
   doc.text('IFSC Code: BARB0GODIRD', leftMargin, y);
 
-  // Dynamic QR Code Generation using qrcode library
+  // Dynamic QR Code Generation using actual TEN11 UPI
   try {
     const QRCode = await import('qrcode');
-    const upiID = 'duokarma54@okicici'; 
-    const upiName = 'TEN11 SALON';
-    const upiURI = `upi://pay?pa=${upiID}&pn=${encodeURIComponent(upiName)}&am=${grandTotal.toFixed(2)}&cu=INR`;
+    const upiID = 'ten19327841@barodampay'; 
+    const payeeName = 'TEN11 HAIR STUDIO AND SKIN CARE';
     
-    // Generate valid Base64 data URI
-    const dynamicQrBase64 = await QRCode.toDataURL(upiURI, { margin: 1, width: 120 });
+    // Construct exact UPI deep link payload
+    const upiUrl = `upi://pay?pa=${encodeURIComponent(upiID)}&pn=${encodeURIComponent(payeeName)}&am=${grandTotal.toFixed(2)}&cu=INR`;
+    
+    // Generate valid Base64 data URI (high-res, high error correction, adequate quiet zone margin)
+    const dynamicQrBase64 = await QRCode.toDataURL(upiUrl, { 
+      margin: 2, 
+      width: 300,
+      errorCorrectionLevel: 'H' 
+    });
     
     if (dynamicQrBase64) {
       const qrSize = 25; // mm
       const qrX = rightEdge - qrSize;
-      // Position QR code slightly up so it perfectly balances the Payment Details text
       const qrY = y - 18;
 
       doc.setFontSize(9);
