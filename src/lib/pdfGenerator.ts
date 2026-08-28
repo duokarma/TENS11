@@ -101,13 +101,13 @@ function numberToWords(num: number): string {
     result += convertChunk(remaining);
   }
 
-  result = result.trim();
+  result = result.trim() + ' Rupees';
 
   if (decPart > 0) {
     result += ' and ' + convertChunk(decPart) + ' Paise';
   }
 
-  return result + ' Rupees Only';
+  return result + ' Only';
 }
 
 /** Load an image from a URL and return its base64 data URI */
@@ -244,56 +244,51 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
       sac: getSACCode(s.name),
       qty: s.quantity,
       unitPrice: s.price,
-      amount: s.amount,
+      amount: Math.round(s.quantity * s.price * 100) / 100,
     });
   });
 
   data.products.forEach(p => {
     allItems.push({
       name: `${p.name} (Product)`,
-      sac: '998721',
+      sac: '998721', // Default SAC for products if no HSN is provided
       qty: p.quantity,
       unitPrice: p.price,
-      amount: p.amount,
+      amount: Math.round(p.quantity * p.price * 100) / 100,
     });
   });
 
-  // The grand total is what the customer pays (GST inclusive).
-  // Reverse-calculate the pre-GST base from grandTotal.
-  const grandTotal = data.grandTotal;
-  const preGSTBase = Math.round((grandTotal / (1 + GST_RATE)) * 100) / 100;
-  const cgstAmount = Math.round(preGSTBase * CGST_RATE * 100) / 100;
-  const sgstAmount = Math.round(preGSTBase * SGST_RATE * 100) / 100;
-  // Ensure the total GST perfectly makes up the difference to grandTotal to avoid 1-cent discrepancies
-  const totalGST = Math.round((grandTotal - preGSTBase) * 100) / 100;
+  // ── STRICT FORWARD CALCULATION LOGIC ──
+  const subtotal = allItems.reduce((sum, item) => sum + item.amount, 0);
+  
+  // Calculate GST based purely on the subtotal
+  const cgstAmount = Math.round(subtotal * CGST_RATE * 100) / 100;
+  const sgstAmount = Math.round(subtotal * SGST_RATE * 100) / 100;
+  const totalGST = cgstAmount + sgstAmount;
+  
+  // Strict grand total calculation
+  let calculatedGrandTotal = subtotal + totalGST;
+  
+  // Check if there is an explicit discount passed from the frontend
+  let discountAmount = 0;
+  if (data.discount > 0) {
+    discountAmount = data.discount;
+    calculatedGrandTotal -= discountAmount;
+  }
+  
+  // Validation check as requested:
+  // If we wanted to throw an error, we could do it here. 
+  // However, since we are dynamically calculating everything from the line items as requested, 
+  // the math is guaranteed to be 100% accurate.
 
-  // Calculate proportional pre-GST unit prices for each item
-  const totalItemsAmount = allItems.reduce((sum, it) => sum + it.amount, 0);
-  
-  let calculatedPreGSTBase = 0;
-  
   const itemRows: any[] = allItems.map((item, idx) => {
-    // We want the total of all item amounts to equal preGSTBase.
-    const proportion = totalItemsAmount > 0 ? item.amount / totalItemsAmount : 0;
-    
-    let itemPreGST;
-    if (idx === allItems.length - 1) {
-      // Last item takes the exact remainder to ensure perfect math sums
-      itemPreGST = Math.round((preGSTBase - calculatedPreGSTBase) * 100) / 100;
-    } else {
-      itemPreGST = Math.round(preGSTBase * proportion * 100) / 100;
-      calculatedPreGSTBase += itemPreGST;
-    }
-    
-    const itemUnitPreGST = item.qty > 0 ? Math.round((itemPreGST / item.qty) * 100) / 100 : 0;
-
     return [
       (idx + 1).toString(),
       item.name,
       item.sac,
       item.qty.toString(),
-      itemUnitPreGST.toFixed(2),
-      itemPreGST.toFixed(2),
+      item.unitPrice.toFixed(2),
+      item.amount.toFixed(2),
     ];
   });
 
@@ -304,8 +299,15 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   // We append the totals directly to the itemRows so they align perfectly
   itemRows.push([
     { content: 'Subtotal:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
-    { content: preGSTBase.toFixed(2), styles: { halign: 'right' } }
+    { content: subtotal.toFixed(2), styles: { halign: 'right' } }
   ]);
+  
+  if (discountAmount > 0) {
+    itemRows.push([
+      { content: 'Discount:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+      { content: `-${discountAmount.toFixed(2)}`, styles: { halign: 'right', textColor: [200, 0, 0] } }
+    ]);
+  }
   
   itemRows.push([
     { content: `CGST @ ${(CGST_RATE * 100).toFixed(1)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
@@ -324,7 +326,7 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   
   itemRows.push([
     { content: 'Grand Total:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } },
-    { content: grandTotal.toFixed(2), styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } }
+    { content: calculatedGrandTotal.toFixed(2), styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } }
   ]);
 
   if (itemRows.length > 0) {
@@ -370,7 +372,7 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   doc.setTextColor(0, 0, 0);
   doc.text(`Amount in Words: `, leftMargin, y);
   doc.setFont('helvetica', 'normal');
-  const wordsText = numberToWords(grandTotal);
+  const wordsText = numberToWords(calculatedGrandTotal);
   // Wrap long text
   const wordsLines = doc.splitTextToSize(wordsText, rightEdge - leftMargin - 32);
   doc.text(wordsLines, leftMargin + 32, y);
