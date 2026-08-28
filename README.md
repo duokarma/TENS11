@@ -71,3 +71,5 @@ export default defineConfig([
   },
 ])
 ```
+
+* Updated Invoice System to Tax Invoice format with GST tracking.*
