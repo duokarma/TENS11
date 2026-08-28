@@ -264,14 +264,27 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   const preGSTBase = Math.round((grandTotal / (1 + GST_RATE)) * 100) / 100;
   const cgstAmount = Math.round(preGSTBase * CGST_RATE * 100) / 100;
   const sgstAmount = Math.round(preGSTBase * SGST_RATE * 100) / 100;
-  const totalGST = Math.round((cgstAmount + sgstAmount) * 100) / 100;
+  // Ensure the total GST perfectly makes up the difference to grandTotal to avoid 1-cent discrepancies
+  const totalGST = Math.round((grandTotal - preGSTBase) * 100) / 100;
 
   // Calculate proportional pre-GST unit prices for each item
   const totalItemsAmount = allItems.reduce((sum, it) => sum + it.amount, 0);
-  const itemRows = allItems.map((item, idx) => {
-    // Proportional pre-GST amount for this item
+  
+  let calculatedPreGSTBase = 0;
+  
+  const itemRows: any[] = allItems.map((item, idx) => {
+    // We want the total of all item amounts to equal preGSTBase.
     const proportion = totalItemsAmount > 0 ? item.amount / totalItemsAmount : 0;
-    const itemPreGST = Math.round(preGSTBase * proportion * 100) / 100;
+    
+    let itemPreGST;
+    if (idx === allItems.length - 1) {
+      // Last item takes the exact remainder to ensure perfect math sums
+      itemPreGST = Math.round((preGSTBase - calculatedPreGSTBase) * 100) / 100;
+    } else {
+      itemPreGST = Math.round(preGSTBase * proportion * 100) / 100;
+      calculatedPreGSTBase += itemPreGST;
+    }
+    
     const itemUnitPreGST = item.qty > 0 ? Math.round((itemPreGST / item.qty) * 100) / 100 : 0;
 
     return [
@@ -283,6 +296,36 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
       itemPreGST.toFixed(2),
     ];
   });
+
+  // ══════════════════════════════════════════════════════════════════
+  //  TOTALS & GST BREAKDOWN (merged into the same table)
+  // ══════════════════════════════════════════════════════════════════
+  
+  // We append the totals directly to the itemRows so they align perfectly
+  itemRows.push([
+    { content: 'Subtotal:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: preGSTBase.toFixed(2), styles: { halign: 'right' } }
+  ]);
+  
+  itemRows.push([
+    { content: `CGST @ ${(CGST_RATE * 100).toFixed(1)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: cgstAmount.toFixed(2), styles: { halign: 'right' } }
+  ]);
+  
+  itemRows.push([
+    { content: `SGST @ ${(SGST_RATE * 100).toFixed(1)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: sgstAmount.toFixed(2), styles: { halign: 'right' } }
+  ]);
+  
+  itemRows.push([
+    { content: `Total GST (${(GST_RATE * 100).toFixed(0)}%):`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: totalGST.toFixed(2), styles: { halign: 'right' } }
+  ]);
+  
+  itemRows.push([
+    { content: 'Grand Total:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } },
+    { content: grandTotal.toFixed(2), styles: { halign: 'right', fontStyle: 'bold', fontSize: 10 } }
+  ]);
 
   if (itemRows.length > 0) {
     autoTable(doc, {
@@ -316,42 +359,6 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
 
     y = (doc as any).lastAutoTable.finalY;
   }
-
-  // ══════════════════════════════════════════════════════════════════
-  //  TOTALS & GST BREAKDOWN (right-aligned rows inside table)
-  // ══════════════════════════════════════════════════════════════════
-  const totalsData = [
-    ['Subtotal:', preGSTBase.toFixed(2)],
-    [`CGST @ ${(CGST_RATE * 100).toFixed(1)}%:`, cgstAmount.toFixed(2)],
-    [`SGST @ ${(SGST_RATE * 100).toFixed(1)}%:`, sgstAmount.toFixed(2)],
-    [`Total GST (${(GST_RATE * 100).toFixed(0)}%):`, totalGST.toFixed(2)],
-    ['Grand Total', grandTotal.toFixed(2)],
-  ];
-
-  autoTable(doc, {
-    startY: y,
-    body: totalsData,
-    theme: 'grid',
-    styles: {
-      fontSize: 9,
-      cellPadding: 3,
-      textColor: [30, 30, 30],
-      lineColor: [0, 0, 0],
-      lineWidth: 0.3,
-    },
-    columnStyles: {
-      0: { halign: 'right', fontStyle: 'bold', cellWidth: 140 },
-      1: { halign: 'right', cellWidth: 28 },
-    },
-    didParseCell: (hookData: any) => {
-      // Make Grand Total row stand out
-      if (hookData.row.index === 4) {
-        hookData.cell.styles.fontStyle = 'bold';
-        hookData.cell.styles.fontSize = 10;
-        hookData.cell.styles.textColor = [0, 0, 0];
-      }
-    },
-  });
 
   y = (doc as any).lastAutoTable.finalY + 6;
 
