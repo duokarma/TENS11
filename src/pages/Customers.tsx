@@ -1363,7 +1363,7 @@ export default function Customers() {
                       <div className="space-y-3">
                         {customerServices.map((cs, idx) => (
                           <div key={idx} className="flex items-center gap-3">
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <Select
                                 instanceId={`customer-service-${idx}`}
                                 styles={selectStyles}
@@ -1388,7 +1388,8 @@ export default function Customers() {
                                   updated[idx].customPrice = e.target.value === '' ? undefined : Number(e.target.value);
                                   setCustomerServices(updated);
                                 }}
-                                className="glass-input px-3 py-3 w-24 text-center bg-black/40 shrink-0"
+                                className="glass-input px-3 py-3 text-center bg-black/40 shrink-0"
+                                style={{ width: '90px' }}
                                 placeholder="Price"
                               />
                             )}
@@ -1571,7 +1572,7 @@ export default function Customers() {
                   <div className="space-y-3">
                     {visitServices.map((vs, idx) => (
                       <div key={idx} className="flex items-center gap-3">
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <Select
                             instanceId={`visit-service-${idx}`}
                             styles={selectStyles}
@@ -1596,7 +1597,8 @@ export default function Customers() {
                               updated[idx].customPrice = e.target.value === '' ? undefined : Number(e.target.value);
                               setVisitServices(updated);
                             }}
-                            className="glass-input px-3 py-3 w-24 text-center bg-black/40 shrink-0"
+                            className="glass-input px-3 py-3 text-center bg-black/40 shrink-0"
+                            style={{ width: '90px' }}
                             placeholder="Price"
                           />
                         )}
