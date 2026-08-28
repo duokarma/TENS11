@@ -1,74 +1,37 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 
-// ── GST Configuration ──────────────────────────────────────────────
-const GST_RATE = 0.05;        // 5% total GST
-const CGST_RATE = 0.025;      // 2.5% CGST
-const SGST_RATE = 0.025;      // 2.5% SGST
-const GSTIN = '24ABCDE1234F1Z1';
-const PLACE_OF_SUPPLY = 'Gujarat (24)';
-const DEFAULT_SAC = '998721';  // Beauty & physical well-being services
+const GSTIN = '24ABCDE1234F1Z1'; // Replace with actual GSTIN
+const PLACE_OF_SUPPLY = 'Gujarat (24)'; // Replace with actual state
+const GST_RATE = 0.05; // 5% GST
+const CGST_RATE = 0.025; // 2.5% CGST
+const SGST_RATE = 0.025; // 2.5% SGST
 
-// SAC code mapping for common salon service categories
-const SAC_CODES: Record<string, string> = {
-  'hair':     '998711',
-  'haircut':  '998711',
-  'styling':  '998711',
-  'color':    '998711',
-  'colour':   '998711',
-  'keratin':  '998711',
-  'smoothing':'998711',
-  'rebonding':'998711',
-  'perm':     '998711',
-  'facial':   '998721',
-  'cleanup':  '998721',
-  'bleach':   '998721',
-  'wax':      '998721',
-  'threading':'998721',
-  'makeup':   '998721',
-  'bridal':   '998721',
-  'skin':     '998721',
-  'manicure': '998722',
-  'pedicure': '998722',
-  'nail':     '998722',
-  'spa':      '998723',
-  'massage':  '998723',
-  'body':     '998723',
+// Map of services to SAC codes
+const SAC_MAP: Record<string, string> = {
+  'Haircut & Styling': '999722',
+  'Skin Hydration Facial': '999721',
+  'KENPEKI CLEANUP': '998721',
+  'HEEL PEEL': '998721',
+  // Default SAC code for beauty treatments
+  default: '998721',
 };
 
-// ── Invoice Data Interface ─────────────────────────────────────────
-export interface InvoiceData {
-  invoiceNumber: string;
-  date: string;
-  customerName: string;
-  customerPhone: string;
-  services: { name: string; quantity: number; price: number; amount: number }[];
-  products: { name: string; quantity: number; price: number; amount: number }[];
-  subtotal: number;
-  tax: number;
-  discount: number;
-  grandTotal: number;
-  paymentMethod?: string;
-}
-
-// ── Helpers ────────────────────────────────────────────────────────
-
-/** Look up the SAC code for a service by matching keywords in its name */
 function getSACCode(serviceName: string): string {
-  const lower = serviceName.toLowerCase();
-  for (const [keyword, sac] of Object.entries(SAC_CODES)) {
-    if (lower.includes(keyword)) return sac;
+  for (const [key, value] of Object.entries(SAC_MAP)) {
+    if (serviceName.toLowerCase().includes(key.toLowerCase())) {
+      return value;
+    }
   }
-  return DEFAULT_SAC;
+  return SAC_MAP.default;
 }
 
-/** Convert a number to Indian-English words (e.g. 1500 → "One Thousand Five Hundred") */
+/** Convert a number into Indian Rupees in words */
 function numberToWords(num: number): string {
   if (num === 0) return 'Zero';
 
-  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
   const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
   function convertChunk(n: number): string {
@@ -81,7 +44,6 @@ function numberToWords(num: number): string {
   const intPart = Math.floor(Math.abs(num));
   const decPart = Math.round((Math.abs(num) - intPart) * 100);
 
-  // Indian numbering: Crore (10^7), Lakh (10^5), Thousand (10^3), Hundred (10^2)
   let result = '';
   let remaining = intPart;
 
@@ -110,40 +72,28 @@ function numberToWords(num: number): string {
   return result + ' Only';
 }
 
-/** Load an image from a URL and return its base64 data URI */
-function loadImageAsBase64(url: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      // Resize QR to a reasonable size for the PDF (150×150 px)
-      const size = 150;
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, size, size);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
-    };
-    img.onerror = () => reject(new Error('Failed to load QR image'));
-    img.src = url;
+export const generateInvoicePDF = async (data: {
+  invoiceNumber: string;
+  date: string;
+  customerName: string;
+  customerPhone: string;
+  services: any[];
+  products: any[];
+  subtotal: number;
+  tax: number;
+  discount: number;
+  grandTotal: number;
+  paymentMethod?: string;
+}) => {
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
   });
-}
 
-// ── Main PDF Generator ─────────────────────────────────────────────
-export const generateInvoicePDF = async (data: InvoiceData) => {
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();  // 210mm (A4)
+  const pageWidth = doc.internal.pageSize.getWidth();
   const leftMargin = 14;
-  const rightEdge = pageWidth - 14; // 196
-
-  // ── Load QR code image ──
-  let qrBase64: string | null = null;
-  try {
-    qrBase64 = await loadImageAsBase64('/qr-payment.jpg');
-  } catch {
-    console.warn('Could not load QR code image');
-  }
+  const rightEdge = pageWidth - 14;
 
   // ══════════════════════════════════════════════════════════════════
   //  HEADER — "TAX INVOICE"
@@ -260,14 +210,14 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   // ── INCLUSIVE GST CALCULATION LOGIC ──
   const grossTotal = allItems.reduce((sum, item) => sum + item.amount, 0);
   
-  // Taxable Value = Gross Total / 1.05
   // If there's a discount, apply it before GST extraction
   const discountAmount = data.discount > 0 ? data.discount : 0;
   const netCustomerTotal = grossTotal - discountAmount;
   
+  // Taxable Value = Net Total / 1.05
   const taxableValue = Math.round((netCustomerTotal / (1 + GST_RATE)) * 100) / 100;
   
-  // Total GST = Net Total - Taxable Value (this prevents 1 cent floating point rounding errors)
+  // Total GST = Net Total - Taxable Value (prevents 1 cent floating point errors)
   const totalGST = Math.round((netCustomerTotal - taxableValue) * 100) / 100;
   
   // Split into CGST and SGST
@@ -288,7 +238,7 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   });
 
   // ══════════════════════════════════════════════════════════════════
-  //  TOTALS & GST BREAKDOWN (merged into the same table)
+  //  TOTALS & GST BREAKDOWN
   // ══════════════════════════════════════════════════════════════════
   
   if (discountAmount > 0) {
@@ -302,9 +252,8 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
     ]);
   }
 
-  // We append the totals directly to the itemRows so they align perfectly
   itemRows.push([
-    { content: 'Subtotal:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: 'Taxable Value:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
     { content: taxableValue.toFixed(2), styles: { halign: 'right' } }
   ]);
   
@@ -314,7 +263,7 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   ]);
   
   itemRows.push([
-    { content: `SGST @ ${(CGST_RATE * 100).toFixed(1)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: `SGST @ ${(SGST_RATE * 100).toFixed(1)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
     { content: sgstAmount.toFixed(2), styles: { halign: 'right' } }
   ]);
   
@@ -364,7 +313,7 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   y = (doc as any).lastAutoTable.finalY + 8;
 
   // ══════════════════════════════════════════════════════════════════
-  //  AMOUNT IN WORDS & PAYMENT METHOD
+  //  AMOUNT IN WORDS
   // ══════════════════════════════════════════════════════════════════
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
@@ -374,24 +323,20 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   const wordsText = numberToWords(grandTotal);
   const wordsLines = doc.splitTextToSize(wordsText, rightEdge - leftMargin - 32);
   doc.text(wordsLines, leftMargin + 32, y);
-  
   y += wordsLines.length * 5;
 
+  // ══════════════════════════════════════════════════════════════════
+  //  PAYMENT METHOD & DETAILS
+  // ══════════════════════════════════════════════════════════════════
   if (data.paymentMethod) {
     doc.setFont('helvetica', 'bold');
     doc.text('Payment Method: ', leftMargin, y);
     doc.setFont('helvetica', 'normal');
     doc.text(data.paymentMethod, leftMargin + 30, y);
-    y += 6;
+    y += 10;
+  } else {
+    y += 4;
   }
-
-  // ══════════════════════════════════════════════════════════════════
-  //  PAYMENT DETAILS  +  QR CODE
-  // ══════════════════════════════════════════════════════════════════
-  doc.setDrawColor(180, 180, 180);
-  doc.setLineWidth(0.3);
-  doc.line(leftMargin, y, rightEdge, y);
-  y += 6;
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
@@ -399,38 +344,46 @@ export const generateInvoicePDF = async (data: InvoiceData) => {
   doc.text('Payment Details', leftMargin, y);
   y += 6;
 
-  doc.setFontSize(11);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('Account No: 33300200000841', leftMargin, y);
   y += 6;
   doc.text('IFSC Code: BARB0GODIRD', leftMargin, y);
 
-  // QR code on the right
-  if (qrBase64) {
-    const qrSize = 30; // mm
-    const qrX = rightEdge - qrSize;
-    const qrY = y - 16;
+  // Dynamic QR Code Generation using qrcode library
+  try {
+    const QRCode = await import('qrcode');
+    const upiID = 'duokarma54@okicici'; 
+    const upiName = 'TEN11 SALON';
+    const upiURI = `upi://pay?pa=${upiID}&pn=${encodeURIComponent(upiName)}&am=${grandTotal.toFixed(2)}&cu=INR`;
+    
+    // Generate valid Base64 data URI
+    const dynamicQrBase64 = await QRCode.toDataURL(upiURI, { margin: 1, width: 120 });
+    
+    if (dynamicQrBase64) {
+      const qrSize = 25; // mm
+      const qrX = rightEdge - qrSize;
+      // Position QR code slightly up so it perfectly balances the Payment Details text
+      const qrY = y - 18;
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text('SCAN TO PAY', qrX + qrSize / 2, qrY - 2, { align: 'center' });
-    doc.addImage(qrBase64, 'JPEG', qrX, qrY, qrSize, qrSize);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('SCAN TO PAY', qrX + qrSize / 2, qrY - 2, { align: 'center' });
+      doc.addImage(dynamicQrBase64, 'PNG', qrX, qrY, qrSize, qrSize);
+    }
+  } catch (error) {
+    console.error('Error generating QR code:', error);
   }
-
-  y += 10;
 
   // ══════════════════════════════════════════════════════════════════
   //  FOOTER
   // ══════════════════════════════════════════════════════════════════
-  doc.setDrawColor(180, 180, 180);
-  doc.setLineWidth(0.3);
-  doc.line(leftMargin, y + 2, rightEdge, y + 2);
+  y += 20;
 
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('helvetica', 'italic');
   doc.setTextColor(120, 120, 120);
-  doc.text('Thank you for choosing TEN11 Salon & Skin Care!', pageWidth / 2, y + 8, { align: 'center' });
-  doc.text('This is a computer-generated invoice.', pageWidth / 2, y + 12, { align: 'center' });
+  doc.text('Thank you for choosing TEN11 Salon & Skin Care!', pageWidth / 2, y, { align: 'center' });
 
   // ── Save PDF ─────────────────────────────────────────────────────
   doc.save(`TEN11_Invoice_${data.invoiceNumber}.pdf`);
