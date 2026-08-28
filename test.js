@@ -11,7 +11,7 @@ const SGST_RATE = 0.025;
 
 function numberToWords(num) {
   if (num === 0) return 'Zero';
-
+  // ... omitted for brevity in thought, but I must include it here
   const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
   const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
@@ -137,23 +137,18 @@ async function run() {
   y += 8;
 
   const allItems = [
-    { name: 'KENPEKI CLEANUP', sac: '998721', qty: 1, unitPrice: 1500, amount: 1500 },
-    { name: 'HEEL PEEL', sac: '998721', qty: 1, unitPrice: 3000, amount: 3000 }
+    { name: 'RETINOL', sac: '998721', qty: 1, unitPrice: 4000, amount: 4000 },
+    { name: 'Body massage', sac: '998721', qty: 1, unitPrice: 2000, amount: 2000 }
   ];
 
   const grossTotal = allItems.reduce((sum, item) => sum + item.amount, 0);
-  
   const discountAmount = 0;
-  const netCustomerTotal = grossTotal - discountAmount;
+  const grandTotal = grossTotal - discountAmount;
   
-  const taxableValue = Math.round((netCustomerTotal / (1 + GST_RATE)) * 100) / 100;
-  
-  const totalGST = Math.round((netCustomerTotal - taxableValue) * 100) / 100;
-  
+  const taxableValue = Math.round((grandTotal / (1 + GST_RATE)) * 100) / 100;
+  const totalGST = Math.round((grandTotal - taxableValue) * 100) / 100;
   const cgstAmount = Math.round((totalGST / 2) * 100) / 100;
-  const sgstAmount = Math.round((totalGST / 2) * 100) / 100;
-  
-  const grandTotal = netCustomerTotal;
+  const sgstAmount = Math.round((totalGST - cgstAmount) * 100) / 100;
 
   const itemRows = allItems.map((item, idx) => {
     return [
@@ -235,7 +230,7 @@ async function run() {
   doc.setFont('helvetica', 'bold');
   doc.text('Payment Method: ', leftMargin, y);
   doc.setFont('helvetica', 'normal');
-  doc.text('UPI', leftMargin + 30, y);
+  doc.text('Cash', leftMargin + 30, y);
   y += 10;
 
   doc.setFontSize(10);
@@ -250,11 +245,19 @@ async function run() {
   y += 6;
   doc.text('IFSC Code: BARB0GODIRD', leftMargin, y);
 
-  const upiID = 'duokarma54@okicici'; 
-  const upiName = 'TEN11 SALON';
-  const upiURI = `upi://pay?pa=${upiID}&pn=${encodeURIComponent(upiName)}&am=${grandTotal.toFixed(2)}&cu=INR`;
+  // ACTUAL TEN11 UPI LOGIC
+  const upiID = 'ten19327841@barodampay';
+  const payeeName = 'TEN11 HAIR STUDIO AND SKIN CARE';
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(upiID)}&pn=${encodeURIComponent(payeeName)}&am=${grandTotal.toFixed(2)}&cu=INR`;
   
-  const dynamicQrBase64 = await QRCode.toDataURL(upiURI, { margin: 1, width: 120 });
+  console.log("Encoding exactly:", upiUrl);
+  
+  // Create high-res QR, errorCorrectionLevel H for robustness, wider margin for quiet zone
+  const dynamicQrBase64 = await QRCode.toDataURL(upiUrl, { 
+    margin: 2, 
+    width: 300,
+    errorCorrectionLevel: 'H'
+  });
   
   const qrSize = 25; 
   const qrX = rightEdge - qrSize;
@@ -273,7 +276,7 @@ async function run() {
   doc.text('Thank you for choosing TEN11 Salon & Skin Care!', pageWidth / 2, y, { align: 'center' });
 
   const pdfData = doc.output('arraybuffer');
-  fs.writeFileSync('C:/Users/Moizd/.gemini/antigravity/brain/a06608ef-6f40-42bf-856e-d0b2fc54b3f1/TEN11_Invoice_TEST.pdf', Buffer.from(pdfData));
+  fs.writeFileSync('C:/Users/Moizd/.gemini/antigravity/brain/a06608ef-6f40-42bf-856e-d0b2fc54b3f1/TEN11_Invoice_FIXED_QR.pdf', Buffer.from(pdfData));
   console.log('PDF saved.');
 }
 
