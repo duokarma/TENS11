@@ -258,7 +258,7 @@ export default function Customers() {
   // Modals state
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [customerToEdit, setCustomerToEdit] = useState<Customer | null>(null);
-  const [customerServices, setCustomerServices] = useState<{serviceId: string}[]>([]);
+  const [customerServices, setCustomerServices] = useState<{serviceId: string, customPrice?: number, isEditingPrice?: boolean}[]>([]);
   const [customerProducts, setCustomerProducts] = useState<{productId: string, quantity: number}[]>([]);
   const [customerStaffId, setCustomerStaffId] = useState<string>('');
   const [customerStaffIds, setCustomerStaffIds] = useState<string[]>([]);
@@ -281,7 +281,7 @@ export default function Customers() {
   // Record Visit modal state
   const [isRecordVisitOpen, setIsRecordVisitOpen] = useState(false);
   const [visitCustomer, setVisitCustomer] = useState<Customer | null>(null);
-  const [visitServices, setVisitServices] = useState<{serviceId: string}[]>([]);
+  const [visitServices, setVisitServices] = useState<{serviceId: string, customPrice?: number, isEditingPrice?: boolean}[]>([]);
   const [visitProducts, setVisitProducts] = useState<{productId: string, quantity: number}[]>([]);
   const [visitStaffId, setVisitStaffId] = useState<string>('');
   const [visitStaffIds, setVisitStaffIds] = useState<string[]>([]);
@@ -648,7 +648,7 @@ export default function Customers() {
 
         const vServicesData = customerServices.map(cs => {
           const s = services.find(x => x.id.toString() === cs.serviceId.toString())!;
-          return { service_id: s.id, service_name: s.service_name, price: Number(s.price) };
+          return { service_id: s.id, service_name: s.service_name, price: cs.customPrice !== undefined ? Number(cs.customPrice) : Number(s.price) };
         });
 
         if (vServicesData.length > 0) {
@@ -727,7 +727,8 @@ export default function Customers() {
     setVisitToEdit(visit);
     
     const vServices = (visit.visit_services || []).map((vs: any) => ({
-      serviceId: services.find((s: any) => s.service_name === vs.service_name)?.id?.toString() || ''
+      serviceId: services.find((s: any) => s.service_name === vs.service_name)?.id?.toString() || '',
+      customPrice: vs.price
     })).filter((vs: any) => vs.serviceId);
     setVisitServices(vServices.length > 0 ? vServices : [{ serviceId: '' }]);
     
@@ -838,7 +839,7 @@ export default function Customers() {
       // 2. Insert visit_services
       const vServicesData = filledServices.map(vs => {
         const s = services.find(x => x.id.toString() === vs.serviceId.toString())!;
-        return { visit_id: currentVisitId, service_id: s.id, service_name: s.service_name, price: Number(s.price) };
+        return { visit_id: currentVisitId, service_id: s.id, service_name: s.service_name, price: vs.customPrice !== undefined ? Number(vs.customPrice) : Number(s.price) };
       });
       if (vServicesData.length > 0) {
         const { error: vsErr } = await supabase.from('visit_services').insert(vServicesData);
@@ -1378,6 +1379,29 @@ export default function Customers() {
                                 classNamePrefix="react-select"
                               />
                             </div>
+                            {cs.isEditingPrice && cs.serviceId && (
+                              <input
+                                type="number"
+                                value={cs.customPrice !== undefined ? cs.customPrice : (services.find(s => s.id.toString() === cs.serviceId)?.price || '')}
+                                onChange={(e) => {
+                                  const updated = [...customerServices];
+                                  updated[idx].customPrice = e.target.value === '' ? undefined : Number(e.target.value);
+                                  setCustomerServices(updated);
+                                }}
+                                className="glass-input px-3 py-3 w-24 text-center bg-black/40 shrink-0"
+                                placeholder="Price"
+                              />
+                            )}
+                            <button type="button" onClick={() => {
+                               const updated = [...customerServices];
+                               updated[idx].isEditingPrice = !updated[idx].isEditingPrice;
+                               if (updated[idx].isEditingPrice && updated[idx].customPrice === undefined) {
+                                  updated[idx].customPrice = Number(services.find(s => s.id.toString() === cs.serviceId)?.price || 0);
+                               }
+                               setCustomerServices(updated);
+                            }} className="p-3 text-blue-400 hover:bg-blue-400/20 rounded-xl bg-blue-400/10 border border-blue-400/20 transition-colors shrink-0" title="Edit Price">
+                              <Edit2 className="w-5 h-5" />
+                            </button>
                             <button type="button" onClick={() => setCustomerServices(customerServices.filter((_, i) => i !== idx))} className="p-3 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 transition-colors">
                               <Trash2 className="w-5 h-5" />
                             </button>
@@ -1443,7 +1467,7 @@ export default function Customers() {
                 )}
 
                   {!customerToEdit && (customerServices.length > 0 || customerProducts.length > 0) && (() => {
-                    const calcSvcTotal = customerServices.reduce((sum, cs) => sum + Number(services.find(s => s.id.toString() === cs.serviceId.toString())?.price || 0), 0);
+                    const calcSvcTotal = customerServices.reduce((sum, cs) => sum + (cs.customPrice !== undefined ? Number(cs.customPrice) : Number(services.find(s => s.id.toString() === cs.serviceId.toString())?.price || 0)), 0);
                     const calcProdTotal = customerProducts.reduce((sum, cp) => sum + (Number(products.find(p => p.id.toString() === cp.productId.toString())?.selling_price || products.find(p => p.id.toString() === cp.productId.toString())?.sellingPrice || 0) * cp.quantity), 0);
                     const calcTotal = calcSvcTotal + calcProdTotal;
                     const finalAmt = addFinalAmount !== '' ? Number(addFinalAmount) : calcTotal;
@@ -1563,6 +1587,34 @@ export default function Customers() {
                             classNamePrefix="react-select"
                           />
                         </div>
+                        {vs.isEditingPrice && vs.serviceId && (
+                          <input
+                            type="number"
+                            value={vs.customPrice !== undefined ? vs.customPrice : (services.find(s => s.id.toString() === vs.serviceId)?.price || '')}
+                            onChange={(e) => {
+                              const updated = [...visitServices];
+                              updated[idx].customPrice = e.target.value === '' ? undefined : Number(e.target.value);
+                              setVisitServices(updated);
+                            }}
+                            className="glass-input px-3 py-3 w-24 text-center bg-black/40 shrink-0"
+                            placeholder="Price"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                             const updated = [...visitServices];
+                             updated[idx].isEditingPrice = !updated[idx].isEditingPrice;
+                             if (updated[idx].isEditingPrice && updated[idx].customPrice === undefined) {
+                                updated[idx].customPrice = Number(services.find(s => s.id.toString() === vs.serviceId)?.price || 0);
+                             }
+                             setVisitServices(updated);
+                          }}
+                          className="p-3 text-blue-400 hover:bg-blue-400/20 rounded-xl bg-blue-400/10 border border-blue-400/20 transition-colors shrink-0"
+                          title="Edit Price"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
                         <button
                           type="button"
                           onClick={() => setVisitServices(visitServices.filter((_, i) => i !== idx))}
@@ -1641,7 +1693,7 @@ export default function Customers() {
 
               {/* Live Total + Discount */}
               {(visitServices.some(vs => vs.serviceId) || visitProducts.some(vp => vp.productId)) && (() => {
-                const calcSvc = visitServices.reduce((sum, vs) => sum + Number(services.find(s => s.id.toString() === vs.serviceId)?.price || 0), 0);
+                const calcSvc = visitServices.reduce((sum, vs) => sum + (vs.customPrice !== undefined ? Number(vs.customPrice) : Number(services.find(s => s.id.toString() === vs.serviceId)?.price || 0)), 0);
                 const calcProd = visitProducts.reduce((sum, vp) => sum + (Number(products.find(p => p.id.toString() === vp.productId)?.selling_price || 0) * vp.quantity), 0);
                 const calcTotal = calcSvc + calcProd;
                 const finalAmt = visitFinalAmount !== '' ? Number(visitFinalAmount) : calcTotal;
