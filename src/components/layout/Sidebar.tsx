@@ -52,10 +52,10 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Brand Header */}
       <div className="flex h-24 shrink-0 items-center px-6 relative" style={{ borderBottom: '1px solid rgba(200, 157, 60,0.1)' }}>
         <div
-          className="w-10 h-10 rounded-full flex items-center justify-center mr-3 shrink-0 overflow-hidden shadow-sm"
+          className="w-14 h-9 rounded-xl flex items-center justify-center mr-3 shrink-0 overflow-hidden shadow-sm bg-black"
           style={{ border: '1px solid rgba(200, 157, 60,0.35)', boxShadow: '0 0 15px rgba(200, 157, 60,0.08)' }}
         >
-          <img src="/logo.png" alt="TEN11 Logo" className="w-full h-full object-cover" />
+          <img src="/logo.png" alt="TEN11 Logo" className="w-full h-full object-contain" />
         </div>
         <div>
           <h1

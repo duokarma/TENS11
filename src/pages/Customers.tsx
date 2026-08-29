@@ -7,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, Download, MessageCircle, Star, ClipboardList, Tag, Filter, SortDesc,
   NotebookPen, Save, PlusCircle
 } from 'lucide-react';
-import { generateInvoicePDF } from '../lib/pdfGenerator';
+import { generateInvoicePDF, generateProductInvoicePDF } from '../lib/pdfGenerator';
 import { format, isThisMonth, isToday, isYesterday, isThisWeek } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
@@ -1887,6 +1887,33 @@ export default function Customers() {
                                 >
                                   <Download className="w-3 h-3 mr-1" /> Invoice
                                 </button>
+                                {productsList.length > 0 && (
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await generateProductInvoicePDF({
+                                          invoiceNumber: visit.id.substring(0, 8).toUpperCase(),
+                                          date: visit.visit_date,
+                                          customerName: selectedCustomer.name,
+                                          customerPhone: selectedCustomer.phone,
+                                          products: productsList.map((p: any) => ({
+                                            name: p.product_name,
+                                            quantity: p.quantity,
+                                            price: p.price || 0,
+                                            hsnCode: '33049910',
+                                          })),
+                                          grandTotal: visit.product_total || productsList.reduce((sum: number, p: any) => sum + ((p.price || 0) * p.quantity), 0),
+                                          paymentMethod: visit.payment_method,
+                                        });
+                                      } catch (err) {
+                                        toast.error('Failed to generate product invoice');
+                                      }
+                                    }}
+                                    className="text-xs font-bold px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-lg border border-amber-400/20 transition-colors flex items-center"
+                                  >
+                                    <Download className="w-3 h-3 mr-1" /> Product Invoice
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => openEditFullVisit(visit)}
                                   className="p-1.5 hover:bg-white/10 text-white/60 rounded-lg transition-colors border border-transparent hover:border-white/20"

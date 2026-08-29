@@ -165,10 +165,10 @@ export default function Login() {
 
             <div className="text-center mb-10 relative z-10">
               <div
-                className="mx-auto w-24 h-24 mb-6 rounded-full overflow-hidden shadow-2xl"
+                className="mx-auto w-36 h-24 mb-6 rounded-2xl overflow-hidden shadow-2xl bg-black"
                 style={{ border: '1px solid rgba(200, 157, 60,0.3)', boxShadow: '0 0 30px rgba(200, 157, 60,0.08)' }}
               >
-                <img src="/logo.png" alt="TEN11 Logo" className="w-full h-full object-cover" />
+                <img src="/logo.png" alt="TEN11 Logo" className="w-full h-full object-contain" />
               </div>
               <h1
                 className="text-4xl mb-2 leading-none"
