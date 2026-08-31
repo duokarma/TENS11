@@ -1039,8 +1039,8 @@ export default function Customers() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Total Customers</dt>
-                <dd className="text-3xl font-light text-white mt-1">{stats.totalCustomers}</dd>
+                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase truncate">Total Customers</dt>
+                <dd className="text-2xl xl:text-3xl font-light text-white mt-1 truncate">{stats.totalCustomers}</dd>
               </dl>
             </div>
           </div>
@@ -1052,8 +1052,8 @@ export default function Customers() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">New This Month</dt>
-                <dd className="text-3xl font-light text-white mt-1">{stats.newThisMonth}</dd>
+                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase truncate">New This Month</dt>
+                <dd className="text-2xl xl:text-3xl font-light text-white mt-1 truncate">{stats.newThisMonth}</dd>
               </dl>
             </div>
           </div>
@@ -1065,8 +1065,8 @@ export default function Customers() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Lifetime Revenue</dt>
-                <dd className="text-3xl font-light text-white mt-1">₹{stats.totalRevenue.toLocaleString()}</dd>
+                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase truncate">Lifetime Revenue</dt>
+                <dd className="text-2xl xl:text-3xl font-light text-white mt-1 truncate">₹{stats.totalRevenue.toLocaleString()}</dd>
               </dl>
             </div>
           </div>
@@ -1078,8 +1078,8 @@ export default function Customers() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Average Spend</dt>
-                <dd className="text-3xl font-light text-white mt-1">₹{Math.round(stats.avgSpend).toLocaleString()}</dd>
+                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase truncate">Average Spend</dt>
+                <dd className="text-2xl xl:text-3xl font-light text-white mt-1 truncate">₹{Math.round(stats.avgSpend).toLocaleString()}</dd>
               </dl>
             </div>
           </div>
@@ -1087,7 +1087,7 @@ export default function Customers() {
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row items-center gap-4">
+      <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4">
         <div className="flex items-center w-full max-w-md glass-panel px-4 py-3 focus-within:ring-1 focus-within:ring-white/30 transition-all">
           <Search className="h-5 w-5 text-white/40 mr-3" />
           <input

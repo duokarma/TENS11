@@ -263,11 +263,11 @@ export default function Dashboard() {
       </div>
       <div className="relative z-10">
         <h3 className="text-[11px] font-bold mb-2 tracking-[0.2em] uppercase" style={{ color: 'rgba(200, 157, 60,0.6)' }}>{title}</h3>
-        <p className="font-numbers text-5xl font-light text-white tracking-tight mb-3">{todayValue}</p>
+        <p className="font-numbers text-5xl font-light text-white tracking-tight mb-3 truncate" title={String(todayValue)}>{todayValue}</p>
         
-        <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid rgba(200, 157, 60,0.08)' }}>
-          <span className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(200, 157, 60,0.35)' }}>{lifetimeLabel || 'Lifetime'}</span>
-          <span className="text-sm font-light text-white/70">{lifetimeValue}</span>
+        <div className="flex items-center justify-between pt-3 gap-2" style={{ borderTop: '1px solid rgba(200, 157, 60,0.08)' }}>
+          <span className="text-[10px] uppercase tracking-widest flex-shrink-0" style={{ color: 'rgba(200, 157, 60,0.35)' }}>{lifetimeLabel || 'Lifetime'}</span>
+          <span className="text-sm font-light text-white/70 truncate text-right" title={String(lifetimeValue)}>{lifetimeValue}</span>
         </div>
       </div>
     </motion.div>
