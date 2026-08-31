@@ -28,6 +28,8 @@ const SUGGESTIONS = [
   'What is our total profit?',
   'Show me recent expenses',
   'Which products are out of stock?',
+  'Who is our top performing staff?',
+  'How many returning customers do we have?',
 ];
 
 export default function AskAI({ visits, customers, products, expenses = [] }: AskAIProps) {

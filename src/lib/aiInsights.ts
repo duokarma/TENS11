@@ -467,6 +467,79 @@ export function parseAIQuery(query: string, ctx: AIQueryContext): string {
     return `Customer health check:\n• **Active** (visited in 30 days): ${Object.values(lastVisitMap).filter(d => differenceInDays(now, d) <= 30).length}\n• **At Risk** (31–60 days): **${atRisk}**\n• **Churned** (60+ days): **${churned}**`;
   }
 
+  // ── Expenses ──────────────────────────────────────────────────────────────
+  if (q.includes('expense') || q.includes('spend') || q.includes('cost')) {
+    if (!ctx.expenses || ctx.expenses.length === 0) return 'No expense data is currently available.';
+    if (q.includes('today')) {
+      const todayExpenses = ctx.expenses.filter(
+        e => e.date && new Date(e.date).toDateString() === now.toDateString()
+      );
+      const sum = todayExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      return `Today's expenses are **₹${sum.toLocaleString()}** from ${todayExpenses.length} record${todayExpenses.length !== 1 ? 's' : ''}.`;
+    }
+    if (q.includes('month') || q.includes('recent')) {
+      const monthStart = startOfMonth(now);
+      const monthExpenses = ctx.expenses.filter(e => e.date && new Date(e.date) >= monthStart);
+      const sum = monthExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      return `Expenses this month: **₹${sum.toLocaleString()}** across ${monthExpenses.length} record${monthExpenses.length !== 1 ? 's' : ''}.`;
+    }
+    const total = ctx.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    return `All-time expenses: **₹${total.toLocaleString()}**.`;
+  }
+
+  // ── Staff Performance ─────────────────────────────────────────────────────
+  if (q.includes('staff') || q.includes('performing') || q.includes('top employee')) {
+    const monthStart = startOfMonth(now);
+    const monthVisits = ctx.visits.filter(v => v.visit_date && new Date(v.visit_date) >= monthStart);
+    const staffRevenue: Record<string, number> = {};
+    monthVisits.forEach(v => {
+      if (v.staff?.name) {
+        staffRevenue[v.staff.name] = (staffRevenue[v.staff.name] || 0) + (Number(v.grand_total) || 0);
+      }
+    });
+    const topStaff = Object.entries(staffRevenue).sort((a, b) => b[1] - a[1]);
+    if (topStaff.length === 0) return 'No staff performance data found for this month.';
+    const lines = topStaff.slice(0, 3).map(([name, rev], i) => `${i + 1}. **${name}** — ₹${rev.toLocaleString()}`);
+    return `Top performing staff this month:\n${lines.join('\n')}`;
+  }
+
+  // ── Customer Retention ────────────────────────────────────────────────────
+  if (q.includes('return') || q.includes('retention')) {
+    const monthStart = startOfMonth(now);
+    const thisMonthCustomerIds = new Set(
+      ctx.visits.filter(v => v.visit_date && new Date(v.visit_date) >= monthStart && v.customer_id)
+        .map(v => v.customer_id)
+    );
+    const prevVisitedCustomers = new Set(
+      ctx.visits.filter(v => v.visit_date && new Date(v.visit_date) < monthStart && v.customer_id)
+        .map(v => v.customer_id)
+    );
+    let returning = 0;
+    thisMonthCustomerIds.forEach(id => {
+      if (prevVisitedCustomers.has(id)) returning++;
+    });
+    return `**${returning}** out of ${thisMonthCustomerIds.size} customers who visited this month are returning clients.`;
+  }
+
+  // ── Profit ────────────────────────────────────────────────────────────────
+  if (q.includes('profit')) {
+    const monthStart = startOfMonth(now);
+    const monthVisits = ctx.visits.filter(v => v.visit_date && new Date(v.visit_date) >= monthStart);
+    const monthExpenses = (ctx.expenses || []).filter(e => e.date && new Date(e.date) >= monthStart);
+    const rev = monthVisits.reduce((s, v) => s + (Number(v.grand_total) || 0), 0);
+    const exp = monthExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const profit = rev - exp;
+    return `Profit this month:\n• Revenue: ₹${rev.toLocaleString()}\n• Expenses: ₹${exp.toLocaleString()}\n• **Net Profit: ₹${profit.toLocaleString()}**`;
+  }
+
+  // ── Out of stock specifically ─────────────────────────────────────────────
+  if (q.includes('out of stock') || q.includes('empty stock') || q.includes('zero stock')) {
+    const out = ctx.products.filter(p => (Number(p.current_stock) || 0) <= 0);
+    if (out.length === 0) return 'Good news! No products are completely out of stock.';
+    const lines = out.map((p: any) => `• **${p.name}**`);
+    return `**${out.length} product${out.length !== 1 ? 's' : ''} out of stock:**\n${lines.join('\n')}`;
+  }
+
   // ── Fallback ──────────────────────────────────────────────────────────────
   return `I can answer questions like:\n• "What's my revenue this month?"\n• "Who are my top customers?"\n• "Best service this month?"\n• "Who visited today?"\n• "Low stock?"\n• "How many customers?"\n• "At risk customers?"`;
 }
