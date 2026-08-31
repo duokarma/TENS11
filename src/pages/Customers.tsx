@@ -1120,10 +1120,10 @@ export default function Customers() {
               style={{ color: churnFilter !== 'all' ? '#E6C27A' : undefined }}
             >
               <option value="all" className="bg-[#1a1a1a]">All Customers</option>
-              <option value="Active" className="bg-[#1a1a1a]">🟢 Active</option>
-              <option value="AtRisk" className="bg-[#1a1a1a]">🟡 At Risk</option>
-              <option value="Churned" className="bg-[#1a1a1a]">🔴 Churned</option>
-              <option value="New" className="bg-[#1a1a1a]">🔵 New (No Visits)</option>
+              <option value="Active" className="bg-[#1a1a1a]">🟢 Active (Visited within 30 days)</option>
+              <option value="AtRisk" className="bg-[#1a1a1a]">🟡 At Risk (31-60 days without visit)</option>
+              <option value="Churned" className="bg-[#1a1a1a]">🔴 Churned (60+ days without visit)</option>
+              <option value="New" className="bg-[#1a1a1a]">🔵 New (No visits yet)</option>
             </select>
           </div>
           <div className="glass-panel px-3 py-2 flex items-center gap-2">
@@ -1146,12 +1146,20 @@ export default function Customers() {
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-transparent text-sm text-white outline-none border-none appearance-none pr-4 cursor-pointer"
             >
-              <option value="recent" className="bg-[#1a1a1a]">Recently Added</option>
-              <option value="spend" className="bg-[#1a1a1a]">Highest Spend</option>
-              <option value="alphabet" className="bg-[#1a1a1a]">Alphabetical</option>
+              <option value="recent" className="bg-[#1a1a1a]">Recently Added (Sort by creation date)</option>
+              <option value="spend" className="bg-[#1a1a1a]">Highest Spend (Sort by total revenue)</option>
+              <option value="visits" className="bg-[#1a1a1a]">Most Visits (Sort by visit count)</option>
+              <option value="alphabet" className="bg-[#1a1a1a]">Alphabetical (A-Z by name)</option>
             </select>
           </div>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 text-[10.5px] uppercase tracking-widest text-white/50 pl-2">
+        <span className="font-bold text-white/70">Health Check Legend:</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400"></span> Active (Visited &lt; 30 days)</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400"></span> At Risk (31-60 days)</span>
+        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-400"></span> Churned (60+ days)</span>
       </div>
 
       {/* Table */}
