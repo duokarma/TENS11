@@ -11,13 +11,22 @@ import {
   Clock,
   Check,
   Loader2,
-  X as XIcon
+  X as XIcon,
+  Sparkles,
+  TrendingDown,
+  Scissors,
+  Calendar,
+  BarChart2,
+  RefreshCw
 } from 'lucide-react';
 import { isSameDay, parseISO } from 'date-fns';
 import { format } from 'date-fns';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Variants } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { computeInsights, computeDaysOfStock, getDaysRemainingStyle } from '../lib/aiInsights';
+import type { InsightCard, StockForecast } from '../lib/aiInsights';
+import AskAI from '../components/AskAI';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -38,10 +47,13 @@ export default function Dashboard() {
   const [products, setProducts] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [visitProducts, setVisitProducts] = useState<any[]>([]);
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [aiInsights, setAiInsights] = useState<InsightCard[]>([]);
+  const [stockForecasts, setStockForecasts] = useState<Record<number, StockForecast>>({});
 
   const handleUpdateStock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,19 +85,34 @@ export default function Dashboard() {
         { data: visitsData },
         { data: expensesData },
         { data: productsData },
-        { data: customersData }
+        { data: customersData },
+        { data: visitProductsData }
       ] = await Promise.all([
-        supabase.from('customer_visits').select('*, customer:customer_id(is_deleted)').eq('is_deleted', false).order('visit_date', { ascending: false }),
+        supabase.from('customer_visits').select('*, customer:customer_id(is_deleted), visit_services(*), visit_products(*)').eq('is_deleted', false).order('visit_date', { ascending: false }),
         supabase.from('expenses').select('*').eq('is_deleted', false).order('date', { ascending: false }),
         supabase.from('products').select('*').eq('is_deleted', false),
-        supabase.from('customers').select('id, created_at, name, dob, phone').eq('is_deleted', false)
+        supabase.from('customers').select('id, created_at, name, dob, phone').eq('is_deleted', false),
+        supabase.from('visit_products').select('*, visit:visit_id(visit_date)').limit(2000)
       ]);
 
       const validVisits = (visitsData || []).filter((v: any) => !v.customer || !v.customer.is_deleted);
       setVisits(validVisits);
       setExpenses(expensesData || []);
-      setProducts(productsData || []);
+      const prods = productsData || [];
+      setProducts(prods);
       setCustomers(customersData || []);
+      const vps = visitProductsData || [];
+      setVisitProducts(vps);
+
+      // Compute AI insights
+      setAiInsights(computeInsights(validVisits, expensesData || [], customersData || []));
+
+      // Compute stock forecasts for each product
+      const forecasts: Record<number, StockForecast> = {};
+      prods.forEach((p: any) => {
+        forecasts[p.id] = computeDaysOfStock(p, vps);
+      });
+      setStockForecasts(forecasts);
 
       const { data: apptData } = await supabase
         .from('appointments')
@@ -168,7 +195,20 @@ export default function Dashboard() {
   const lifetimeProfit = lifetimeRevenue - lifetimeExpensesAmount;
 
   // --- Low Stock Products ---
-  const lowStockProducts = products.filter(p => (Number(p.current_stock) || 0) <= 5).slice(0, 10);
+  const lowStockProducts = products.filter(p => (Number(p.current_stock) || 0) <= (Number(p.low_stock_threshold) || 5)).slice(0, 10);
+
+  // AI Insight icon mapper
+  const insightIcon = (icon: string) => {
+    const cls = 'w-4 h-4';
+    switch (icon) {
+      case 'revenue': return <IndianRupee className={cls} />;
+      case 'service': return <Scissors className={cls} />;
+      case 'day':     return <Calendar className={cls} />;
+      case 'retention': return <RefreshCw className={cls} />;
+      case 'customers': return <Users className={cls} />;
+      default:        return <BarChart2 className={cls} />;
+    }
+  };
 
   // --- Today's Appointments ---
   const todayAppointments = appointments.filter(a => a.appointment_date && isSameDay(parseISO(a.appointment_date), today));
@@ -234,6 +274,7 @@ export default function Dashboard() {
   );
 
   return (
+    <>
     <motion.div 
       className="space-y-12 pb-16 max-w-[1400px] mx-auto px-4"
       variants={containerVariants}
@@ -326,6 +367,62 @@ export default function Dashboard() {
             />
           </div>
 
+          {/* ── AI Insights ─────────────────────────────────────────── */}
+          {aiInsights.length > 0 && (
+            <motion.div variants={itemVariants} className="mt-8">
+              <div className="ai-section-header">
+                <div className="ai-icon-wrap">
+                  <Sparkles className="w-4 h-4" style={{ color: '#a78bfa' }} />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white tracking-tight">AI Insights</h3>
+                  <p className="text-[10px] uppercase tracking-widest mt-0.5" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                    Auto-calculated from your data
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                {aiInsights.map((card) => (
+                  <motion.div
+                    key={card.id}
+                    variants={itemVariants}
+                    className="ai-card p-4"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="ai-icon-wrap p-1.5" style={{ padding: '6px' }}>
+                        <span style={{ color: '#a78bfa' }}>{insightIcon(card.icon)}</span>
+                      </div>
+                      {card.trend && (
+                        <span
+                          className={`ml-auto ai-badge ${
+                            card.trend === 'up' ? 'ai-trend-up' : card.trend === 'down' ? 'ai-trend-down' : ''
+                          }`}
+                          style={{ fontSize: '0.65rem', padding: '0.1rem 0.45rem', border: 'none', background: 'transparent' }}
+                        >
+                          {card.trend === 'up' ? (
+                            <TrendingUp className="w-3 h-3" />
+                          ) : card.trend === 'down' ? (
+                            <TrendingDown className="w-3 h-3" />
+                          ) : null}
+                          {card.trendPct !== undefined && `${card.trendPct}%`}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                      {card.label}
+                    </p>
+                    <p className="text-xl font-light text-white leading-tight mb-1 truncate" title={card.value}>
+                      {card.value}
+                    </p>
+                    <p className="text-[11px] leading-snug" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                      {card.subtext}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
           {/* Today's Appointments */}
           {todayAppointments.length > 0 && (
             <motion.div
@@ -369,7 +466,7 @@ export default function Dashboard() {
             </motion.div>
           )}
 
-          {/* Low Stock Alerts */}
+          {/* Low Stock Alerts — upgraded with AI days-remaining */}
           <motion.div
             variants={itemVariants}
             className="glass-card p-5 flex flex-col min-h-[300px] mt-6 relative overflow-hidden"
@@ -389,6 +486,9 @@ export default function Dashboard() {
                   Low Stock Alerts
                 </h3>
               </div>
+              <span className="text-[10px] uppercase tracking-widest flex items-center gap-1.5" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                <Sparkles className="w-3 h-3" /> AI Forecast
+              </span>
             </div>
             
             <div className="space-y-3 overflow-y-auto custom-scrollbar pr-2 flex-1 relative z-10">
@@ -399,40 +499,53 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {lowStockProducts.map(product => (
-                    <div
-                      key={product.id}
-                      onClick={() => {
-                        setEditingProduct(product);
-                        setIsProductModalOpen(true);
-                      }}
-                      className="flex flex-col p-4 rounded-xl backdrop-blur-md transition-all cursor-pointer"
-                      style={{
-                        background: 'rgba(207,102,121,0.04)',
-                        border: '1px solid rgba(207,102,121,0.1)',
-                      }}
-                      onMouseEnter={e => {
-                        (e.currentTarget as HTMLElement).style.background = 'rgba(207,102,121,0.06)';
-                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(207,102,121,0.2)';
-                      }}
-                      onMouseLeave={e => {
-                        (e.currentTarget as HTMLElement).style.background = 'rgba(207,102,121,0.04)';
-                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(207,102,121,0.1)';
-                      }}
-                    >
-                      <p className="text-base font-medium text-white truncate">{product.name}</p>
-                      <div className="flex justify-between items-end mt-4">
-                        <div>
-                          <p className="text-[9px] text-white/40 uppercase tracking-[0.1em] mb-1">Threshold</p>
-                          <p className="text-xs font-semibold text-white/70">5</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[9px] uppercase tracking-[0.1em] font-bold mb-1" style={{ color: '#CF6679' }}>Current Stock</p>
-                          <p className="text-xl font-light" style={{ color: '#CF6679' }}>{product.current_stock || 0}</p>
+                  {lowStockProducts.map(product => {
+                    const forecast = stockForecasts[product.id];
+                    const forecastStyle = forecast ? getDaysRemainingStyle(forecast.status) : null;
+                    return (
+                      <div
+                        key={product.id}
+                        onClick={() => {
+                          setEditingProduct(product);
+                          setIsProductModalOpen(true);
+                        }}
+                        className="flex flex-col p-4 rounded-xl backdrop-blur-md transition-all cursor-pointer"
+                        style={{
+                          background: 'rgba(207,102,121,0.04)',
+                          border: '1px solid rgba(207,102,121,0.1)',
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLElement).style.background = 'rgba(207,102,121,0.06)';
+                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(207,102,121,0.2)';
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLElement).style.background = 'rgba(207,102,121,0.04)';
+                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(207,102,121,0.1)';
+                        }}
+                      >
+                        <p className="text-base font-medium text-white truncate mb-3">{product.name}</p>
+                        <div className="flex justify-between items-end">
+                          <div>
+                            <p className="text-[9px] text-white/40 uppercase tracking-[0.1em] mb-1">In Stock</p>
+                            <p className="text-xl font-light" style={{ color: '#CF6679' }}>{product.current_stock || 0}</p>
+                          </div>
+                          {forecast && forecast.daysRemaining !== null && forecastStyle ? (
+                            <div
+                              className="text-right px-2 py-1 rounded-lg"
+                              style={{ background: forecastStyle.bg, border: `1px solid ${forecastStyle.border}` }}
+                            >
+                              <p className="text-[9px] uppercase tracking-widest font-bold mb-0.5" style={{ color: forecastStyle.color }}>Days Left</p>
+                              <p className="text-lg font-light" style={{ color: forecastStyle.color }}>{forecast.daysRemaining}</p>
+                            </div>
+                          ) : (
+                            <div className="text-right">
+                              <p className="text-[9px] text-white/30 uppercase tracking-widest">No history</p>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -499,5 +612,9 @@ export default function Dashboard() {
         </div>
       )}
     </motion.div>
+
+    {/* Ask AI floating button — always visible on Dashboard */}
+    <AskAI visits={visits} customers={customers} products={products} expenses={expenses} />
+    </>
   );
 }

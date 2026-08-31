@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Package, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Package, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
 import type { Product } from '../types';
+import { computeDaysOfStock, getDaysRemainingStyle } from '../lib/aiInsights';
 
 export default function Inventory() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -10,6 +11,7 @@ export default function Inventory() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [visitProductsForAI, setVisitProductsForAI] = useState<any[]>([]);
   
   // Pagination
   const [page, setPage] = useState(1);
@@ -78,6 +80,14 @@ export default function Inventory() {
       .channel('products-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, loadProducts)
       .subscribe();
+
+    // Fetch visit_products for AI days-remaining forecast
+    supabase
+      .from('visit_products')
+      .select('product_id, quantity, visit:visit_id(visit_date)')
+      .limit(2000)
+      .then(({ data }) => { if (data) setVisitProductsForAI(data); });
+
     return () => { supabase.removeChannel(channel); };
   }, [loadProducts]);
 
@@ -204,19 +214,28 @@ export default function Inventory() {
                     <th className="px-6 py-5 text-center">Sold Qty</th>
                     <th className="px-6 py-5 text-center">Salon Consumption</th>
                     <th className="px-6 py-5 text-center">Current Stock</th>
+                    <th className="px-6 py-5 text-center">
+                      <span className="flex items-center justify-center gap-1">
+                        <Sparkles className="w-3 h-3" style={{ color: '#a78bfa' }} />
+                        Days Left
+                      </span>
+                    </th>
                     <th className="px-6 py-5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {products.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="text-center py-16 text-white/60">
+                      <td colSpan={9} className="text-center py-16 text-white/60">
                         <Package className="h-10 w-10 mx-auto mb-4 text-white/60/30" />
                         <p className="text-base font-light tracking-wide text-white">No products found</p>
                       </td>
                     </tr>
                   )}
-                  {products.map(item => (
+                  {products.map(item => {
+                    const forecast = computeDaysOfStock(item, visitProductsForAI);
+                    const fStyle = getDaysRemainingStyle(forecast.status);
+                    return (
                     <tr key={item.id} className="hover:bg-black/40 transition-colors group font-light">
                       <td className="px-6 py-4">
                         <div className="font-medium text-white text-base">{item.name}</div>
@@ -231,6 +250,20 @@ export default function Inventory() {
                           {item.current_stock}
                         </span>
                       </td>
+                      {/* AI Days Left */}
+                      <td className="px-6 py-4 text-center">
+                        {forecast.daysRemaining !== null ? (
+                          <span
+                            className="inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-bold"
+                            style={{ background: fStyle.bg, color: fStyle.color, border: `1px solid ${fStyle.border}` }}
+                            title={`~${forecast.avgDailyUsage.toFixed(2)} units/day avg (last 90 days)`}
+                          >
+                            {forecast.daysRemaining}d
+                          </span>
+                        ) : (
+                          <span className="text-white/20 text-xs">—</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => openEditModal(item)} className="p-2 text-white/60 hover:bg-black/5 hover:text-white rounded-xl transition-colors">
@@ -242,7 +275,8 @@ export default function Inventory() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

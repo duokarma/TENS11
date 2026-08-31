@@ -5,7 +5,7 @@ import {
   Search, Plus, User, Scissors, Receipt, Package,
   Trash2, Edit2, X, Users, UserPlus, IndianRupee, TrendingUp, Calendar as CalendarIcon,
   ChevronLeft, ChevronRight, Download, MessageCircle, Star, ClipboardList, Tag, Filter, SortDesc,
-  NotebookPen, Save, PlusCircle
+  NotebookPen, Save, PlusCircle, Sparkles
 } from 'lucide-react';
 import { generateInvoicePDF, generateProductInvoicePDF } from '../lib/pdfGenerator';
 import { format, isThisMonth, isToday, isYesterday, isThisWeek } from 'date-fns';
@@ -17,6 +17,7 @@ import { supabase } from '../lib/supabase';
 import { serviceService } from '../lib/serviceService';
 import type { SalonService } from '../lib/serviceService';
 import Select from 'react-select';
+import { computeChurnStatus, getChurnBadgeStyle, getServiceRecommendations } from '../lib/aiInsights';
 
 const selectStyles = {
   control: (base: any, state: any) => ({
@@ -86,6 +87,8 @@ export default function Customers() {
   const [filterTime, setFilterTime] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'spend' | 'alphabet'>('recent');
   const [showPaymentDue, setShowPaymentDue] = useState(false);
+  const [churnFilter, setChurnFilter] = useState<'all' | 'Active' | 'AtRisk' | 'Churned' | 'New'>('all');
+  const [allVisitsForChurn, setAllVisitsForChurn] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -295,12 +298,13 @@ export default function Customers() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [custData, srvData, stfRes, prodRes, statsData] = await Promise.all([
+      const [custData, srvData, stfRes, prodRes, statsData, visitsRes] = await Promise.all([
         customerService.getCustomers({ page, limit, search: debouncedSearch }),
         serviceService.getServices(),
         supabase.from('staff').select('*').eq('is_deleted', false),
         supabase.from('products').select('*').eq('is_deleted', false),
-        customerService.getCustomerStats()
+        customerService.getCustomerStats(),
+        supabase.from('customer_visits').select('customer_id, visit_date, visit_services(service_name)').eq('is_deleted', false).order('visit_date', { ascending: false }).limit(5000)
       ]);
       setCustomers(custData.data);
       setTotalCount(custData.count);
@@ -308,6 +312,7 @@ export default function Customers() {
       setServices(srvData);
       if (stfRes.data) setStaff(stfRes.data);
       if (prodRes.data) setProducts(prodRes.data);
+      if (visitsRes.data) setAllVisitsForChurn(visitsRes.data);
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to load data');
@@ -942,6 +947,14 @@ export default function Customers() {
         return true;
       });
     }
+
+    // Churn filter
+    if (churnFilter !== 'all') {
+      result = result.filter(c => {
+        const { status } = computeChurnStatus(c.id, allVisitsForChurn);
+        return status === churnFilter;
+      });
+    }
     
     result.sort((a, b) => {
       if (sortBy === 'spend') {
@@ -1095,6 +1108,24 @@ export default function Customers() {
             <IndianRupee className="w-4 h-4" />
             Due
           </button>
+          {/* Churn filter */}
+          <div className="glass-panel px-3 py-2 flex items-center gap-2"
+            style={{ border: churnFilter !== 'all' ? '1px solid rgba(139,92,246,0.3)' : undefined }}
+          >
+            <Sparkles className="w-4 h-4" style={{ color: churnFilter !== 'all' ? '#a78bfa' : 'rgba(255,255,255,0.4)' }} />
+            <select
+              value={churnFilter}
+              onChange={(e) => setChurnFilter(e.target.value as any)}
+              className="bg-transparent text-sm text-white outline-none border-none appearance-none pr-4 cursor-pointer"
+              style={{ color: churnFilter !== 'all' ? '#a78bfa' : undefined }}
+            >
+              <option value="all" className="bg-[#1a1a1a]">All Customers</option>
+              <option value="Active" className="bg-[#1a1a1a]">🟢 Active</option>
+              <option value="AtRisk" className="bg-[#1a1a1a]">🟡 At Risk</option>
+              <option value="Churned" className="bg-[#1a1a1a]">🔴 Churned</option>
+              <option value="New" className="bg-[#1a1a1a]">🔵 New (No Visits)</option>
+            </select>
+          </div>
           <div className="glass-panel px-3 py-2 flex items-center gap-2">
             <Filter className="w-4 h-4 text-white/60" />
             <select
@@ -1140,9 +1171,10 @@ export default function Customers() {
             <table className="w-full text-sm text-left text-white">
               <thead className="bg-black/40/5 text-white/60 text-xs uppercase font-bold tracking-wider border-b border-white/10">
                 <tr>
-                  <th className="px-6 py-5">Customer</th>
+          <th className="px-6 py-5">Customer</th>
                   <th className="px-6 py-5">Contact</th>
                   <th className="px-6 py-5">Lifetime Spend</th>
+                  <th className="px-6 py-5">Status</th>
                   <th className="px-6 py-5">Details</th>
                   <th className="px-6 py-5 text-right">Actions</th>
                 </tr>
@@ -1203,6 +1235,29 @@ export default function Customers() {
                             <span className="font-light text-white text-lg">
                               ₹{getCustomerTotalSpend(customer).toLocaleString()}
                             </span>
+                          </td>
+                          {/* Churn Status Badge */}
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {(() => {
+                              const { status, daysSince } = computeChurnStatus(customer.id, allVisitsForChurn);
+                              const style = getChurnBadgeStyle(status);
+                              return (
+                                <div className="flex flex-col gap-1">
+                                  <span
+                                    className="ai-badge"
+                                    style={{ background: style.bg, border: `1px solid ${style.border}`, color: style.text }}
+                                  >
+                                    <span className="ai-badge-dot" style={{ background: style.dot }} />
+                                    {style.label}
+                                  </span>
+                                  {daysSince !== null && (
+                                    <span className="text-[10px] text-white/30">
+                                      {daysSince === 0 ? 'Today' : `${daysSince}d ago`}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td className="px-6 py-4 whitespace-normal min-w-[200px]">
                             {customer.payment_due && customer.payment_due > 0 ? (
@@ -1794,6 +1849,34 @@ export default function Customers() {
               </button>
             </div>
             <div className="p-8 overflow-y-auto bg-black/60 flex-1 custom-scrollbar space-y-10">
+
+              {/* ── AI Service Recommender ─────────────────────────────── */}
+              {(() => {
+                const recs = getServiceRecommendations(selectedCustomer.id, allVisitsForChurn);
+                if (recs.length === 0) return null;
+                return (
+                  <div className="ai-card p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="ai-icon-wrap" style={{ padding: '6px' }}>
+                        <Sparkles className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(167,139,250,0.7)' }}>AI Suggestions</p>
+                        <p className="text-[10px] text-white/30">Based on visit history</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {recs.map(r => (
+                        <span key={r.serviceName} className="ai-rec-chip">
+                          <Scissors className="w-3 h-3" />
+                          {r.serviceName}
+                          <span style={{ opacity: 0.6, fontSize: '0.7rem' }}>{r.pct}%</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* ── Visit History Section ──────────────────────────────── */}
               <div>

@@ -1,0 +1,192 @@
+# 🧠 TENS11 Salon — AI Features Implementation Plan (v2)
+*Scope: 5 AI features only. GST/HSN already done. Starting fresh on AI.*
+
+---
+
+## 🗺️ Where Each Feature Lives + Who Can Access It
+
+| # | Feature | Page / Location | Role Access |
+|---|---------|----------------|-------------|
+| 3 | AI Dashboard Insights | **Dashboard** — new section below stat cards | Owner + Manager |
+| 4 | Churn Detection | **Customers page** — badge on every row + filter dropdown | Owner + Manager + Receptionist |
+| 5 | Smart Inventory Alerts (Days of Stock) | **Inventory page** — new column + **Dashboard** widget upgrade | Owner + Manager |
+| 6 | Service Recommender | **Customers page** — inside the customer detail slide-out panel | Owner + Manager + Receptionist |
+| 7 | Ask AI Chat | **Floating button** on Dashboard bottom-right | Owner + Manager |
+
+> [!NOTE]
+> Features 3, 5, and 7 are **Manager+Owner only** (wrapped in `<RoleGuard allowedRoles={['Owner', 'Manager']}>`). Features 4 and 6 are visible to all staff including Receptionists since they directly assist with daily work.
+
+---
+
+## 🎨 Design Language (Matching Existing App)
+
+The app uses a **Luxury Black & Gold** aesthetic. All new AI components will match this exactly:
+
+- **AI accent color**: Purple-indigo glow (`rgba(139, 92, 246, 0.X)`) to differentiate AI from the gold financial stats — premium feel, distinct identity
+- **Cards**: Same `glass-card` class with subtle AI-purple border instead of gold
+- **Badges**: Pill-shaped, color-coded — Active 🟢 / At Risk 🟡 / Churned 🔴
+- **Animations**: Same `framer-motion` with stagger entrance already used in the dashboard
+- **Ask AI panel**: Slide-up bottom sheet, dark glass background, typewriter effect for AI responses
+- **New CSS classes** added to `index.css` (never inline-style-only so it's reusable)
+
+---
+
+## 📦 Files That Change
+
+### [NEW] `src/lib/aiInsights.ts`
+The **brain** of all 5 features. Pure TypeScript, zero API calls, runs entirely on data already fetched from Supabase.
+
+Functions:
+```
+computeInsights(visits, expenses, customers, products) → InsightCard[]
+computeChurnStatus(customer, visits) → 'Active' | 'AtRisk' | 'Churned'
+computeDaysOfStock(product, visitProducts) → number | null
+getServiceRecommendations(customerId, visitServices) → Recommendation[]
+parseAIQuery(query, { visits, customers, products }) → string
+```
+
+---
+
+### [NEW] `src/components/AskAI.tsx`
+Floating chat button + slide-up panel.
+
+**UI design:**
+- Bottom-right corner: a glowing purple `💬` button (pulsing ring animation)
+- Click → panel slides up from bottom with backdrop blur
+- Input field at bottom, AI responses above
+- Handles ~12 query patterns: "top customers", "best service", "revenue this week", "who visited today", "low stock", etc.
+- **Typewriter animation** on AI response text (premium feel)
+
+---
+
+### [MODIFY] `src/pages/Dashboard.tsx`
+**Two additions:**
+
+**1. AI Insights Section** (below stat cards, Manager+ only via RoleGuard):
+```
+┌─────────────────────────────────────────────────────────────┐
+│  🧠 AI Insights                          This Month         │
+│                                                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │ ↑ 23% Revenue│  │ 💇 Haircut   │  │ 📅 Saturday  │      │
+│  │ vs last month│  │ Top Service  │  │ Busiest Day  │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+│  ┌──────────────┐  ┌──────────────┐                        │
+│  │ ⭐ Rahul     │  │ 45% Returning│                        │
+│  │ Top Staff    │  │ Customers    │                        │
+│  └──────────────┘  └──────────────┘                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**2. Upgraded Low Stock Widget:**
+- Current stock number stays
+- Adds **"X days left"** badge below it (red if < 7, amber if 7–14)
+- `<AskAI />` component mounted here (floating, not inside the card)
+
+---
+
+### [MODIFY] `src/pages/Customers.tsx`
+**Two additions:**
+
+**1. Churn Badge on every row:**
+```
+┌─────────────────────────────────────────────────────────┐
+│  Priya Sharma   9876543210   ● Active   Last: 3 days    │
+│  Riya Mehta     9123456780   ⚠ At Risk  Last: 45 days   │
+│  Amit Kumar     9234567891   ✗ Churned  Last: 75 days   │
+└─────────────────────────────────────────────────────────┘
+```
+Filter dropdown added: **All / Active / At Risk / Churned**
+
+**2. Service Recommender in the customer detail panel** (the slide-out drawer that opens when you click a customer):
+```
+┌──────────────────────────────────────────┐
+│  💡 AI Suggestions                       │
+│  Based on her visit history              │
+│                                          │
+│  ● Deep Conditioning    (80% of visits)  │
+│  ● Ombre Colour         (60% of visits)  │
+│  ● Head Massage         (40% of visits)  │
+└──────────────────────────────────────────┘
+```
+
+---
+
+### [MODIFY] `src/pages/Inventory.tsx`
+Add **"Days Remaining"** column to the products table:
+```
+┌──────────────────┬────────┬─────────┬─────────────────────┐
+│ Product          │ Stock  │ Thresh  │ Days Remaining       │
+├──────────────────┼────────┼─────────┼─────────────────────┤
+│ Keratin Serum    │  2     │  5      │  🔴 4 days left      │
+│ Argan Oil        │  15    │  5      │  🟡 10 days left     │
+│ Shampoo Base     │  40    │  5      │  🟢 28 days left     │
+└──────────────────┴────────┴─────────┴─────────────────────┘
+```
+Needs `visit_products` data fetched (Inventory page doesn't fetch it currently — I'll add a lightweight query).
+
+---
+
+### [MODIFY] `src/index.css`
+New utility classes added:
+```css
+/* AI Feature Classes */
+.ai-card          /* purple-tinted glass card */
+.ai-badge-active  /* green pill */
+.ai-badge-atrisk  /* amber pill */
+.ai-badge-churned /* red pill */
+.ai-glow          /* purple ambient glow */
+.ask-ai-btn       /* floating chat button */
+.typewriter        /* typewriter text animation */
+```
+
+---
+
+## ⚙️ One Manual Step YOU Need to Do
+
+> [!IMPORTANT]
+> **Supabase SQL** — Run this one line in your Supabase SQL Editor before I start. This lets the `visit_products` table be queried for "days of stock" calculation (it already exists, just needs to be included in a query — actually **no migration needed at all**). ✅
+
+**No SQL migration required.** All 5 features compute from existing tables:
+- `customer_visits` → churn dates, revenue insights
+- `visit_services` → top services, service recommender
+- `visit_products` → days of stock calculation  
+- `customers` → churn tagging
+- `products` → stock levels
+
+---
+
+## 📐 Implementation Order (Top to Bottom)
+
+```
+1. src/lib/aiInsights.ts          ← Engine first, everything depends on it
+2. src/index.css                   ← Add AI design classes
+3. src/pages/Dashboard.tsx         ← AI Insights section + Ask AI mount point
+4. src/pages/Customers.tsx         ← Churn badges + recommender
+5. src/pages/Inventory.tsx         ← Days of stock column
+6. src/components/AskAI.tsx        ← Floating chat (last, depends on aiInsights)
+```
+
+---
+
+## ✅ Verification Plan
+
+| Test | Expected |
+|------|---------|
+| Dashboard loads | AI Insights cards appear below stat cards (Manager only) |
+| Customer visited 2 days ago | Shows 🟢 Active badge |
+| Customer visited 50 days ago | Shows 🟡 At Risk badge |
+| Customer visited 80 days ago | Shows 🔴 Churned badge |
+| Churn filter = "At Risk" | Only at-risk customers show |
+| Customer with 5+ visits | Service Recommender section visible in detail panel |
+| Product with 10 units, sold 1/day avg | Shows "~10 days left" 🟢 |
+| Product with 3 units, sold 1/day avg | Shows "~3 days left" 🔴 |
+| Ask AI: "top customers this month" | Returns top 3 by spend |
+| Ask AI: "best service" | Returns top service by revenue |
+| `npm run build` | Zero TypeScript errors |
+
+---
+
+**🕐 Ready to start building immediately on your approval.**
+**📦 No new npm packages needed.**
+**🗄️ No SQL migrations needed.**
