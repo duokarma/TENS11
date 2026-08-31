@@ -17,7 +17,9 @@ import {
   Scissors,
   Calendar,
   BarChart2,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { isSameDay, parseISO } from 'date-fns';
 import { format } from 'date-fns';
@@ -54,6 +56,7 @@ export default function Dashboard() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [aiInsights, setAiInsights] = useState<InsightCard[]>([]);
   const [stockForecasts, setStockForecasts] = useState<Record<number, StockForecast>>({});
+  const [showRevenue, setShowRevenue] = useState(false);
 
   const handleUpdateStock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,12 +244,21 @@ export default function Dashboard() {
     finally { setCheckingIn(null); }
   };
 
-  const StatCard = ({ title, todayValue, lifetimeValue, lifetimeLabel, icon: Icon, colorClass }: any) => (
+  const StatCard = ({ title, todayValue, lifetimeValue, lifetimeLabel, icon: Icon, colorClass, isRevenue = false }: any) => (
     <motion.div
       variants={itemVariants}
       className="glass-card p-5 flex flex-col justify-between relative overflow-hidden group"
       style={{ border: '1px solid rgba(200, 157, 60,0.1)' }}
     >
+      {isRevenue && (
+        <button 
+          onClick={() => setShowRevenue(!showRevenue)}
+          className="absolute top-4 right-4 text-white/30 hover:text-white/60 transition-colors z-20"
+          title={showRevenue ? "Hide Revenue" : "Show Revenue"}
+        >
+          {showRevenue ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </button>
+      )}
       {/* Decorative gold glow */}
       <div
         className="absolute -right-10 -top-10 w-40 h-40 rounded-full pointer-events-none transition-all duration-500"
@@ -263,11 +275,15 @@ export default function Dashboard() {
       </div>
       <div className="relative z-10">
         <h3 className="text-[11px] font-bold mb-2 tracking-[0.2em] uppercase" style={{ color: 'rgba(200, 157, 60,0.6)' }}>{title}</h3>
-        <p className="font-numbers text-5xl font-light text-white tracking-tight mb-3 truncate" title={String(todayValue)}>{todayValue}</p>
+        <p className="font-numbers font-light text-white tracking-tight mb-3 break-all" style={{ fontSize: 'clamp(1.75rem, 4.5vw, 2.5rem)', lineHeight: '1.2' }}>
+          {isRevenue ? (showRevenue ? todayValue : '₹**,**,***') : todayValue}
+        </p>
         
         <div className="flex items-center justify-between pt-3 gap-2" style={{ borderTop: '1px solid rgba(200, 157, 60,0.08)' }}>
           <span className="text-[10px] uppercase tracking-widest flex-shrink-0" style={{ color: 'rgba(200, 157, 60,0.35)' }}>{lifetimeLabel || 'Lifetime'}</span>
-          <span className="text-sm font-light text-white/70 truncate text-right" title={String(lifetimeValue)}>{lifetimeValue}</span>
+          <span className="text-sm font-light text-white/70 break-all text-right" style={{ fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)' }}>
+             {isRevenue ? (showRevenue ? lifetimeValue : '₹**,**,***') : lifetimeValue}
+          </span>
         </div>
       </div>
     </motion.div>
@@ -345,12 +361,14 @@ export default function Dashboard() {
               todayValue={`Rs. ${todayRevenue.toLocaleString()}`}
               lifetimeValue={`Rs. ${lifetimeRevenue.toLocaleString()}`}
               icon={IndianRupee} 
+              isRevenue={true}
             />
             <StatCard 
               title="Today's Profit" 
               todayValue={`Rs. ${todayProfit.toLocaleString()}`}
               lifetimeValue={`Rs. ${lifetimeProfit.toLocaleString()}`}
               icon={TrendingUp} 
+              isRevenue={true}
             />
             <StatCard 
               title="Customers (Today)" 
@@ -363,7 +381,9 @@ export default function Dashboard() {
               title="Today's Expenses" 
               todayValue={`Rs. ${todayExpensesAmount.toLocaleString()}`}
               lifetimeValue={`Rs. ${lifetimeExpensesAmount.toLocaleString()}`}
+              lifetimeLabel="Total Expenses"
               icon={IndianRupee} 
+              isRevenue={true}
             />
           </div>
 

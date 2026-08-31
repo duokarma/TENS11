@@ -5,7 +5,7 @@ import {
   Search, Plus, User, Scissors, Receipt, Package,
   Trash2, Edit2, X, Users, UserPlus, IndianRupee, TrendingUp, Calendar as CalendarIcon,
   ChevronLeft, ChevronRight, Download, MessageCircle, Star, ClipboardList, Tag, Filter, SortDesc,
-  NotebookPen, Save, PlusCircle, Sparkles
+  NotebookPen, Save, PlusCircle, Sparkles, Eye, EyeOff
 } from 'lucide-react';
 import { generateInvoicePDF, generateProductInvoicePDF } from '../lib/pdfGenerator';
 import { format, isThisMonth, isToday, isYesterday, isThisWeek } from 'date-fns';
@@ -88,6 +88,7 @@ export default function Customers() {
   const [sortBy, setSortBy] = useState<'recent' | 'spend' | 'alphabet'>('recent');
   const [showPaymentDue, setShowPaymentDue] = useState(false);
   const [churnFilter, setChurnFilter] = useState<'all' | 'Active' | 'AtRisk' | 'Churned' | 'New'>('all');
+  const [showRevenue, setShowRevenue] = useState(false);
   const [allVisitsForChurn, setAllVisitsForChurn] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -1039,8 +1040,8 @@ export default function Customers() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase truncate">Total Customers</dt>
-                <dd className="text-2xl xl:text-3xl font-light text-white mt-1 truncate">{stats.totalCustomers}</dd>
+                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Total Customers</dt>
+                <dd className="font-light text-white mt-1 break-all tracking-tighter" style={{ fontSize: 'clamp(1.5rem, 4vw, 1.875rem)', lineHeight: '1.2' }}>{stats.totalCustomers}</dd>
               </dl>
             </div>
           </div>
@@ -1052,21 +1053,30 @@ export default function Customers() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase truncate">New This Month</dt>
-                <dd className="text-2xl xl:text-3xl font-light text-white mt-1 truncate">{stats.newThisMonth}</dd>
+                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">New This Month</dt>
+                <dd className="font-light text-white mt-1 break-all tracking-tighter" style={{ fontSize: 'clamp(1.5rem, 4vw, 1.875rem)', lineHeight: '1.2' }}>{stats.newThisMonth}</dd>
               </dl>
             </div>
           </div>
         </div>
-        <div className="glass-card p-6">
+        <div className="glass-card p-6 relative group">
+          <button 
+            onClick={() => setShowRevenue(!showRevenue)}
+            className="absolute top-4 right-4 text-white/30 hover:text-white/60 transition-colors"
+            title={showRevenue ? "Hide Revenue" : "Show Revenue"}
+          >
+            {showRevenue ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
           <div className="flex items-center">
             <div className="flex-shrink-0 bg-black/40/5 p-3 rounded-2xl border border-white/20">
               <IndianRupee className="h-6 w-6 text-white" />
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase truncate">Lifetime Revenue</dt>
-                <dd className="text-2xl xl:text-3xl font-light text-white mt-1 truncate">₹{stats.totalRevenue.toLocaleString()}</dd>
+                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Lifetime Revenue</dt>
+                <dd className="font-light text-white mt-1 break-all tracking-tighter" style={{ fontSize: 'clamp(1.5rem, 4vw, 1.875rem)', lineHeight: '1.2' }}>
+                  {showRevenue ? `₹${stats.totalRevenue.toLocaleString()}` : '₹**,**,***'}
+                </dd>
               </dl>
             </div>
           </div>
@@ -1078,8 +1088,8 @@ export default function Customers() {
             </div>
             <div className="ml-5 w-0 flex-1">
               <dl>
-                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase truncate">Average Spend</dt>
-                <dd className="text-2xl xl:text-3xl font-light text-white mt-1 truncate">₹{Math.round(stats.avgSpend).toLocaleString()}</dd>
+                <dt className="text-xs font-bold tracking-[0.1em] text-white/60 uppercase">Average Spend</dt>
+                <dd className="font-light text-white mt-1 break-all tracking-tighter" style={{ fontSize: 'clamp(1.5rem, 4vw, 1.875rem)', lineHeight: '1.2' }}>₹{Math.round(stats.avgSpend).toLocaleString()}</dd>
               </dl>
             </div>
           </div>
