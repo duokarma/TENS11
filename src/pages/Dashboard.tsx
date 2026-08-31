@@ -376,7 +376,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-white tracking-tight">AI Insights</h3>
-                  <p className="text-[10px] uppercase tracking-widest mt-0.5" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                  <p className="text-[10px] uppercase tracking-widest mt-0.5" style={{ color: 'rgba(200, 157, 60, 0.5)' }}>
                     Auto-calculated from your data
                   </p>
                 </div>
@@ -408,7 +408,7 @@ export default function Dashboard() {
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                    <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'rgba(200, 157, 60, 0.5)' }}>
                       {card.label}
                     </p>
                     <p className="text-xl font-light text-white leading-tight mb-1 truncate" title={card.value}>

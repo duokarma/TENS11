@@ -24,6 +24,10 @@ const SUGGESTIONS = [
   'Low stock?',
   'Who visited today?',
   'At risk customers?',
+  'How many customers do we have?',
+  'What is our total profit?',
+  'Show me recent expenses',
+  'Which products are out of stock?',
 ];
 
 export default function AskAI({ visits, customers, products, expenses = [] }: AskAIProps) {
@@ -84,7 +88,7 @@ export default function AskAI({ visits, customers, products, expenses = [] }: As
     const parts = text.split(/(\*\*[^*]+\*\*)/g);
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} style={{ color: '#c4b5fd', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+        return <strong key={i} style={{ color: 'var(--gold-light)', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
       }
       return <span key={i}>{part}</span>;
     });
@@ -141,8 +145,8 @@ export default function AskAI({ visits, customers, products, expenses = [] }: As
                 <Bot className="w-4 h-4" style={{ color: '#E6C27A' }} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Ask AI</p>
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: 'rgba(167,139,250,0.5)' }}>
+                <p className="text-sm font-semibold text-white">TEN11 AI</p>
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: 'rgba(200, 157, 60, 0.5)' }}>
                   Powered by your data
                 </p>
               </div>
@@ -169,32 +173,30 @@ export default function AskAI({ visits, customers, products, expenses = [] }: As
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Suggestions — only at start */}
-            {messages.length <= 1 && (
-              <div style={{ padding: '0 1.25rem 0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                {SUGGESTIONS.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => handleSuggestion(s)}
-                    style={{
-                      fontSize: '0.72rem',
-                      padding: '0.25rem 0.65rem',
-                      borderRadius: '9999px',
-                      background: 'rgba(139,92,246,0.08)',
-                      border: '1px solid rgba(139,92,246,0.18)',
-                      color: '#c4b5fd',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s',
-                      whiteSpace: 'nowrap',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.18)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.08)')}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Quick Suggestions — always accessible */}
+            <div style={{ padding: '0 1.25rem 0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', maxHeight: '100px', overflowY: 'auto' }} className="custom-scrollbar">
+              {SUGGESTIONS.map(s => (
+                <button
+                  key={s}
+                  onClick={() => handleSuggestion(s)}
+                  style={{
+                    fontSize: '0.72rem',
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: '9999px',
+                    background: 'rgba(200, 157, 60, 0.08)',
+                    border: '1px solid rgba(200, 157, 60, 0.18)',
+                    color: 'var(--gold-light)',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200, 157, 60, 0.18)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(200, 157, 60, 0.08)')}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
 
             {/* Input */}
             <div className="ai-chat-input-wrap">
