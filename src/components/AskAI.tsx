@@ -138,7 +138,7 @@ export default function AskAI({ visits, customers, products, expenses = [] }: As
             {/* Header */}
             <div className="ai-chat-header">
               <div className="ai-icon-wrap">
-                <Bot className="w-4 h-4" style={{ color: '#a78bfa' }} />
+                <Bot className="w-4 h-4" style={{ color: '#E6C27A' }} />
               </div>
               <div>
                 <p className="text-sm font-semibold text-white">Ask AI</p>

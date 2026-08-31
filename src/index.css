@@ -462,17 +462,17 @@
      AI FEATURE DESIGN CLASSES
      ════════════════════════════════════════ */
 
-  /* AI Card — purple-indigo tinted glass */
+  /* AI Card — gold tinted glass */
   .ai-card {
-    background: rgba(139, 92, 246, 0.04);
-    border: 1px solid rgba(139, 92, 246, 0.12);
+    background: rgba(200, 157, 60, 0.04);
+    border: 1px solid rgba(200, 157, 60, 0.12);
     border-radius: 1rem;
     backdrop-filter: blur(20px);
     transition: all 0.3s ease;
   }
   .ai-card:hover {
-    background: rgba(139, 92, 246, 0.07);
-    border-color: rgba(139, 92, 246, 0.2);
+    background: rgba(200, 157, 60, 0.07);
+    border-color: rgba(200, 157, 60, 0.2);
   }
 
   /* AI Section Header */
@@ -481,14 +481,14 @@
     align-items: center;
     gap: 0.75rem;
     padding-bottom: 1.25rem;
-    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+    border-bottom: 1px solid rgba(200, 157, 60, 0.1);
     margin-bottom: 1.25rem;
   }
   .ai-icon-wrap {
     padding: 0.5rem;
     border-radius: 0.75rem;
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.2);
+    background: rgba(200, 157, 60, 0.1);
+    border: 1px solid rgba(200, 157, 60, 0.2);
     flex-shrink: 0;
   }
 
@@ -528,9 +528,9 @@
     color: #CF6679;
   }
   .ai-badge-new {
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.25);
-    color: #a78bfa;
+    background: rgba(200, 157, 60, 0.1);
+    border: 1px solid rgba(200, 157, 60, 0.25);
+    color: var(--gold-light);
   }
 
   /* Ask AI Floating Button */
@@ -542,25 +542,25 @@
     width: 3.5rem;
     height: 3.5rem;
     border-radius: 50%;
-    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-    border: 1px solid rgba(139, 92, 246, 0.4);
-    box-shadow: 0 4px 24px rgba(139, 92, 246, 0.35);
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    border: 1px solid rgba(200, 157, 60, 0.4);
+    box-shadow: 0 4px 24px rgba(200, 157, 60, 0.35);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    color: white;
+    color: #050505;
   }
   .ask-ai-btn:hover {
     transform: scale(1.08);
-    box-shadow: 0 6px 32px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 6px 32px rgba(200, 157, 60, 0.5);
   }
   .ask-ai-btn-ring {
     position: absolute;
     inset: -4px;
     border-radius: 50%;
-    border: 1.5px solid rgba(139, 92, 246, 0.3);
+    border: 1.5px solid rgba(200, 157, 60, 0.3);
     animation: aiRingPulse 2.5s ease-in-out infinite;
   }
 
@@ -573,18 +573,18 @@
     width: 360px;
     max-height: 500px;
     background: rgba(10, 10, 10, 0.95);
-    border: 1px solid rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(200, 157, 60, 0.2);
     border-radius: 1.25rem;
     backdrop-filter: blur(32px);
-    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(139,92,246,0.08);
+    box-shadow: 0 16px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(200, 157, 60, 0.08);
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
   .ai-chat-header {
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(139, 92, 246, 0.12);
-    background: rgba(139, 92, 246, 0.04);
+    border-bottom: 1px solid rgba(200, 157, 60, 0.12);
+    background: rgba(200, 157, 60, 0.04);
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -600,9 +600,9 @@
   }
   .ai-msg-user {
     align-self: flex-end;
-    background: rgba(139, 92, 246, 0.15);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    color: #e2e2ff;
+    background: rgba(200, 157, 60, 0.15);
+    border: 1px solid rgba(200, 157, 60, 0.2);
+    color: var(--gold-light);
     border-radius: 1rem 1rem 0.25rem 1rem;
     padding: 0.55rem 0.9rem;
     font-size: 0.82rem;
@@ -622,7 +622,7 @@
   }
   .ai-chat-input-wrap {
     padding: 0.875rem 1.25rem;
-    border-top: 1px solid rgba(139, 92, 246, 0.1);
+    border-top: 1px solid rgba(200, 157, 60, 0.1);
     display: flex;
     gap: 0.5rem;
     flex-shrink: 0;
@@ -630,7 +630,7 @@
   .ai-chat-input {
     flex: 1;
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(200, 157, 60, 0.2);
     border-radius: 0.75rem;
     padding: 0.55rem 0.875rem;
     color: white;
@@ -642,13 +642,13 @@
     color: rgba(255, 255, 255, 0.3);
   }
   .ai-chat-input:focus {
-    border-color: rgba(139, 92, 246, 0.45);
+    border-color: rgba(200, 157, 60, 0.45);
   }
   .ai-chat-send {
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 0.625rem;
-    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
     border: none;
     display: flex;
     align-items: center;
@@ -656,11 +656,11 @@
     cursor: pointer;
     flex-shrink: 0;
     transition: all 0.2s;
-    color: white;
+    color: #050505;
   }
   .ai-chat-send:hover {
     transform: scale(1.05);
-    box-shadow: 0 2px 12px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 2px 12px rgba(200, 157, 60, 0.4);
   }
   .ai-chat-send:disabled {
     opacity: 0.5;
@@ -686,11 +686,11 @@
     align-items: center;
     gap: 0.4rem;
     padding: 0.3rem 0.75rem;
-    background: rgba(139, 92, 246, 0.08);
-    border: 1px solid rgba(139, 92, 246, 0.18);
+    background: rgba(200, 157, 60, 0.08);
+    border: 1px solid rgba(200, 157, 60, 0.18);
     border-radius: 9999px;
     font-size: 0.75rem;
-    color: #c4b5fd;
+    color: var(--gold-light);
     white-space: nowrap;
   }
 
@@ -708,7 +708,7 @@
   .ai-typing-dot {
     width: 5px; height: 5px;
     border-radius: 50%;
-    background: rgba(139, 92, 246, 0.6);
+    background: rgba(200, 157, 60, 0.6);
     display: inline-block;
     animation: aiTyping 1.2s ease-in-out infinite;
   }

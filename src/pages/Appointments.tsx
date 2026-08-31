@@ -575,7 +575,7 @@ export default function Appointments() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Today's Bookings", value: todayCount, color: '#60a5fa' },
-          { label: 'Upcoming', value: upcomingCount, color: '#a78bfa' },
+          { label: 'Upcoming', value: upcomingCount, color: '#E6C27A' },
           { label: 'Completed (Month)', value: completedMonth, color: '#34d399' },
           { label: 'Cancelled', value: cancelledCount, color: '#6b7280' },
         ].map(stat => (

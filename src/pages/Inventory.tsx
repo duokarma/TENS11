@@ -216,7 +216,7 @@ export default function Inventory() {
                     <th className="px-6 py-5 text-center">Current Stock</th>
                     <th className="px-6 py-5 text-center">
                       <span className="flex items-center justify-center gap-1">
-                        <Sparkles className="w-3 h-3" style={{ color: '#a78bfa' }} />
+                        <Sparkles className="w-3 h-3" style={{ color: '#E6C27A' }} />
                         Days Left
                       </span>
                     </th>

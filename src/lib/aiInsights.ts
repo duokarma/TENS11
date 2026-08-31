@@ -1,5 +1,5 @@
 /**
- * aiInsights.ts — AI computation engine for TENS11 Salon
+ * aiInsights.ts — AI computation engine for TEN11 Salon
  * All logic runs entirely on already-fetched Supabase data.
  * Zero external API calls. Zero monthly cost.
  */
@@ -231,12 +231,12 @@ export function getChurnBadgeStyle(status: ChurnStatus): {
       };
     case 'New':
     default:
-      return {
-        bg: 'rgba(139, 92, 246, 0.08)',
-        border: 'rgba(139, 92, 246, 0.25)',
-        text: '#a78bfa',
-        dot: '#a78bfa',
-        label: 'New',
+      return { 
+        bg: 'rgba(200, 157, 60, 0.08)', 
+        border: 'rgba(200, 157, 60, 0.25)', 
+        text: '#E6C27A', 
+        dot: '#E6C27A', 
+        label: 'New' 
       };
   }
 }

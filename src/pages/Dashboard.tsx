@@ -372,7 +372,7 @@ export default function Dashboard() {
             <motion.div variants={itemVariants} className="mt-8">
               <div className="ai-section-header">
                 <div className="ai-icon-wrap">
-                  <Sparkles className="w-4 h-4" style={{ color: '#a78bfa' }} />
+                  <Sparkles className="w-4 h-4" style={{ color: '#E6C27A' }} />
                 </div>
                 <div>
                   <h3 className="text-base font-semibold text-white tracking-tight">AI Insights</h3>
@@ -390,7 +390,7 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center gap-2 mb-3">
                       <div className="ai-icon-wrap p-1.5" style={{ padding: '6px' }}>
-                        <span style={{ color: '#a78bfa' }}>{insightIcon(card.icon)}</span>
+                        <span style={{ color: '#E6C27A' }}>{insightIcon(card.icon)}</span>
                       </div>
                       {card.trend && (
                         <span

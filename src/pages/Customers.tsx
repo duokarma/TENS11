@@ -1110,14 +1110,14 @@ export default function Customers() {
           </button>
           {/* Churn filter */}
           <div className="glass-panel px-3 py-2 flex items-center gap-2"
-            style={{ border: churnFilter !== 'all' ? '1px solid rgba(139,92,246,0.3)' : undefined }}
+            style={{ border: churnFilter !== 'all' ? '1px solid rgba(200, 157, 60, 0.3)' : undefined }}
           >
-            <Sparkles className="w-4 h-4" style={{ color: churnFilter !== 'all' ? '#a78bfa' : 'rgba(255,255,255,0.4)' }} />
+            <Sparkles className="w-4 h-4" style={{ color: churnFilter !== 'all' ? '#E6C27A' : 'rgba(255,255,255,0.4)' }} />
             <select
               value={churnFilter}
               onChange={(e) => setChurnFilter(e.target.value as any)}
               className="bg-transparent text-sm text-white outline-none border-none appearance-none pr-4 cursor-pointer"
-              style={{ color: churnFilter !== 'all' ? '#a78bfa' : undefined }}
+              style={{ color: churnFilter !== 'all' ? '#E6C27A' : undefined }}
             >
               <option value="all" className="bg-[#1a1a1a]">All Customers</option>
               <option value="Active" className="bg-[#1a1a1a]">🟢 Active</option>
@@ -1858,10 +1858,10 @@ export default function Customers() {
                   <div className="ai-card p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <div className="ai-icon-wrap" style={{ padding: '6px' }}>
-                        <Sparkles className="w-3.5 h-3.5" style={{ color: '#a78bfa' }} />
+                        <Sparkles className="w-3.5 h-3.5" style={{ color: '#E6C27A' }} />
                       </div>
                       <div>
-                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(167,139,250,0.7)' }}>AI Suggestions</p>
+                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: 'rgba(200, 157, 60, 0.7)' }}>AI Suggestions</p>
                         <p className="text-[10px] text-white/30">Based on visit history</p>
                       </div>
                     </div>
