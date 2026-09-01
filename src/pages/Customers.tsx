@@ -92,6 +92,7 @@ interface HealthCustomerCardProps {
 
 function HealthCustomerCard({ customer, status, allVisits, onRecordVisit, onViewHistory }: HealthCustomerCardProps) {
   const { daysSince } = computeChurnStatus(customer.id, allVisits);
+  const visitCount = allVisits.filter(v => v.customer_id === customer.id).length;
   const initials = customer.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
 
   const dotColor = status === 'Active' ? '#34d399' : status === 'AtRisk' ? '#fbbf24' : '#f87171';
@@ -124,9 +125,14 @@ function HealthCustomerCard({ customer, status, allVisits, onRecordVisit, onView
             </span>
           )}
         </div>
-        {customer.payment_due && customer.payment_due > 0 && (
-          <div className="text-[10px] text-rose-400 mt-0.5">⚠️ Due ₹{customer.payment_due.toLocaleString()}</div>
-        )}
+        <div className="flex items-center gap-2 mt-0.5">
+          {visitCount > 0 && (
+            <span className="text-[10px] text-white/30">{visitCount} visit{visitCount !== 1 ? 's' : ''}</span>
+          )}
+          {customer.payment_due && customer.payment_due > 0 && (
+            <span className="text-[10px] text-rose-400">⚠️ Due ₹{customer.payment_due.toLocaleString()}</span>
+          )}
+        </div>
       </div>
 
       {/* Actions */}
@@ -1000,7 +1006,11 @@ export default function Customers() {
   };
 
   // Derived Data (no longer filtered locally)
-  const selectedCustomer = customers.find(c => c.id === selectedCustomerForHistory);
+  // Fall back to allCustomersForHealth so health-card history buttons work
+  // even when the customer is not on the current paginated page
+  const selectedCustomer =
+    customers.find(c => c.id === selectedCustomerForHistory) ||
+    allCustomersForHealth.find(c => c.id === selectedCustomerForHistory);
 
   // We can't synchronously calculate total spend across 50k customers in UI for the table.
   // The 'amount_paid' field on customer table aggregates this on save, let's use it!
@@ -1315,7 +1325,8 @@ export default function Customers() {
           />
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center flex-wrap gap-2">
+          {/* Payment Due toggle */}
           <button
             onClick={() => setShowPaymentDue(!showPaymentDue)}
             className={`glass-panel px-3 py-2 flex items-center gap-2 text-sm transition-colors ${showPaymentDue ? 'bg-danger/20 text-danger border-danger/30' : 'text-white/60 hover:text-white'}`}
@@ -1324,24 +1335,37 @@ export default function Customers() {
             <IndianRupee className="w-4 h-4" />
             Due
           </button>
-          {/* Churn filter */}
-          <div className="glass-panel px-3 py-2 flex items-center gap-2"
-            style={{ border: churnFilter !== 'all' ? '1px solid rgba(200, 157, 60, 0.3)' : undefined }}
-          >
-            <Sparkles className="w-4 h-4" style={{ color: churnFilter !== 'all' ? '#E6C27A' : 'rgba(255,255,255,0.4)' }} />
-            <select
-              value={churnFilter}
-              onChange={(e) => setChurnFilter(e.target.value as any)}
-              className="bg-transparent text-sm text-white outline-none border-none appearance-none pr-4 cursor-pointer"
-              style={{ color: churnFilter !== 'all' ? '#E6C27A' : undefined }}
-            >
-              <option value="all" className="bg-[#1a1a1a]">All Customers</option>
-              <option value="Active" className="bg-[#1a1a1a]">🟢 Active (Visited within 30 days)</option>
-              <option value="AtRisk" className="bg-[#1a1a1a]">🟡 At Risk (31-60 days without visit)</option>
-              <option value="Churned" className="bg-[#1a1a1a]">🔴 Churned (60+ days without visit)</option>
-              <option value="New" className="bg-[#1a1a1a]">🔵 New (No visits yet)</option>
-            </select>
+
+          {/* Status filter pills */}
+          <div className="flex items-center gap-1 glass-panel px-2 py-1.5">
+            {([
+              { value: 'all',     label: 'All',     dot: null },
+              { value: 'Active',  label: 'Active',  dot: '#34d399' },
+              { value: 'AtRisk',  label: 'At Risk', dot: '#fbbf24' },
+              { value: 'Churned', label: 'Churned', dot: '#f87171' },
+              { value: 'New',     label: 'New',     dot: '#E6C27A' },
+            ] as const).map(({ value, label, dot }) => (
+              <button
+                key={value}
+                onClick={() => setChurnFilter(value)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                  churnFilter === value
+                    ? 'bg-white/15 text-white'
+                    : 'text-white/40 hover:text-white/70'
+                }`}
+              >
+                {dot && (
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ background: dot, boxShadow: churnFilter === value ? `0 0 4px ${dot}` : 'none' }}
+                  />
+                )}
+                {label}
+              </button>
+            ))}
           </div>
+
+          {/* Time filter */}
           <div className="glass-panel px-3 py-2 flex items-center gap-2">
             <Filter className="w-4 h-4 text-white/60" />
             <select
@@ -1355,6 +1379,8 @@ export default function Customers() {
               <option value="month" className="bg-[#1a1a1a]">This Month</option>
             </select>
           </div>
+
+          {/* Sort */}
           <div className="glass-panel px-3 py-2 flex items-center gap-2">
             <SortDesc className="w-4 h-4 text-white/60" />
             <select
@@ -1362,21 +1388,15 @@ export default function Customers() {
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-transparent text-sm text-white outline-none border-none appearance-none pr-4 cursor-pointer"
             >
-              <option value="recent" className="bg-[#1a1a1a]">Recently Added (Sort by creation date)</option>
-              <option value="spend" className="bg-[#1a1a1a]">Highest Spend (Sort by total revenue)</option>
-              <option value="visits" className="bg-[#1a1a1a]">Most Visits (Sort by visit count)</option>
-              <option value="alphabet" className="bg-[#1a1a1a]">Alphabetical (A-Z by name)</option>
+              <option value="recent" className="bg-[#1a1a1a]">Recently Added</option>
+              <option value="spend" className="bg-[#1a1a1a]">Highest Spend</option>
+              <option value="alphabet" className="bg-[#1a1a1a]">Alphabetical (A–Z)</option>
             </select>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 text-[10.5px] uppercase tracking-widest text-white/50 pl-2">
-        <span className="font-bold text-white/70">Health Check Legend:</span>
-        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400"></span> Active (Visited &lt; 30 days)</span>
-        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400"></span> At Risk (31-60 days)</span>
-        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-400"></span> Churned (60+ days)</span>
-      </div>
+
 
       {/* Table */}
       <div className="glass-card overflow-hidden">

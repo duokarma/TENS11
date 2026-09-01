@@ -15,24 +15,41 @@ interface AskAIProps {
   customers: any[];
   products: any[];
   expenses?: any[];
+  appointments?: any[];
 }
 
 const SUGGESTIONS = [
+  // Revenue & Finance
   'Revenue this month?',
-  'Top customers?',
-  'Best service?',
-  'Low stock?',
-  'Who visited today?',
-  'At risk customers?',
-  'How many customers do we have?',
+  'Average bill value?',
+  'Cash vs UPI breakdown?',
   'What is our total profit?',
-  'Show me recent expenses',
-  'Which products are out of stock?',
-  'Who is our top performing staff?',
-  'How many returning customers do we have?',
+  'Show me discounts given',
+  // Customers
+  'Top 5 customers?',
+  'Customer lifetime value?',
+  'Churned customers list?',
+  'Birthday this month?',
+  'New customers this week?',
+  'How many returning customers?',
+  // Services & Products
+  'Best service this month?',
+  'Service revenue breakdown?',
+  'Top product sales?',
+  'Which products are low stock?',
+  // Staff
+  'Top performing staff?',
+  'Staff visit count this month?',
+  // Trends
+  'Last 6 months revenue trend?',
+  'Busiest month ever?',
+  // Health
+  'At risk customers?',
+  'Who visited today?',
+  'Revenue today?',
 ];
 
-export default function AskAI({ visits, customers, products, expenses = [] }: AskAIProps) {
+export default function AskAI({ visits, customers, products, expenses = [], appointments = [] }: AskAIProps) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([

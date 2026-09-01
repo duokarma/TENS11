@@ -549,6 +549,246 @@ export function parseAIQuery(query: string, ctx: AIQueryContext): string {
     return `**${out.length} product${out.length !== 1 ? 's' : ''} out of stock:**\n${lines.join('\n')}`;
   }
 
+  // ── Payment method breakdown ──────────────────────────────────────────────
+  if (q.includes('payment method') || q.includes('cash vs upi') || q.includes('cash upi') || q.includes('how paid') || q.includes('payment split')) {
+    const monthStart = q.includes('month') ? startOfMonth(now) : new Date(0);
+    const filtered = ctx.visits.filter(v => v.visit_date && new Date(v.visit_date) >= monthStart);
+    const methodMap: Record<string, { count: number; amount: number }> = {};
+    filtered.forEach(v => {
+      const m = v.payment_method || 'Unknown';
+      if (!methodMap[m]) methodMap[m] = { count: 0, amount: 0 };
+      methodMap[m].count++;
+      methodMap[m].amount += Number(v.grand_total) || 0;
+    });
+    if (Object.keys(methodMap).length === 0) return 'No payment data found.';
+    const lines = Object.entries(methodMap)
+      .sort((a, b) => b[1].amount - a[1].amount)
+      .map(([method, d]) => `• **${method}** — ${d.count} visits, ₹${d.amount.toLocaleString()}`);
+    return `Payment method breakdown${q.includes('month') ? ' this month' : ''}:\n${lines.join('\n')}`;
+  }
+
+  // ── Product revenue ───────────────────────────────────────────────────────
+  if (q.includes('product revenue') || q.includes('product sales') || q.includes('top product') || q.includes('best product')) {
+    const monthStart = q.includes('month') ? startOfMonth(now) : new Date(0);
+    const filtered = ctx.visits.filter(v => v.visit_date && new Date(v.visit_date) >= monthStart);
+    const prodRevenue: Record<string, number> = {};
+    const prodCount: Record<string, number> = {};
+    filtered.forEach(v => {
+      (v.visit_products || []).forEach((vp: any) => {
+        if (vp.product_name) {
+          prodRevenue[vp.product_name] = (prodRevenue[vp.product_name] || 0) + (Number(vp.price) || 0);
+          prodCount[vp.product_name] = (prodCount[vp.product_name] || 0) + (Number(vp.quantity) || 1);
+        }
+      });
+    });
+    const top = Object.entries(prodRevenue).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (top.length === 0) return 'No product sales data found.';
+    const lines = top.map(([name, rev], i) =>
+      `${i + 1}. **${name}** — ₹${rev.toLocaleString()} (${prodCount[name]} units)`
+    );
+    return `Top products by revenue${q.includes('month') ? ' this month' : ''}:\n${lines.join('\n')}`;
+  }
+
+  // ── Discount analytics ────────────────────────────────────────────────────
+  if (q.includes('discount') || q.includes('offer') || q.includes('how much discount')) {
+    const monthStart = q.includes('month') ? startOfMonth(now) : new Date(0);
+    const filtered = ctx.visits.filter(v => v.visit_date && new Date(v.visit_date) >= monthStart && Number(v.discount_amount) > 0);
+    const totalDiscount = filtered.reduce((s, v) => s + (Number(v.discount_amount) || 0), 0);
+    const allVisitsInPeriod = ctx.visits.filter(v => v.visit_date && new Date(v.visit_date) >= monthStart);
+    const avgDiscount = filtered.length > 0 ? Math.round(totalDiscount / filtered.length) : 0;
+    return `Discount analysis${q.includes('month') ? ' this month' : ' (all time)'}:\n• **${filtered.length}** visits had a discount\n• Total discounts given: **₹${totalDiscount.toLocaleString()}**\n• Avg discount per visit: **₹${avgDiscount.toLocaleString()}**\n• Discount visit rate: **${allVisitsInPeriod.length > 0 ? Math.round((filtered.length / allVisitsInPeriod.length) * 100) : 0}%** of visits`;
+  }
+
+  // ── Average bill / average order value ───────────────────────────────────
+  if (q.includes('average bill') || q.includes('avg bill') || q.includes('average order') || q.includes('avg order') || q.includes('average visit value')) {
+    const monthStart = q.includes('month') ? startOfMonth(now) : new Date(0);
+    const filtered = ctx.visits.filter(v => v.visit_date && new Date(v.visit_date) >= monthStart);
+    if (filtered.length === 0) return 'No visit data found for this period.';
+    const total = filtered.reduce((s, v) => s + (Number(v.grand_total) || 0), 0);
+    const avg = Math.round(total / filtered.length);
+    const maxVisit = filtered.reduce((max, v) => Number(v.grand_total) > Number(max.grand_total) ? v : max, filtered[0]);
+    return `Average bill${q.includes('month') ? ' this month' : ' (all time)'}:\n• **₹${avg.toLocaleString()}** per visit (across ${filtered.length} visits)\n• Highest single bill: **₹${Number(maxVisit.grand_total).toLocaleString()}**`;
+  }
+
+  // ── Customer lifetime value (CLV) ─────────────────────────────────────────
+  if (q.includes('lifetime value') || q.includes('clv') || q.includes('customer value') || q.includes('average spend per customer')) {
+    const spendMap: Record<number, number> = {};
+    ctx.visits.forEach(v => {
+      if (v.customer_id) {
+        spendMap[v.customer_id] = (spendMap[v.customer_id] || 0) + (Number(v.grand_total) || 0);
+      }
+    });
+    const spendValues = Object.values(spendMap);
+    if (spendValues.length === 0) return 'No spend data available.';
+    const totalRevenue = spendValues.reduce((s, v) => s + v, 0);
+    const avgCLV = Math.round(totalRevenue / spendValues.length);
+    const sorted = spendValues.sort((a, b) => b - a);
+    const top10pct = sorted.slice(0, Math.max(1, Math.floor(sorted.length * 0.1)));
+    const top10avg = Math.round(top10pct.reduce((s, v) => s + v, 0) / top10pct.length);
+    return `Customer Lifetime Value (CLV):\n• Avg CLV: **₹${avgCLV.toLocaleString()}**\n• Top 10% customers avg: **₹${top10avg.toLocaleString()}**\n• Total customers with visits: **${spendValues.length}**`;
+  }
+
+  // ── Monthly revenue trend (last 6 months) ────────────────────────────────
+  if (q.includes('monthly trend') || q.includes('last 6 months') || q.includes('6 month') || q.includes('monthly revenue') || q.includes('trend')) {
+    const months: { label: string; rev: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const mStart = startOfMonth(subMonths(now, i));
+      const mEnd = endOfMonth(subMonths(now, i));
+      const mVisits = ctx.visits.filter(v => {
+        if (!v.visit_date) return false;
+        const d = new Date(v.visit_date);
+        return d >= mStart && d <= mEnd;
+      });
+      const rev = mVisits.reduce((s, v) => s + (Number(v.grand_total) || 0), 0);
+      months.push({ label: format(mStart, 'MMM yyyy'), rev });
+    }
+    const lines = months.map(m => `• **${m.label}**: ₹${m.rev.toLocaleString()}`);
+    return `Revenue trend — last 6 months:\n${lines.join('\n')}`;
+  }
+
+  // ── Staff visit count ─────────────────────────────────────────────────────
+  if (q.includes('staff visit') || q.includes('staff count') || q.includes('who handled') || q.includes('visits by staff')) {
+    const monthStart = q.includes('month') ? startOfMonth(now) : new Date(0);
+    const filtered = ctx.visits.filter(v => v.visit_date && new Date(v.visit_date) >= monthStart);
+    const staffVisits: Record<string, number> = {};
+    filtered.forEach(v => {
+      if (v.staff?.name) {
+        staffVisits[v.staff.name] = (staffVisits[v.staff.name] || 0) + 1;
+      }
+    });
+    const top = Object.entries(staffVisits).sort((a, b) => b[1] - a[1]);
+    if (top.length === 0) return 'No staff visit data found.';
+    const lines = top.slice(0, 5).map(([name, count], i) => `${i + 1}. **${name}** — ${count} visits`);
+    return `Staff visit count${q.includes('month') ? ' this month' : ''}:\n${lines.join('\n')}`;
+  }
+
+  // ── Birthday lists ────────────────────────────────────────────────────────
+  if (q.includes('birthday') || q.includes('born this') || q.includes('dob')) {
+    const isWeek = q.includes('week');
+    const isMonth = q.includes('month') || !isWeek;
+    const todayMon = now.getMonth() + 1;
+    const todayDay = now.getDate();
+    // Get end of week
+    const weekEnd = new Date(now);
+    weekEnd.setDate(now.getDate() + 7);
+
+    const matches = ctx.customers.filter((c: any) => {
+      if (!c.dob) return false;
+      const parts = c.dob.split('-');
+      if (parts.length < 3) return false;
+      const month = Number(parts[1]);
+      const day = Number(parts[2]);
+      if (isWeek) {
+        // Check if birthday falls in next 7 days
+        for (let d = 0; d <= 7; d++) {
+          const check = new Date(now);
+          check.setDate(now.getDate() + d);
+          if (month === check.getMonth() + 1 && day === check.getDate()) return true;
+        }
+        return false;
+      }
+      return month === todayMon; // same month
+    });
+
+    if (matches.length === 0) return `No customer birthdays ${isWeek ? 'this week' : 'this month'}.`;
+    const lines = matches.map((c: any) => {
+      const parts = c.dob.split('-');
+      return `• **${c.name}** — ${parts[2]}/${parts[1]}`;
+    });
+    return `Birthdays ${isWeek ? 'this week' : 'this month'} (${matches.length}):\n${lines.join('\n')}`;
+  }
+
+  // ── Churned customer names list ───────────────────────────────────────────
+  if (q.includes('churned customers') || q.includes('who churned') || q.includes('lost customers') || q.includes('list churned')) {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 60);
+    const lastVisitMap: Record<number, Date> = {};
+    ctx.visits.forEach(v => {
+      if (!v.customer_id || !v.visit_date) return;
+      const d = new Date(v.visit_date);
+      if (!lastVisitMap[v.customer_id] || d > lastVisitMap[v.customer_id]) {
+        lastVisitMap[v.customer_id] = d;
+      }
+    });
+    const churned = Object.entries(lastVisitMap)
+      .filter(([, d]) => d < cutoff)
+      .map(([id]) => {
+        const c = ctx.customers.find((x: any) => x.id === Number(id));
+        return c ? c.name : null;
+      })
+      .filter(Boolean);
+    if (churned.length === 0) return 'Great news! No customers have churned (60+ days inactive).';
+    const preview = churned.slice(0, 10).map(name => `• **${name}**`);
+    const extra = churned.length > 10 ? `\n…and ${churned.length - 10} more` : '';
+    return `**${churned.length} churned customers** (60+ days inactive):\n${preview.join('\n')}${extra}`;
+  }
+
+  // ── New customers this week ───────────────────────────────────────────────
+  if (q.includes('new this week') || q.includes('new customers this week') || q.includes('joined this week')) {
+    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+    const newOnes = ctx.customers.filter((c: any) => {
+      const created = c.created_at || c.createdAt;
+      return created && new Date(created) >= weekAgo;
+    });
+    return `**${newOnes.length} new customer${newOnes.length !== 1 ? 's' : ''}** joined this week.${newOnes.length > 0 ? '\n' + newOnes.slice(0, 5).map((c: any) => `• **${c.name}**`).join('\n') : ''}`;
+  }
+
+  // ── Service revenue breakdown ─────────────────────────────────────────────
+  if (q.includes('service revenue') || q.includes('revenue by service') || q.includes('service breakdown')) {
+    const monthStart = q.includes('month') ? startOfMonth(now) : new Date(0);
+    const filtered = ctx.visits.filter(v => v.visit_date && new Date(v.visit_date) >= monthStart);
+    const svcRevMap: Record<string, number> = {};
+    filtered.forEach(v => {
+      (v.visit_services || []).forEach((vs: any) => {
+        if (vs.service_name) {
+          svcRevMap[vs.service_name] = (svcRevMap[vs.service_name] || 0) + (Number(vs.price) || 0);
+        }
+      });
+    });
+    const top = Object.entries(svcRevMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (top.length === 0) return 'No service revenue data found.';
+    const total = Object.values(svcRevMap).reduce((s, v) => s + v, 0);
+    const lines = top.map(([name, rev], i) =>
+      `${i + 1}. **${name}** — ₹${rev.toLocaleString()} (${total > 0 ? Math.round((rev / total) * 100) : 0}%)`
+    );
+    return `Service revenue breakdown${q.includes('month') ? ' this month' : ''}:\n${lines.join('\n')}\nTotal: ₹${total.toLocaleString()}`;
+  }
+
+  // ── Busiest month ─────────────────────────────────────────────────────────
+  if (q.includes('busiest month') || q.includes('best month') || q.includes('peak month')) {
+    const monthRevMap: Record<string, { visits: number; revenue: number }> = {};
+    ctx.visits.forEach(v => {
+      if (!v.visit_date) return;
+      const key = format(new Date(v.visit_date), 'MMMM yyyy');
+      if (!monthRevMap[key]) monthRevMap[key] = { visits: 0, revenue: 0 };
+      monthRevMap[key].visits++;
+      monthRevMap[key].revenue += Number(v.grand_total) || 0;
+    });
+    const sorted = Object.entries(monthRevMap).sort((a, b) => b[1].revenue - a[1].revenue);
+    if (sorted.length === 0) return 'No visit data to determine busiest month.';
+    const [topMonth, topData] = sorted[0];
+    const lines = sorted.slice(0, 5).map(([month, data], i) =>
+      `${i + 1}. **${month}** — ${data.visits} visits, ₹${data.revenue.toLocaleString()}`
+    );
+    return `Busiest months by revenue:\n${lines.join('\n')}`;
+  }
+
+  // ── Top 5 customers (extended) ────────────────────────────────────────────
+  if (q.includes('top 5') || q.includes('top five')) {
+    const spendMap: Record<number, number> = {};
+    ctx.visits.forEach(v => {
+      if (v.customer_id) {
+        spendMap[v.customer_id] = (spendMap[v.customer_id] || 0) + (Number(v.grand_total) || 0);
+      }
+    });
+    const top = Object.entries(spendMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    if (top.length === 0) return 'No visit data found.';
+    const lines = top.map(([id, spend], i) => {
+      const c = ctx.customers.find((x: any) => x.id === Number(id));
+      return `${i + 1}. **${c?.name || 'Unknown'}** — ₹${spend.toLocaleString()}`;
+    });
+    return `Top 5 customers by lifetime spend:\n${lines.join('\n')}`;
+  }
+
   // ── Fallback ──────────────────────────────────────────────────────────────
-  return `I can answer questions like:\n• "What's my revenue this month?"\n• "Who are my top customers?"\n• "Best service this month?"\n• "Who visited today?"\n• "Low stock?"\n• "How many customers?"\n• "At risk customers?"`;
+  return `I can answer questions about:\n• **Revenue** — "revenue today/week/month/all time"\n• **Customers** — "top customers", "top 5", "how many customers", "new this week"\n• **Services** — "best service", "service revenue breakdown"\n• **Products** — "product revenue", "low stock", "out of stock"\n• **Staff** — "top performing staff", "staff visit count"\n• **Health** — "at risk customers", "churned customers", "who churned"\n• **Finance** — "profit", "expenses", "average bill", "discounts", "payment method breakdown"\n• **Trends** — "monthly trend", "last 6 months", "busiest month"\n• **Analytics** — "customer lifetime value", "returning customers", "birthday this month"\n• **Visits** — "who visited today", "revenue this month"`;
 }

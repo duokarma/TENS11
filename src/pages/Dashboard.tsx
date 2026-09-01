@@ -634,7 +634,7 @@ export default function Dashboard() {
     </motion.div>
 
     {/* Ask AI floating button — always visible on Dashboard */}
-    <AskAI visits={visits} customers={customers} products={products} expenses={expenses} />
+    <AskAI visits={visits} customers={customers} products={products} expenses={expenses} appointments={appointments} />
     </>
   );
 }
