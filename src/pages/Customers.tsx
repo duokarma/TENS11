@@ -81,6 +81,75 @@ const customerSchema = z.object({
 });
 type CustomerFormData = z.infer<typeof customerSchema>;
 
+// ── HealthCustomerCard ─────────────────────────────────────────────────────
+interface HealthCustomerCardProps {
+  customer: Customer;
+  status: 'Active' | 'AtRisk' | 'Churned';
+  allVisits: any[];
+  onRecordVisit: (c: Customer) => void;
+  onViewHistory: (id: number) => void;
+}
+
+function HealthCustomerCard({ customer, status, allVisits, onRecordVisit, onViewHistory }: HealthCustomerCardProps) {
+  const { daysSince } = computeChurnStatus(customer.id, allVisits);
+  const initials = customer.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
+
+  const dotColor = status === 'Active' ? '#34d399' : status === 'AtRisk' ? '#fbbf24' : '#f87171';
+  const accentBorder = status === 'Active'
+    ? 'border-l-emerald-400/40'
+    : status === 'AtRisk'
+    ? 'border-l-amber-400/40'
+    : 'border-l-rose-400/40';
+  const avatarBg = status === 'Active'
+    ? 'bg-emerald-400/10 border-emerald-400/20 text-emerald-300'
+    : status === 'AtRisk'
+    ? 'bg-amber-400/10 border-amber-400/20 text-amber-300'
+    : 'bg-rose-400/10 border-rose-400/20 text-rose-300';
+
+  return (
+    <div className={`flex items-center gap-3 px-4 py-3 border-b border-white/5 border-l-2 ${accentBorder} hover:bg-white/[0.03] transition-colors group`}>
+      {/* Avatar */}
+      <div className={`h-9 w-9 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${avatarBg}`}>
+        {initials}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-white truncate">{customer.name}</div>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-[11px] text-white/40 truncate">{customer.phone}</span>
+          {daysSince !== null && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: `${dotColor}18`, color: dotColor }}>
+              {daysSince === 0 ? 'Today' : `${daysSince}d ago`}
+            </span>
+          )}
+        </div>
+        {customer.payment_due && customer.payment_due > 0 && (
+          <div className="text-[10px] text-rose-400 mt-0.5">⚠️ Due ₹{customer.payment_due.toLocaleString()}</div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <button
+          onClick={() => onRecordVisit(customer)}
+          title="Record Visit"
+          className="p-1.5 rounded-lg hover:bg-emerald-400/10 text-emerald-400 transition-colors"
+        >
+          <ClipboardList className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => onViewHistory(customer.id)}
+          title="View History"
+          className="p-1.5 rounded-lg hover:bg-white/10 text-white/60 transition-colors"
+        >
+          <CalendarIcon className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -90,6 +159,7 @@ export default function Customers() {
   const [churnFilter, setChurnFilter] = useState<'all' | 'Active' | 'AtRisk' | 'Churned' | 'New'>('all');
   const [showRevenue, setShowRevenue] = useState(false);
   const [allVisitsForChurn, setAllVisitsForChurn] = useState<any[]>([]);
+  const [allCustomersForHealth, setAllCustomersForHealth] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -299,13 +369,14 @@ export default function Customers() {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [custData, srvData, stfRes, prodRes, statsData, visitsRes] = await Promise.all([
+      const [custData, srvData, stfRes, prodRes, statsData, visitsRes, allCustsRes] = await Promise.all([
         customerService.getCustomers({ page, limit, search: debouncedSearch }),
         serviceService.getServices(),
         supabase.from('staff').select('*').eq('is_deleted', false),
         supabase.from('products').select('*').eq('is_deleted', false),
         customerService.getCustomerStats(),
-        supabase.from('customer_visits').select('customer_id, visit_date, visit_services(service_name)').eq('is_deleted', false).order('visit_date', { ascending: false }).limit(5000)
+        supabase.from('customer_visits').select('customer_id, visit_date, visit_services(service_name)').eq('is_deleted', false).order('visit_date', { ascending: false }).limit(5000),
+        supabase.from('customers').select('id, name, phone, amount_paid, payment_due, notes, dob, created_at').eq('is_deleted', false).order('created_at', { ascending: false }).limit(2000)
       ]);
       setCustomers(custData.data);
       setTotalCount(custData.count);
@@ -314,6 +385,15 @@ export default function Customers() {
       if (stfRes.data) setStaff(stfRes.data);
       if (prodRes.data) setProducts(prodRes.data);
       if (visitsRes.data) setAllVisitsForChurn(visitsRes.data);
+      if (allCustsRes.data) {
+        // Map raw db columns to Customer type fields
+        const mapped = allCustsRes.data.map((c: any) => ({
+          ...c,
+          amountPaid: c.amount_paid,
+          createdAt: c.created_at,
+        })) as Customer[];
+        setAllCustomersForHealth(mapped);
+      }
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to load data');
@@ -1014,6 +1094,20 @@ export default function Customers() {
     }, {} as Record<string, Customer[]>);
   }, [processedCustomers, sortBy]);
 
+  // ── Customer Health Section data ──────────────────────────────────────────
+  const healthGroups = useMemo(() => {
+    const active: Customer[] = [];
+    const atRisk: Customer[] = [];
+    const churned: Customer[] = [];
+    for (const c of allCustomersForHealth) {
+      const { status } = computeChurnStatus(c.id, allVisitsForChurn);
+      if (status === 'Active') active.push(c);
+      else if (status === 'AtRisk') atRisk.push(c);
+      else if (status === 'Churned') churned.push(c);
+    }
+    return { active, atRisk, churned };
+  }, [allCustomersForHealth, allVisitsForChurn]);
+
 
   return (
     <div className="space-y-8 relative max-w-7xl mx-auto">
@@ -1092,6 +1186,118 @@ export default function Customers() {
                 <dd className="font-light text-white mt-1 break-all tracking-tighter" style={{ fontSize: 'clamp(1.5rem, 4vw, 1.875rem)', lineHeight: '1.2' }}>₹{Math.round(stats.avgSpend).toLocaleString()}</dd>
               </dl>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Customer Health Dashboard ── */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-light tracking-tight text-white flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-400" />
+            Customer Health
+          </h3>
+          <span className="text-xs text-white/40 tracking-widest uppercase">Slide to explore each segment</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* ── Active ── */}
+          <div className="glass-card overflow-hidden flex flex-col" style={{ maxHeight: '420px' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-emerald-500/5 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-sm font-semibold text-emerald-400 uppercase tracking-wider">Active</span>
+              </div>
+              <span className="text-xs font-bold text-emerald-400/70 bg-emerald-400/10 border border-emerald-400/20 px-2.5 py-1 rounded-full">
+                {healthGroups.active.length}
+              </span>
+            </div>
+            {isLoading ? (
+              <div className="flex-1 flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-400" />
+              </div>
+            ) : healthGroups.active.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center py-8 text-white/30 text-sm">No active customers</div>
+            ) : (
+              <div className="overflow-y-auto custom-scrollbar flex-1">
+                {healthGroups.active.map((c) => (
+                  <HealthCustomerCard
+                    key={c.id}
+                    customer={c}
+                    status="Active"
+                    allVisits={allVisitsForChurn}
+                    onRecordVisit={openRecordVisit}
+                    onViewHistory={(id) => setSelectedCustomerForHistory(id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── At Risk ── */}
+          <div className="glass-card overflow-hidden flex flex-col" style={{ maxHeight: '420px' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-amber-500/5 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" style={{ boxShadow: '0 0 6px rgba(251,191,36,0.6)' }} />
+                <span className="text-sm font-semibold text-amber-400 uppercase tracking-wider">At Risk</span>
+              </div>
+              <span className="text-xs font-bold text-amber-400/70 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-full">
+                {healthGroups.atRisk.length}
+              </span>
+            </div>
+            {isLoading ? (
+              <div className="flex-1 flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-amber-400" />
+              </div>
+            ) : healthGroups.atRisk.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center py-8 text-white/30 text-sm">No at-risk customers</div>
+            ) : (
+              <div className="overflow-y-auto custom-scrollbar flex-1">
+                {healthGroups.atRisk.map((c) => (
+                  <HealthCustomerCard
+                    key={c.id}
+                    customer={c}
+                    status="AtRisk"
+                    allVisits={allVisitsForChurn}
+                    onRecordVisit={openRecordVisit}
+                    onViewHistory={(id) => setSelectedCustomerForHistory(id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── Churned ── */}
+          <div className="glass-card overflow-hidden flex flex-col" style={{ maxHeight: '420px' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-rose-500/5 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                <span className="text-sm font-semibold text-rose-400 uppercase tracking-wider">Churned</span>
+              </div>
+              <span className="text-xs font-bold text-rose-400/70 bg-rose-400/10 border border-rose-400/20 px-2.5 py-1 rounded-full">
+                {healthGroups.churned.length}
+              </span>
+            </div>
+            {isLoading ? (
+              <div className="flex-1 flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-rose-400" />
+              </div>
+            ) : healthGroups.churned.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center py-8 text-white/30 text-sm">No churned customers</div>
+            ) : (
+              <div className="overflow-y-auto custom-scrollbar flex-1">
+                {healthGroups.churned.map((c) => (
+                  <HealthCustomerCard
+                    key={c.id}
+                    customer={c}
+                    status="Churned"
+                    allVisits={allVisitsForChurn}
+                    onRecordVisit={openRecordVisit}
+                    onViewHistory={(id) => setSelectedCustomerForHistory(id)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
