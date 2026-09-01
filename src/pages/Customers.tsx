@@ -164,6 +164,7 @@ export default function Customers() {
   const [showPaymentDue, setShowPaymentDue] = useState(false);
   const [churnFilter, setChurnFilter] = useState<'all' | 'Active' | 'AtRisk' | 'Churned'>('all');
   const [showRevenue, setShowRevenue] = useState(false);
+  const [showCustomerHealth, setShowCustomerHealth] = useState(true);
   const [allVisitsForChurn, setAllVisitsForChurn] = useState<any[]>([]);
   const [allCustomersForHealth, setAllCustomersForHealth] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1214,10 +1215,22 @@ export default function Customers() {
             <Sparkles className="w-5 h-5 text-amber-400" />
             Customer Health
           </h3>
-          <span className="text-xs text-white/40 tracking-widest uppercase">Slide to explore each segment</span>
+          <div className="flex items-center gap-4">
+            {showCustomerHealth && (
+              <span className="text-xs text-white/40 tracking-widest uppercase hidden sm:inline-block">Slide to explore each segment</span>
+            )}
+            <button 
+              onClick={() => setShowCustomerHealth(!showCustomerHealth)}
+              className="p-1.5 text-white/40 hover:text-white/80 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2"
+              title={showCustomerHealth ? "Hide Customer Health" : "Show Customer Health"}
+            >
+              {showCustomerHealth ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {showCustomerHealth && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* ── Active ── */}
           <div className="glass-card overflow-hidden flex flex-col" style={{ maxHeight: '420px' }}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-emerald-500/5 shrink-0">
@@ -1317,6 +1330,7 @@ export default function Customers() {
             )}
           </div>
         </div>
+        )}
       </div>
 
       {/* Search and Filters */}
