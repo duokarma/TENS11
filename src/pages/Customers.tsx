@@ -129,8 +129,8 @@ function HealthCustomerCard({ customer, status, allVisits, onRecordVisit, onView
           {visitCount > 0 && (
             <span className="text-[10px] text-white/30">{visitCount} visit{visitCount !== 1 ? 's' : ''}</span>
           )}
-          {customer.payment_due && customer.payment_due > 0 && (
-            <span className="text-[10px] text-rose-400">⚠️ Due ₹{customer.payment_due.toLocaleString()}</span>
+          {(customer.payment_due || 0) > 0 && (
+            <span className="text-[10px] text-rose-400">⚠️ Due ₹{customer.payment_due!.toLocaleString()}</span>
           )}
         </div>
       </div>
@@ -1022,7 +1022,14 @@ export default function Customers() {
   // For now we omit or leave as 'History' button. Let's omit the generic visit count in list for performance.
 
   const processedCustomers = useMemo(() => {
-    let result = [...customers];
+    // If a client-side filter is applied (churn, time, payment due, or sorting by spend), 
+    // use the full list of customers (allCustomersForHealth) instead of the paginated 
+    // page of 10, otherwise the filter will just return 0 items.
+    const sourceList = (churnFilter !== 'all' || filterTime !== 'all' || showPaymentDue || sortBy === 'spend') 
+      ? allCustomersForHealth 
+      : customers;
+      
+    let result = [...sourceList];
     
     if (showPaymentDue) {
       result = result.filter(c => c.payment_due && c.payment_due > 0);
