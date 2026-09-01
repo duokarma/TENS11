@@ -351,6 +351,24 @@ export function parseAIQuery(query: string, ctx: AIQueryContext): string {
   const q = query.toLowerCase().trim();
   const now = new Date();
 
+  // ── Monthly revenue trend (last 6 months) ────────────────────────────────
+  if (q.includes('monthly trend') || q.includes('last 6 months') || q.includes('6 month') || q.includes('monthly revenue') || q.includes('trend')) {
+    const months: { label: string; rev: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const mStart = startOfMonth(subMonths(now, i));
+      const mEnd = endOfMonth(subMonths(now, i));
+      const mVisits = ctx.visits.filter(v => {
+        if (!v.visit_date) return false;
+        const d = new Date(v.visit_date);
+        return d >= mStart && d <= mEnd;
+      });
+      const rev = mVisits.reduce((s, v) => s + (Number(v.grand_total) || 0), 0);
+      months.push({ label: format(mStart, 'MMM yyyy'), rev });
+    }
+    const lines = months.map(m => `• **${m.label}**: ₹${m.rev.toLocaleString()}`);
+    return `Revenue trend — last 6 months:\n${lines.join('\n')}`;
+  }
+
   // ── Revenue queries ───────────────────────────────────────────────────────
   if (q.includes('revenue') || q.includes('income') || q.includes('earn')) {
     if (q.includes('today')) {
@@ -629,23 +647,7 @@ export function parseAIQuery(query: string, ctx: AIQueryContext): string {
     return `Customer Lifetime Value (CLV):\n• Avg CLV: **₹${avgCLV.toLocaleString()}**\n• Top 10% customers avg: **₹${top10avg.toLocaleString()}**\n• Total customers with visits: **${spendValues.length}**`;
   }
 
-  // ── Monthly revenue trend (last 6 months) ────────────────────────────────
-  if (q.includes('monthly trend') || q.includes('last 6 months') || q.includes('6 month') || q.includes('monthly revenue') || q.includes('trend')) {
-    const months: { label: string; rev: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const mStart = startOfMonth(subMonths(now, i));
-      const mEnd = endOfMonth(subMonths(now, i));
-      const mVisits = ctx.visits.filter(v => {
-        if (!v.visit_date) return false;
-        const d = new Date(v.visit_date);
-        return d >= mStart && d <= mEnd;
-      });
-      const rev = mVisits.reduce((s, v) => s + (Number(v.grand_total) || 0), 0);
-      months.push({ label: format(mStart, 'MMM yyyy'), rev });
-    }
-    const lines = months.map(m => `• **${m.label}**: ₹${m.rev.toLocaleString()}`);
-    return `Revenue trend — last 6 months:\n${lines.join('\n')}`;
-  }
+
 
   // ── Staff visit count ─────────────────────────────────────────────────────
   if (q.includes('staff visit') || q.includes('staff count') || q.includes('who handled') || q.includes('visits by staff')) {
