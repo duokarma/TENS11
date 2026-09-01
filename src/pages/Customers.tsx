@@ -1067,7 +1067,7 @@ export default function Customers() {
     });
     
     return result;
-  }, [customers, filterTime, sortBy, showPaymentDue]);
+  }, [customers, filterTime, sortBy, showPaymentDue, churnFilter, allCustomersForHealth, allVisitsForChurn]);
 
   const groupedCustomers = useMemo((): Record<string, any[]> => {
     // Deduplicate by customer ID (since customer_timeline view might return multiple events per customer)
