@@ -419,10 +419,19 @@ export function parseAIQuery(query: string, ctx: AIQueryContext): string {
   }
 
   // ── Who visited today ─────────────────────────────────────────────────────
-  if (q.includes('visit today') || q.includes('came today') || q.includes('today visit') || q.includes('who today')) {
-    const todayVisits = ctx.visits.filter(
-      v => v.visit_date && new Date(v.visit_date).toDateString() === now.toDateString()
-    );
+  if (
+    q.includes('visit today') || q.includes('visited today') ||
+    q.includes('came today') || q.includes('today visit') ||
+    q.includes('who today') || q.includes('who visited') ||
+    q.includes('visited now') || q.includes('today customer')
+  ) {
+    // Convert visit_date (UTC ISO) to local date string for accurate IST comparison
+    const todayLocal = now.toLocaleDateString('en-CA'); // YYYY-MM-DD in local timezone
+    const todayVisits = ctx.visits.filter(v => {
+      if (!v.visit_date) return false;
+      const visitLocal = new Date(v.visit_date).toLocaleDateString('en-CA');
+      return visitLocal === todayLocal;
+    });
     if (todayVisits.length === 0) return 'No visits recorded today yet.';
     const names = todayVisits.map(v => {
       const c = ctx.customers.find((x: any) => x.id === v.customer_id);
