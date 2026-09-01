@@ -162,7 +162,7 @@ export default function Customers() {
   const [filterTime, setFilterTime] = useState<'all' | 'today' | 'week' | 'month'>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'spend' | 'alphabet'>('recent');
   const [showPaymentDue, setShowPaymentDue] = useState(false);
-  const [churnFilter, setChurnFilter] = useState<'all' | 'Active' | 'AtRisk' | 'Churned' | 'New'>('all');
+  const [churnFilter, setChurnFilter] = useState<'all' | 'Active' | 'AtRisk' | 'Churned'>('all');
   const [showRevenue, setShowRevenue] = useState(false);
   const [allVisitsForChurn, setAllVisitsForChurn] = useState<any[]>([]);
   const [allCustomersForHealth, setAllCustomersForHealth] = useState<Customer[]>([]);
@@ -1350,7 +1350,6 @@ export default function Customers() {
               { value: 'Active',  label: 'Active',  dot: '#34d399' },
               { value: 'AtRisk',  label: 'At Risk', dot: '#fbbf24' },
               { value: 'Churned', label: 'Churned', dot: '#f87171' },
-              { value: 'New',     label: 'New',     dot: '#E6C27A' },
             ] as const).map(({ value, label, dot }) => (
               <button
                 key={value}
