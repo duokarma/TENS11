@@ -344,6 +344,7 @@ interface AIQueryContext {
   customers: any[];
   products: any[];
   expenses?: any[];
+  appointments?: any[];
 }
 
 export function parseAIQuery(query: string, ctx: AIQueryContext): string {
@@ -789,6 +790,48 @@ export function parseAIQuery(query: string, ctx: AIQueryContext): string {
     return `Top 5 customers by lifetime spend:\n${lines.join('\n')}`;
   }
 
+  // ── Upcoming Appointments ──────────────────────────────────────────────────
+  if (q.includes('appointment') || q.includes('booked') || q.includes('scheduled')) {
+    if (!ctx.appointments || ctx.appointments.length === 0) return 'No appointments found.';
+    const upcoming = ctx.appointments.filter((a: any) => a.status === 'scheduled' || a.status === 'confirmed');
+    if (q.includes('today')) {
+      const todayLocal = now.toLocaleDateString('en-CA');
+      const todayApps = upcoming.filter((a: any) => new Date(a.appointment_date).toLocaleDateString('en-CA') === todayLocal);
+      if (todayApps.length === 0) return 'No appointments scheduled for today.';
+      const sum = todayApps.reduce((s: number, a: any) => s + (Number(a.total_price) || 0), 0);
+      return `**${todayApps.length} appointment${todayApps.length !== 1 ? 's' : ''} today** with an estimated value of **₹${sum.toLocaleString()}**.\n${todayApps.map((a: any) => `• ${a.customer_name} at ${a.appointment_time}`).join('\n')}`;
+    }
+    const sum = upcoming.reduce((s: number, a: any) => s + (Number(a.total_price) || 0), 0);
+    return `You have **${upcoming.length} upcoming appointment${upcoming.length !== 1 ? 's' : ''}** with an estimated value of **₹${sum.toLocaleString()}**.`;
+  }
+
+  // ── Day of week analytics ──────────────────────────────────────────────────
+  if (q.includes('busiest day') || q.includes('best day') || q.includes('day of week')) {
+    const dayVisits: Record<number, number> = { 0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0 };
+    const dayRev: Record<number, number> = { 0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0 };
+    ctx.visits.forEach(v => {
+      if (!v.visit_date) return;
+      const d = new Date(v.visit_date).getDay();
+      dayVisits[d]++;
+      dayRev[d] += Number(v.grand_total) || 0;
+    });
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const busiest = Object.entries(dayVisits).sort((a, b) => b[1] - a[1])[0];
+    const highestRev = Object.entries(dayRev).sort((a, b) => b[1] - a[1])[0];
+    return `Day of Week Analytics:\n• **Busiest day**: ${days[Number(busiest[0])]} (${busiest[1]} visits historically)\n• **Highest revenue day**: ${days[Number(highestRev[0])]} (₹${highestRev[1].toLocaleString()} total)`;
+  }
+
+  // ── Highest Expenses ───────────────────────────────────────────────────────
+  if (q.includes('highest expense') || q.includes('biggest expense')) {
+    if (!ctx.expenses || ctx.expenses.length === 0) return 'No expense data available.';
+    const monthStart = q.includes('month') ? startOfMonth(now) : new Date(0);
+    const filtered = ctx.expenses.filter(e => e.date && new Date(e.date) >= monthStart);
+    if (filtered.length === 0) return 'No expenses found in this period.';
+    const sorted = [...filtered].sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0));
+    const top = sorted.slice(0, 3);
+    return `Highest expenses${q.includes('month') ? ' this month' : ' all time'}:\n${top.map((e, i) => `${i + 1}. **${e.category}** — ₹${Number(e.amount).toLocaleString()} (${e.description || 'No description'})`).join('\n')}`;
+  }
+
   // ── Fallback ──────────────────────────────────────────────────────────────
-  return `I can answer questions about:\n• **Revenue** — "revenue today/week/month/all time"\n• **Customers** — "top customers", "top 5", "how many customers", "new this week"\n• **Services** — "best service", "service revenue breakdown"\n• **Products** — "product revenue", "low stock", "out of stock"\n• **Staff** — "top performing staff", "staff visit count"\n• **Health** — "at risk customers", "churned customers", "who churned"\n• **Finance** — "profit", "expenses", "average bill", "discounts", "payment method breakdown"\n• **Trends** — "monthly trend", "last 6 months", "busiest month"\n• **Analytics** — "customer lifetime value", "returning customers", "birthday this month"\n• **Visits** — "who visited today", "revenue this month"`;
+  return `I can answer questions about:\n• **Revenue** — "revenue today/week/month"\n• **Customers** — "top 5", "how many customers", "birthday this month"\n• **Appointments** — "appointments today", "total upcoming appointments"\n• **Services** — "best service", "service revenue breakdown"\n• **Products** — "product revenue", "low stock"\n• **Staff** — "top performing staff", "staff visit count"\n• **Health** — "at risk customers", "churned customers"\n• **Finance** — "profit", "expenses", "highest expense", "average bill", "discounts"\n• **Trends** — "monthly trend", "busiest month", "busiest day"`;
 }

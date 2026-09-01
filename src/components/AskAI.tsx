@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, X, Sparkles } from 'lucide-react';
+import { Bot, Send, X, Sparkles, RefreshCw } from 'lucide-react';
 import { parseAIQuery } from '../lib/aiInsights';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -25,6 +25,7 @@ const SUGGESTIONS = [
   'Cash vs UPI breakdown?',
   'What is our total profit?',
   'Show me discounts given',
+  'What was our highest expense?',
   // Customers
   'Top 5 customers?',
   'Customer lifetime value?',
@@ -32,6 +33,7 @@ const SUGGESTIONS = [
   'Birthday this month?',
   'New customers this week?',
   'How many returning customers?',
+  'Who spent the most this month?',
   // Services & Products
   'Best service this month?',
   'Service revenue breakdown?',
@@ -43,11 +45,20 @@ const SUGGESTIONS = [
   // Trends
   'Last 6 months revenue trend?',
   'Busiest month ever?',
-  // Health
+  'What is our busiest day of the week?',
+  'Which day generates the most revenue?',
+  // Health & Appointments
   'At risk customers?',
   'Who visited today?',
-  'Revenue today?',
+  'How many appointments today?',
+  'Total value of upcoming appointments?',
 ];
+
+// Helper to get N random items from an array
+const getRandomSuggestions = (n: number) => {
+  const shuffled = [...SUGGESTIONS].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, n);
+};
 
 export default function AskAI({ visits, customers, products, expenses = [], appointments = [] }: AskAIProps) {
   const [open, setOpen] = useState(false);
@@ -63,8 +74,15 @@ export default function AskAI({ visits, customers, products, expenses = [], appo
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
+
+  const shuffleSuggestions = () => {
+    setCurrentSuggestions(getRandomSuggestions(3));
+  };
+
   useEffect(() => {
     if (open) {
+      shuffleSuggestions();
       setTimeout(() => inputRef.current?.focus(), 150);
     }
   }, [open]);
@@ -192,9 +210,10 @@ export default function AskAI({ visits, customers, products, expenses = [], appo
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Suggestions — always accessible */}
-            <div style={{ padding: '0 1.25rem 0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', maxHeight: '100px', overflowY: 'auto' }} className="custom-scrollbar">
-              {SUGGESTIONS.map(s => (
+            {/* Quick Suggestions — randomized and shuffleable */}
+            <div style={{ padding: '0 1.25rem 0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+              <span className="text-[10px] text-white/30 uppercase tracking-wider mr-1">Try asking:</span>
+              {currentSuggestions.map(s => (
                 <button
                   key={s}
                   onClick={() => handleSuggestion(s)}
@@ -215,6 +234,33 @@ export default function AskAI({ visits, customers, products, expenses = [], appo
                   {s}
                 </button>
               ))}
+              <button
+                onClick={shuffleSuggestions}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: 'none',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  e.currentTarget.style.color = 'var(--gold-light)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
+                }}
+                title="Shuffle suggestions"
+              >
+                <RefreshCw className="w-3 h-3" />
+              </button>
             </div>
 
             {/* Input */}
