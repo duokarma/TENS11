@@ -679,7 +679,7 @@ export default function Customers() {
       const parsedServices = customerServices.map(cs => {
         const s = services.find(x => x.id.toString() === cs.serviceId.toString());
         if (s) {
-          const activePrice = cs.customPrice !== undefined && cs.customPrice !== '' ? Number(cs.customPrice) : Number(s.price);
+          const activePrice = cs.customPrice !== undefined && (cs.customPrice as any) !== '' ? Number(cs.customPrice) : Number(s.price);
           serviceTotal += activePrice;
           return s.service_name;
         }
@@ -860,7 +860,7 @@ export default function Customers() {
       const parsedServiceNames = filledServices.map(vs => {
         const s = services.find(x => x.id.toString() === vs.serviceId.toString());
         if (s) { 
-          const activePrice = vs.customPrice !== undefined && vs.customPrice !== '' ? Number(vs.customPrice) : Number(s.price);
+          const activePrice = vs.customPrice !== undefined && (vs.customPrice as any) !== '' ? Number(vs.customPrice) : Number(s.price);
           serviceTotal += activePrice; 
           return s.service_name; 
         }
