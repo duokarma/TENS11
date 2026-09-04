@@ -1146,7 +1146,9 @@ export default function Customers() {
           grand_total,
           service_total,
           product_total,
-          customer:customer_id (name, phone)
+          customer:customer_id (name, phone),
+          visit_services(service_name),
+          visit_products(product_name, quantity)
         `)
         .eq('is_deleted', false)
         .order('visit_date', { ascending: false });
@@ -1158,7 +1160,7 @@ export default function Customers() {
         return;
       }
 
-      const headers = ['Customer Name', 'Customer Number', 'Date', 'Total Bill', 'CGST', 'SGST'];
+      const headers = ['Customer Name', 'Customer Number', 'Date', 'Services Taken', 'Products Taken', 'Total Bill', 'CGST', 'SGST'];
       
       let sumTotalBill = 0;
       let sumCgst = 0;
@@ -1176,7 +1178,9 @@ export default function Customers() {
         const taxableValue = Math.round((grandTotal / (1 + gstRate)) * 100) / 100;
         const cgst = Math.round((grandTotal * (gstRate / 2) / (1 + gstRate)) * 100) / 100;
         const sgst = cgst;
-        const totalGST = cgst + sgst;
+
+        const servicesTaken = visit.visit_services?.map((vs: any) => vs.service_name).filter(Boolean).join(' | ') || '-';
+        const productsTaken = visit.visit_products?.map((vp: any) => `${vp.product_name} (x${vp.quantity || 1})`).filter(Boolean).join(' | ') || '-';
 
         sumTotalBill += grandTotal;
         sumCgst += cgst;
@@ -1186,17 +1190,21 @@ export default function Customers() {
           visit.customer?.name || 'Unknown',
           visit.customer?.phone || 'Unknown',
           visit.visit_date ? format(new Date(visit.visit_date), 'dd MMM yyyy') : '',
+          servicesTaken,
+          productsTaken,
           grandTotal.toFixed(2),
           cgst.toFixed(2),
           sgst.toFixed(2)
         ].map(v => `"${v}"`).join(',');
       });
 
-      rows.push(['', '', '', '', '', ''].join(',')); // Empty row
+      rows.push(['', '', '', '', '', '', '', ''].join(',')); // Empty row
       rows.push([
         'SUMMARY TOTALS', 
         '', 
         '', 
+        '',
+        '',
         sumTotalBill.toFixed(2), 
         sumCgst.toFixed(2), 
         sumSgst.toFixed(2)
