@@ -171,6 +171,7 @@ export default function Customers() {
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const limit = 10;
+  const [isExporting, setIsExporting] = useState(false);
   
   const [services, setServices] = useState<SalonService[]>([]);
   const [staff, setStaff] = useState<any[]>([]);
@@ -1127,6 +1128,84 @@ export default function Customers() {
   }, [allCustomersForHealth, allVisitsForChurn]);
 
 
+  const handleExportInvoices = async () => {
+    setIsExporting(true);
+    try {
+      const { data, error } = await supabase
+        .from('customer_visits')
+        .select(`
+          id,
+          visit_date,
+          grand_total,
+          service_total,
+          product_total,
+          customer:customer_id (name, phone)
+        `)
+        .eq('is_deleted', false)
+        .order('visit_date', { ascending: false });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        toast.error('No invoices found to export');
+        return;
+      }
+
+      const headers = ['Customer Name', 'Customer Number', 'Date', 'Total Bill', 'CGST', 'SGST'];
+      const rows = data.map((visit: any) => {
+        const grandTotal = Number(visit.grand_total || 0);
+        const serviceTotal = Number(visit.service_total || 0);
+        const productTotal = Number(visit.product_total || 0);
+        
+        let serviceGst = 0;
+        let productGst = 0;
+        
+        if (serviceTotal > 0) {
+           const taxable = serviceTotal / 1.05;
+           serviceGst = serviceTotal - taxable;
+        }
+        if (productTotal > 0) {
+           const taxable = productTotal / 1.18;
+           productGst = productTotal - taxable;
+        }
+        
+        const originalTotal = serviceTotal + productTotal;
+        let totalGST = serviceGst + productGst;
+        if (originalTotal > 0 && grandTotal < originalTotal) {
+           totalGST = totalGST * (grandTotal / originalTotal);
+        }
+        
+        const cgst = totalGST / 2;
+        const sgst = totalGST / 2;
+
+        return [
+          visit.customer?.name || 'Unknown',
+          visit.customer?.phone || 'Unknown',
+          visit.visit_date ? format(new Date(visit.visit_date), 'dd MMM yyyy') : '',
+          grandTotal.toFixed(2),
+          cgst.toFixed(2),
+          sgst.toFixed(2)
+        ].map(v => `"${v}"`).join(',');
+      });
+
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Invoices_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Invoices exported successfully!');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to export invoices');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-8 relative max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1134,13 +1213,27 @@ export default function Customers() {
           <h2 className="text-4xl font-light tracking-tight text-white">Customers</h2>
           <p className="text-white/50 mt-2 font-light tracking-wide">Manage your client relationships and view their history.</p>
         </div>
-        <button 
-          onClick={openAddModal}
-          className="btn-primary"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Customer
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleExportInvoices}
+            disabled={isExporting}
+            className="btn-secondary flex items-center bg-white/5 hover:bg-white/10 text-white px-4 py-2 border border-white/10 rounded-lg transition-colors"
+          >
+            {isExporting ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            Export Invoices
+          </button>
+          <button 
+            onClick={openAddModal}
+            className="btn-primary"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Customer
+          </button>
+        </div>
       </div>
 
       {/* Statistics Cards */}
