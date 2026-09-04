@@ -3,14 +3,10 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 
 
+import { calculateGST } from './taxCalculator';
+
 const GSTIN          = '24AARCIJE1234F1Z1';
 const PLACE_OF_SUPPLY = 'Gujarat (24)';
-const GST_RATE       = 0.05;
-const CGST_RATE      = 0.025;
-const SGST_RATE      = 0.025;
-const PRODUCT_GST_RATE   = 0.18;
-const PRODUCT_CGST_RATE  = 0.09;
-const PRODUCT_SGST_RATE  = 0.09;
 
 const SAC_MAP: Record<string, string> = {
   'Haircut & Styling': '999722',
@@ -351,10 +347,8 @@ export const generateInvoicePDF = async (data: {
   const grossTotal     = allItems.reduce((sum, item) => sum + item.amount, 0);
   const discountAmount = data.discount > 0 ? data.discount : 0;
   const grandTotal     = data.grandTotal ?? (grossTotal - discountAmount);
-  const taxableValue   = Math.round((grandTotal / (1 + GST_RATE)) * 100) / 100;
-  const cgstAmount     = Math.round((grandTotal * (GST_RATE / 2) / (1 + GST_RATE)) * 100) / 100;
-  const sgstAmount     = cgstAmount;
-  const totalGST       = cgstAmount + sgstAmount;
+  
+  const { taxableValue, cgst, sgst, totalGST } = calculateGST(grandTotal);
 
   const itemRows: any[] = allItems.map((item, idx) => [
     (idx + 1).toString(),
@@ -381,15 +375,15 @@ export const generateInvoicePDF = async (data: {
     { content: taxableValue.toFixed(2), styles: { halign: 'right' } },
   ]);
   itemRows.push([
-    { content: `CGST @ ${(CGST_RATE * 100).toFixed(1)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
-    { content: cgstAmount.toFixed(2), styles: { halign: 'right' } },
+    { content: `CGST @ 2.5%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: cgst.toFixed(2), styles: { halign: 'right' } },
   ]);
   itemRows.push([
-    { content: `SGST @ ${(SGST_RATE * 100).toFixed(1)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
-    { content: sgstAmount.toFixed(2), styles: { halign: 'right' } },
+    { content: `SGST @ 2.5%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: sgst.toFixed(2), styles: { halign: 'right' } },
   ]);
   itemRows.push([
-    { content: `Total GST (${(GST_RATE * 100).toFixed(0)}%):`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: `Total GST (5%):`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
     { content: totalGST.toFixed(2), styles: { halign: 'right' } },
   ]);
   itemRows.push([
@@ -464,10 +458,8 @@ export const generateProductInvoicePDF = async (data: {
   // GST (18% inclusive)
   const grossTotal   = allItems.reduce((sum, item) => sum + item.amount, 0);
   const grandTotal   = data.grandTotal || grossTotal;
-  const taxableValue = Math.round((grandTotal / (1 + PRODUCT_GST_RATE)) * 100) / 100;
-  const cgstAmount   = Math.round((grandTotal * (PRODUCT_GST_RATE / 2) / (1 + PRODUCT_GST_RATE)) * 100) / 100;
-  const sgstAmount   = cgstAmount;
-  const totalGST     = cgstAmount + sgstAmount;
+  
+  const { taxableValue, cgst, sgst, totalGST } = calculateGST(grandTotal);
 
   const itemRows: any[] = allItems.map((item, idx) => [
     (idx + 1).toString(),
@@ -483,15 +475,15 @@ export const generateProductInvoicePDF = async (data: {
     { content: taxableValue.toFixed(2), styles: { halign: 'right' } },
   ]);
   itemRows.push([
-    { content: `CGST @ ${(PRODUCT_CGST_RATE * 100).toFixed(0)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
-    { content: cgstAmount.toFixed(2), styles: { halign: 'right' } },
+    { content: `CGST @ 2.5%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: cgst.toFixed(2), styles: { halign: 'right' } },
   ]);
   itemRows.push([
-    { content: `SGST @ ${(PRODUCT_SGST_RATE * 100).toFixed(0)}%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
-    { content: sgstAmount.toFixed(2), styles: { halign: 'right' } },
+    { content: `SGST @ 2.5%:`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: sgst.toFixed(2), styles: { halign: 'right' } },
   ]);
   itemRows.push([
-    { content: `Total GST (${(PRODUCT_GST_RATE * 100).toFixed(0)}%):`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+    { content: `Total GST (5%):`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
     { content: totalGST.toFixed(2), styles: { halign: 'right' } },
   ]);
   itemRows.push([

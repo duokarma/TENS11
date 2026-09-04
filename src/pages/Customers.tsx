@@ -8,6 +8,7 @@ import {
   NotebookPen, Save, PlusCircle, Sparkles, Eye, EyeOff, Database
 } from 'lucide-react';
 import { generateInvoicePDF, generateProductInvoicePDF } from '../lib/pdfGenerator';
+import { calculateGST } from '../lib/taxCalculator';
 import AuditModal from '../components/AuditModal';
 import { format, isThisMonth, isToday, isYesterday, isThisWeek } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -1168,16 +1169,7 @@ export default function Customers() {
 
       const rows = data.map((visit: any) => {
         const grandTotal = Number(visit.grand_total || 0);
-        const serviceTotal = Number(visit.service_total || 0);
-        
-        let gstRate = 0.05; // 5% default for services
-        if (serviceTotal === 0 && Number(visit.product_total || 0) > 0) {
-           gstRate = 0.18; // 18% for pure product invoices
-        }
-
-        const taxableValue = Math.round((grandTotal / (1 + gstRate)) * 100) / 100;
-        const cgst = Math.round((grandTotal * (gstRate / 2) / (1 + gstRate)) * 100) / 100;
-        const sgst = cgst;
+        const { cgst, sgst } = calculateGST(grandTotal);
 
         const servicesTaken = visit.visit_services?.map((vs: any) => vs.service_name).filter(Boolean).join(' | ') || '-';
         const productsTaken = visit.visit_products?.map((vp: any) => `${vp.product_name} (x${vp.quantity || 1})`).filter(Boolean).join(' | ') || '-';
