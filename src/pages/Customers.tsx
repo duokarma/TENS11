@@ -164,7 +164,7 @@ export default function Customers() {
   const [showPaymentDue, setShowPaymentDue] = useState(false);
   const [churnFilter, setChurnFilter] = useState<'all' | 'Active' | 'AtRisk' | 'Churned'>('all');
   const [showRevenue, setShowRevenue] = useState(false);
-  const [showCustomerHealth, setShowCustomerHealth] = useState(true);
+  const [showCustomerHealth, setShowCustomerHealth] = useState(false);
   const [allVisitsForChurn, setAllVisitsForChurn] = useState<any[]>([]);
   const [allCustomersForHealth, setAllCustomersForHealth] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
