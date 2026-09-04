@@ -1160,28 +1160,16 @@ export default function Customers() {
       const rows = data.map((visit: any) => {
         const grandTotal = Number(visit.grand_total || 0);
         const serviceTotal = Number(visit.service_total || 0);
-        const productTotal = Number(visit.product_total || 0);
         
-        let serviceGst = 0;
-        let productGst = 0;
-        
-        if (serviceTotal > 0) {
-           const taxable = serviceTotal / 1.05;
-           serviceGst = serviceTotal - taxable;
+        let gstRate = 0.05; // 5% default for services
+        if (serviceTotal === 0 && Number(visit.product_total || 0) > 0) {
+           gstRate = 0.18; // 18% for pure product invoices
         }
-        if (productTotal > 0) {
-           const taxable = productTotal / 1.18;
-           productGst = productTotal - taxable;
-        }
-        
-        const originalTotal = serviceTotal + productTotal;
-        let totalGST = serviceGst + productGst;
-        if (originalTotal > 0 && grandTotal < originalTotal) {
-           totalGST = totalGST * (grandTotal / originalTotal);
-        }
-        
-        const cgst = totalGST / 2;
-        const sgst = totalGST / 2;
+
+        const taxableValue = Math.round((grandTotal / (1 + gstRate)) * 100) / 100;
+        const totalGST = Math.round((grandTotal - taxableValue) * 100) / 100;
+        const cgst = Math.round((totalGST / 2) * 100) / 100;
+        const sgst = Math.round((totalGST - cgst) * 100) / 100;
 
         sumTotalBill += grandTotal;
         sumCgst += cgst;
