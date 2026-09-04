@@ -350,7 +350,7 @@ export const generateInvoicePDF = async (data: {
   // GST (5% inclusive)
   const grossTotal     = allItems.reduce((sum, item) => sum + item.amount, 0);
   const discountAmount = data.discount > 0 ? data.discount : 0;
-  const grandTotal     = grossTotal - discountAmount;
+  const grandTotal     = data.grandTotal ?? (grossTotal - discountAmount);
   const taxableValue   = Math.round((grandTotal / (1 + GST_RATE)) * 100) / 100;
   const cgstAmount     = Math.round((grandTotal * (GST_RATE / 2) / (1 + GST_RATE)) * 100) / 100;
   const sgstAmount     = cgstAmount;

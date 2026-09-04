@@ -678,7 +678,8 @@ export default function Customers() {
       const parsedServices = customerServices.map(cs => {
         const s = services.find(x => x.id.toString() === cs.serviceId.toString());
         if (s) {
-          serviceTotal += Number(s.price);
+          const activePrice = cs.customPrice !== undefined && cs.customPrice !== '' ? Number(cs.customPrice) : Number(s.price);
+          serviceTotal += activePrice;
           return s.service_name;
         }
         return '';
@@ -857,7 +858,11 @@ export default function Customers() {
       let serviceTotal = 0;
       const parsedServiceNames = filledServices.map(vs => {
         const s = services.find(x => x.id.toString() === vs.serviceId.toString());
-        if (s) { serviceTotal += Number(s.price); return s.service_name; }
+        if (s) { 
+          const activePrice = vs.customPrice !== undefined && vs.customPrice !== '' ? Number(vs.customPrice) : Number(s.price);
+          serviceTotal += activePrice; 
+          return s.service_name; 
+        }
         return '';
       }).filter(Boolean);
 
