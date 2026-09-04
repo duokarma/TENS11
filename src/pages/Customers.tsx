@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { generateInvoicePDF, generateProductInvoicePDF } from '../lib/pdfGenerator';
 import { calculateGST } from '../lib/taxCalculator';
-import AuditModal from '../components/AuditModal';
 import { format, isThisMonth, isToday, isYesterday, isThisWeek } from 'date-fns';
 import toast from 'react-hot-toast';
 import { useForm } from 'react-hook-form';
@@ -174,7 +173,6 @@ export default function Customers() {
   const [page, setPage] = useState(1);
   const limit = 10;
   const [isExporting, setIsExporting] = useState(false);
-  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   
   const [services, setServices] = useState<SalonService[]>([]);
   const [staff, setStaff] = useState<any[]>([]);
@@ -1152,7 +1150,7 @@ export default function Customers() {
           visit_products(product_name, quantity)
         `)
         .eq('is_deleted', false)
-        .order('visit_date', { ascending: false });
+        .order('visit_date', { ascending: true });
 
       if (error) throw error;
 
@@ -1228,13 +1226,6 @@ export default function Customers() {
           <p className="text-white/50 mt-2 font-light tracking-wide">Manage your client relationships and view their history.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button 
-            onClick={() => setIsAuditModalOpen(true)}
-            className="btn-secondary flex items-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 px-4 py-2 border border-rose-500/20 rounded-lg transition-colors"
-          >
-            <Database className="mr-2 h-4 w-4" />
-            Data Audit
-          </button>
           <button 
             onClick={handleExportInvoices}
             disabled={isExporting}
@@ -2561,15 +2552,6 @@ export default function Customers() {
           </div>
         </div>
       )}
-
-      {/* Audit Modal */}
-      <AuditModal
-        isOpen={isAuditModalOpen}
-        onClose={() => setIsAuditModalOpen(false)}
-        onComplete={() => {
-          loadData();
-        }}
-      />
     </div>
   );
 }
