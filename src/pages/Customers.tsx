@@ -1152,6 +1152,11 @@ export default function Customers() {
       }
 
       const headers = ['Customer Name', 'Customer Number', 'Date', 'Total Bill', 'CGST', 'SGST'];
+      
+      let sumTotalBill = 0;
+      let sumCgst = 0;
+      let sumSgst = 0;
+
       const rows = data.map((visit: any) => {
         const grandTotal = Number(visit.grand_total || 0);
         const serviceTotal = Number(visit.service_total || 0);
@@ -1178,6 +1183,10 @@ export default function Customers() {
         const cgst = totalGST / 2;
         const sgst = totalGST / 2;
 
+        sumTotalBill += grandTotal;
+        sumCgst += cgst;
+        sumSgst += sgst;
+
         return [
           visit.customer?.name || 'Unknown',
           visit.customer?.phone || 'Unknown',
@@ -1187,6 +1196,16 @@ export default function Customers() {
           sgst.toFixed(2)
         ].map(v => `"${v}"`).join(',');
       });
+
+      rows.push(['', '', '', '', '', ''].join(',')); // Empty row
+      rows.push([
+        'SUMMARY TOTALS', 
+        '', 
+        '', 
+        sumTotalBill.toFixed(2), 
+        sumCgst.toFixed(2), 
+        sumSgst.toFixed(2)
+      ].map(v => `"${v}"`).join(','));
 
       const csvContent = [headers.join(','), ...rows].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
