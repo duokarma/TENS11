@@ -1167,9 +1167,9 @@ export default function Customers() {
         }
 
         const taxableValue = Math.round((grandTotal / (1 + gstRate)) * 100) / 100;
-        const totalGST = Math.round((grandTotal - taxableValue) * 100) / 100;
-        const cgst = Math.round((totalGST / 2) * 100) / 100;
-        const sgst = Math.round((totalGST - cgst) * 100) / 100;
+        const cgst = Math.round((grandTotal * (gstRate / 2) / (1 + gstRate)) * 100) / 100;
+        const sgst = cgst;
+        const totalGST = cgst + sgst;
 
         sumTotalBill += grandTotal;
         sumCgst += cgst;

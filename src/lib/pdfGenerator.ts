@@ -352,9 +352,9 @@ export const generateInvoicePDF = async (data: {
   const discountAmount = data.discount > 0 ? data.discount : 0;
   const grandTotal     = grossTotal - discountAmount;
   const taxableValue   = Math.round((grandTotal / (1 + GST_RATE)) * 100) / 100;
-  const totalGST       = Math.round((grandTotal - taxableValue) * 100) / 100;
-  const cgstAmount     = Math.round((totalGST / 2) * 100) / 100;
-  const sgstAmount     = Math.round((totalGST - cgstAmount) * 100) / 100;
+  const cgstAmount     = Math.round((grandTotal * (GST_RATE / 2) / (1 + GST_RATE)) * 100) / 100;
+  const sgstAmount     = cgstAmount;
+  const totalGST       = cgstAmount + sgstAmount;
 
   const itemRows: any[] = allItems.map((item, idx) => [
     (idx + 1).toString(),
@@ -465,9 +465,9 @@ export const generateProductInvoicePDF = async (data: {
   const grossTotal   = allItems.reduce((sum, item) => sum + item.amount, 0);
   const grandTotal   = data.grandTotal || grossTotal;
   const taxableValue = Math.round((grandTotal / (1 + PRODUCT_GST_RATE)) * 100) / 100;
-  const totalGST     = Math.round((grandTotal - taxableValue) * 100) / 100;
-  const cgstAmount   = Math.round((totalGST / 2) * 100) / 100;
-  const sgstAmount   = Math.round((totalGST - cgstAmount) * 100) / 100;
+  const cgstAmount   = Math.round((grandTotal * (PRODUCT_GST_RATE / 2) / (1 + PRODUCT_GST_RATE)) * 100) / 100;
+  const sgstAmount   = cgstAmount;
+  const totalGST     = cgstAmount + sgstAmount;
 
   const itemRows: any[] = allItems.map((item, idx) => [
     (idx + 1).toString(),
