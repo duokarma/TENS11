@@ -160,7 +160,7 @@ function HealthCustomerCard({ customer, status, allVisits, onRecordVisit, onView
 export default function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterTime, setFilterTime] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [filterTime, setFilterTime] = useState<'all' | 'today' | 'week' | 'month' | 'monthYear'>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'spend' | 'alphabet'>('recent');
   const [showPaymentDue, setShowPaymentDue] = useState(false);
   const [churnFilter, setChurnFilter] = useState<'all' | 'Active' | 'AtRisk' | 'Churned'>('all');
@@ -173,6 +173,8 @@ export default function Customers() {
   const [page, setPage] = useState(1);
   const limit = 10;
   const [isExporting, setIsExporting] = useState(false);
+  const [invoiceMonth, setInvoiceMonth] = useState<string>('all'); // 'all' | 'YYYY-MM'
+  const [filterMonthYear, setFilterMonthYear] = useState<string>('all'); // 'all' | 'YYYY-MM'
   
   const [services, setServices] = useState<SalonService[]>([]);
   const [staff, setStaff] = useState<any[]>([]);
@@ -1050,6 +1052,10 @@ export default function Customers() {
         if (filterTime === 'today') return isToday(date);
         if (filterTime === 'week') return isThisWeek(date, { weekStartsOn: 1 });
         if (filterTime === 'month') return isThisMonth(date);
+        if (filterTime === 'monthYear' && filterMonthYear !== 'all') {
+          const [y, m] = filterMonthYear.split('-').map(Number);
+          return date.getFullYear() === y && date.getMonth() + 1 === m;
+        }
         return true;
       });
     }
@@ -1075,7 +1081,7 @@ export default function Customers() {
     });
     
     return result;
-  }, [customers, filterTime, sortBy, showPaymentDue, churnFilter, allCustomersForHealth, allVisitsForChurn]);
+  }, [customers, filterTime, filterMonthYear, sortBy, showPaymentDue, churnFilter, allCustomersForHealth, allVisitsForChurn]);
 
   const groupedCustomers = useMemo((): Record<string, any[]> => {
     // Deduplicate by customer ID (since customer_timeline view might return multiple events per customer)
@@ -1134,10 +1140,28 @@ export default function Customers() {
   }, [allCustomersForHealth, allVisitsForChurn]);
 
 
+  // ── Helper: generate month options from Jan 2026 → 18 months ahead ─────────
+  const getMonthOptions = () => {
+    const options: { value: string; label: string }[] = [{ value: 'all', label: 'All Time' }];
+    const start = new Date(2026, 0, 1); // Jan 2026
+    const now = new Date();
+    const end = new Date(now.getFullYear(), now.getMonth() + 18, 1); // 18 months ahead
+    let cur = new Date(start);
+    while (cur <= end) {
+      options.push({
+        value: format(cur, 'yyyy-MM'),
+        label: format(cur, 'MMMM yyyy'),
+      });
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return options;
+  };
+
   const handleExportInvoices = async () => {
     setIsExporting(true);
     try {
-      const { data, error } = await supabase
+      // Build the base query
+      let query = supabase
         .from('customer_visits')
         .select(`
           id,
@@ -1152,10 +1176,20 @@ export default function Customers() {
         .eq('is_deleted', false)
         .order('visit_date', { ascending: true });
 
+      // Apply month filter if a specific month is selected (read-only, no data mutation)
+      if (invoiceMonth !== 'all') {
+        const [y, m] = invoiceMonth.split('-').map(Number);
+        const from = new Date(y, m - 1, 1).toISOString();
+        const to   = new Date(y, m, 1).toISOString(); // first day of next month
+        query = query.gte('visit_date', from).lt('visit_date', to);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        toast.error('No invoices found to export');
+        toast.error('No invoices found for the selected period');
         return;
       }
 
@@ -1167,7 +1201,7 @@ export default function Customers() {
 
       const rows = data.map((visit: any) => {
         const grandTotal = Number(visit.grand_total || 0);
-        const { cgst, sgst } = calculateGST(grandTotal);
+        const { cgst, sgst } = calculateGST(grandTotal); // unchanged GST logic
 
         const servicesTaken = visit.visit_services?.map((vs: any) => vs.service_name).filter(Boolean).join(' | ') || '-';
         const productsTaken = visit.visit_products?.map((vp: any) => `${vp.product_name} (x${vp.quantity || 1})`).filter(Boolean).join(' | ') || '-';
@@ -1205,7 +1239,11 @@ export default function Customers() {
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `Invoices_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      // Filename reflects selected month or 'All'
+      const filenameSuffix = invoiceMonth !== 'all'
+        ? format(new Date(invoiceMonth + '-01'), 'MMMM_yyyy')
+        : format(new Date(), 'yyyy-MM-dd');
+      link.setAttribute('download', `Invoices_${filenameSuffix}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1226,18 +1264,34 @@ export default function Customers() {
           <p className="text-white/50 mt-2 font-light tracking-wide">Manage your client relationships and view their history.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button 
-            onClick={handleExportInvoices}
-            disabled={isExporting}
-            className="btn-secondary flex items-center bg-white/5 hover:bg-white/10 text-white px-4 py-2 border border-white/10 rounded-lg transition-colors"
-          >
-            {isExporting ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
-            )}
-            Export Invoices
-          </button>
+          {/* Invoice month picker + export button */}
+          <div className="flex items-center gap-2">
+            <div className="glass-panel px-3 py-2 flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4 text-white/60" />
+              <select
+                value={invoiceMonth}
+                onChange={(e) => setInvoiceMonth(e.target.value)}
+                className="bg-transparent text-sm text-white outline-none border-none appearance-none pr-4 cursor-pointer"
+                title="Select month to export"
+              >
+                {getMonthOptions().map(opt => (
+                  <option key={opt.value} value={opt.value} className="bg-[#1a1a1a]">{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <button 
+              onClick={handleExportInvoices}
+              disabled={isExporting}
+              className="btn-secondary flex items-center bg-white/5 hover:bg-white/10 text-white px-4 py-2 border border-white/10 rounded-lg transition-colors"
+            >
+              {isExporting ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              Export Invoices
+            </button>
+          </div>
           <button 
             onClick={openAddModal}
             className="btn-primary"
@@ -1495,15 +1549,36 @@ export default function Customers() {
             <Filter className="w-4 h-4 text-white/60" />
             <select
               value={filterTime}
-              onChange={(e) => setFilterTime(e.target.value as any)}
+              onChange={(e) => {
+                setFilterTime(e.target.value as any);
+                // Reset month-year sub-filter when switching away
+                if (e.target.value !== 'monthYear') setFilterMonthYear('all');
+              }}
               className="bg-transparent text-sm text-white outline-none border-none appearance-none pr-4 cursor-pointer"
             >
               <option value="all" className="bg-[#1a1a1a]">All Time</option>
               <option value="today" className="bg-[#1a1a1a]">Today</option>
               <option value="week" className="bg-[#1a1a1a]">This Week</option>
               <option value="month" className="bg-[#1a1a1a]">This Month</option>
+              <option value="monthYear" className="bg-[#1a1a1a]">By Month…</option>
             </select>
           </div>
+
+          {/* Secondary month-year picker — shown only when 'By Month' is selected */}
+          {filterTime === 'monthYear' && (
+            <div className="glass-panel px-3 py-2 flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4 text-white/60" />
+              <select
+                value={filterMonthYear}
+                onChange={(e) => setFilterMonthYear(e.target.value)}
+                className="bg-transparent text-sm text-white outline-none border-none appearance-none pr-4 cursor-pointer"
+              >
+                {getMonthOptions().map(opt => (
+                  <option key={opt.value} value={opt.value} className="bg-[#1a1a1a]">{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Sort */}
           <div className="glass-panel px-3 py-2 flex items-center gap-2">
