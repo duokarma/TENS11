@@ -4,7 +4,8 @@ import type { Customer, CustomerNote } from '../types';
 import { 
   Search, Plus, User, Scissors, Receipt, Package,
   Trash2, Edit2, X, Users, UserPlus, IndianRupee, TrendingUp, Calendar as CalendarIcon,
-  ChevronLeft, ChevronRight, Download, MessageCircle, Star, ClipboardList, Tag, Filter, SortDesc,
+  ChevronLeft, ChevronRight, ChevronDown, Download, FileSpreadsheet, FileText,
+  MessageCircle, Star, ClipboardList, Tag, Filter, SortDesc,
   NotebookPen, Save, PlusCircle, Sparkles, Eye, EyeOff, Database
 } from 'lucide-react';
 import { generateInvoicePDF, generateProductInvoicePDF } from '../lib/pdfGenerator';
@@ -173,6 +174,7 @@ export default function Customers() {
   const [page, setPage] = useState(1);
   const limit = 10;
   const [isExporting, setIsExporting] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [invoiceMonth, setInvoiceMonth] = useState<string>('all'); // 'all' | 'YYYY-MM'
   const [filterMonthYear, setFilterMonthYear] = useState<string>('all'); // 'all' | 'YYYY-MM'
   
@@ -1157,104 +1159,219 @@ export default function Customers() {
     return options;
   };
 
-  const handleExportInvoices = async () => {
+  // ── Shared data fetcher for both export formats ──────────────────────────
+  const fetchExportData = async () => {
+    let query = supabase
+      .from('customer_visits')
+      .select(`
+        id,
+        visit_date,
+        grand_total,
+        service_total,
+        product_total,
+        payment_method,
+        customer:customer_id (name, phone),
+        visit_services(service_name, price),
+        visit_products(product_name, quantity, price)
+      `)
+      .eq('is_deleted', false)
+      .order('visit_date', { ascending: true });
+
+    if (invoiceMonth !== 'all') {
+      const [y, m] = invoiceMonth.split('-').map(Number);
+      query = query
+        .gte('visit_date', new Date(y, m - 1, 1).toISOString())
+        .lt('visit_date', new Date(y, m, 1).toISOString());
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  };
+
+  const getExportFileSuffix = () =>
+    invoiceMonth !== 'all'
+      ? format(new Date(invoiceMonth + '-01'), 'MMMM_yyyy')
+      : format(new Date(), 'yyyy-MM-dd');
+
+  // ── Export as Excel (.xlsx) ───────────────────────────────────────────────
+  const handleExportExcel = async () => {
     setIsExporting(true);
+    setShowExportMenu(false);
     try {
-      // Build the base query
-      let query = supabase
-        .from('customer_visits')
-        .select(`
-          id,
-          visit_date,
-          grand_total,
-          service_total,
-          product_total,
-          customer:customer_id (name, phone),
-          visit_services(service_name),
-          visit_products(product_name, quantity)
-        `)
-        .eq('is_deleted', false)
-        .order('visit_date', { ascending: true });
+      const data = await fetchExportData();
+      if (data.length === 0) { toast.error('No invoices found for the selected period'); return; }
 
-      // Apply month filter if a specific month is selected (read-only, no data mutation)
-      if (invoiceMonth !== 'all') {
-        const [y, m] = invoiceMonth.split('-').map(Number);
-        const from = new Date(y, m - 1, 1).toISOString();
-        const to   = new Date(y, m, 1).toISOString(); // first day of next month
-        query = query.gte('visit_date', from).lt('visit_date', to);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        toast.error('No invoices found for the selected period');
-        return;
-      }
-
-      const headers = ['Customer Name', 'Customer Number', 'Date', 'Services Taken', 'Products Taken', 'Total Bill', 'CGST', 'SGST'];
-      
-      let sumTotalBill = 0;
-      let sumCgst = 0;
-      let sumSgst = 0;
-
+      // Build flat rows — one row per visit, no merging
       const rows = data.map((visit: any) => {
         const grandTotal = Number(visit.grand_total || 0);
-        const { cgst, sgst } = calculateGST(grandTotal); // unchanged GST logic
-
-        const servicesTaken = visit.visit_services?.map((vs: any) => vs.service_name).filter(Boolean).join(' | ') || '-';
-        const productsTaken = visit.visit_products?.map((vp: any) => `${vp.product_name} (x${vp.quantity || 1})`).filter(Boolean).join(' | ') || '-';
-
-        sumTotalBill += grandTotal;
-        sumCgst += cgst;
-        sumSgst += sgst;
-
-        return [
-          visit.customer?.name || 'Unknown',
-          visit.customer?.phone || 'Unknown',
-          visit.visit_date ? format(new Date(visit.visit_date), 'dd MMM yyyy') : '',
-          servicesTaken,
-          productsTaken,
-          grandTotal.toFixed(2),
-          cgst.toFixed(2),
-          sgst.toFixed(2)
-        ].map(v => `"${v}"`).join(',');
+        const { cgst, sgst } = calculateGST(grandTotal);
+        return {
+          'Customer Name':  visit.customer?.name  || 'Unknown',
+          'Phone':          visit.customer?.phone  || '-',
+          'Date':           visit.visit_date ? format(new Date(visit.visit_date), 'dd MMM yyyy') : '-',
+          'Services':       visit.visit_services?.map((s: any) => s.service_name).join(' | ') || '-',
+          'Products':       visit.visit_products?.map((p: any) => `${p.product_name} (x${p.quantity || 1})`).join(' | ') || '-',
+          'Service Total':  Number(visit.service_total || 0),
+          'Product Total':  Number(visit.product_total || 0),
+          'Grand Total':    grandTotal,
+          'CGST':           cgst,
+          'SGST':           sgst,
+          'Payment Method': visit.payment_method || '-',
+        };
       });
 
-      rows.push(['', '', '', '', '', '', '', ''].join(',')); // Empty row
-      rows.push([
-        'SUMMARY TOTALS', 
-        '', 
-        '', 
-        '',
-        '',
-        sumTotalBill.toFixed(2), 
-        sumCgst.toFixed(2), 
-        sumSgst.toFixed(2)
-      ].map(v => `"${v}"`).join(','));
+      // Summary row
+      const sumTotal = rows.reduce((s, r) => s + r['Grand Total'], 0);
+      const sumCgst  = rows.reduce((s, r) => s + r['CGST'], 0);
+      const sumSgst  = rows.reduce((s, r) => s + r['SGST'], 0);
+      rows.push({
+        'Customer Name':  'SUMMARY TOTALS',
+        'Phone':          '',
+        'Date':           '',
+        'Services':       '',
+        'Products':       '',
+        'Service Total':  0,
+        'Product Total':  0,
+        'Grand Total':    sumTotal,
+        'CGST':           sumCgst,
+        'SGST':           sumSgst,
+        'Payment Method': '',
+      });
 
-      const csvContent = [headers.join(','), ...rows].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      // Filename reflects selected month or 'All'
-      const filenameSuffix = invoiceMonth !== 'all'
-        ? format(new Date(invoiceMonth + '-01'), 'MMMM_yyyy')
-        : format(new Date(), 'yyyy-MM-dd');
-      link.setAttribute('download', `Invoices_${filenameSuffix}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success('Invoices exported successfully!');
+      const { utils, writeFile } = await import('xlsx');
+      const ws = utils.json_to_sheet(rows);
+      const wb = utils.book_new();
+      utils.book_append_sheet(wb, ws, 'Invoices');
+      writeFile(wb, `Invoices_${getExportFileSuffix()}.xlsx`);
+      toast.success('Excel exported successfully!');
     } catch (err: any) {
       console.error(err);
-      toast.error('Failed to export invoices');
+      toast.error(err.message || 'Excel export failed');
     } finally {
       setIsExporting(false);
     }
   };
+
+  // ── Export as PDF (flat rows, no merged cells) ────────────────────────────
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    setShowExportMenu(false);
+    try {
+      const data = await fetchExportData();
+      if (data.length === 0) { toast.error('No invoices found for the selected period'); return; }
+
+      const { jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+      const periodLabel = invoiceMonth !== 'all'
+        ? format(new Date(invoiceMonth + '-01'), 'MMMM yyyy')
+        : 'All Time';
+
+      // ── Page header ──
+      doc.setFontSize(16);
+      doc.setTextColor(30, 30, 30);
+      doc.text('TEN11 Salon — Invoice Report', 14, 14);
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Period: ${periodLabel}`, 14, 21);
+      doc.text(`Generated: ${format(new Date(), 'dd MMM yyyy, hh:mm a')}`, 14, 26);
+
+      // ── Table — one flat row per visit, zero merging ──
+      let sumTotal = 0;
+      let sumCgst  = 0;
+      let sumSgst  = 0;
+
+      const tableRows = data.map((visit: any) => {
+        const grandTotal = Number(visit.grand_total || 0);
+        const { cgst, sgst } = calculateGST(grandTotal);
+        sumTotal += grandTotal;
+        sumCgst  += cgst;
+        sumSgst  += sgst;
+
+        return [
+          visit.customer?.name  || 'Unknown',
+          visit.customer?.phone || '-',
+          visit.visit_date ? format(new Date(visit.visit_date), 'dd MMM yyyy') : '-',
+          visit.visit_services?.map((s: any) => s.service_name).join(', ') || '-',
+          visit.visit_products?.map((p: any) => `${p.product_name}(x${p.quantity || 1})`).join(', ') || '-',
+          `\u20B9${Number(visit.service_total || 0).toFixed(2)}`,
+          `\u20B9${Number(visit.product_total || 0).toFixed(2)}`,
+          `\u20B9${grandTotal.toFixed(2)}`,
+          `\u20B9${cgst.toFixed(2)}`,
+          `\u20B9${sgst.toFixed(2)}`,
+          visit.payment_method || '-',
+        ];
+      });
+
+      autoTable(doc, {
+        startY: 31,
+        head: [[
+          'Customer', 'Phone', 'Date',
+          'Services', 'Products',
+          'Svc Total', 'Prd Total', 'Grand Total',
+          'CGST', 'SGST', 'Payment'
+        ]],
+        body: tableRows,
+        styles:          { fontSize: 7, cellPadding: 1.8, overflow: 'linebreak' },
+        headStyles:      { fillColor: [20, 20, 20], textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+        alternateRowStyles: { fillColor: [247, 247, 247] },
+        columnStyles: {
+          0: { cellWidth: 28 },
+          1: { cellWidth: 24 },
+          2: { cellWidth: 22 },
+          3: { cellWidth: 45 },
+          4: { cellWidth: 35 },
+          5: { cellWidth: 18, halign: 'right' },
+          6: { cellWidth: 18, halign: 'right' },
+          7: { cellWidth: 20, halign: 'right' },
+          8: { cellWidth: 16, halign: 'right' },
+          9: { cellWidth: 16, halign: 'right' },
+          10: { cellWidth: 18 },
+        },
+        // No rowSpan / colSpan — every cell is independent
+        didDrawPage: (hookData: any) => {
+          // Page number footer
+          const pageCount = doc.getNumberOfPages();
+          doc.setFontSize(7);
+          doc.setTextColor(160);
+          doc.text(
+            `Page ${hookData.pageNumber} of ${pageCount}`,
+            doc.internal.pageSize.getWidth() - 30,
+            doc.internal.pageSize.getHeight() - 8
+          );
+        },
+      });
+
+      // ── Summary line below table ──
+      const finalY = (doc as any).lastAutoTable.finalY + 6;
+      doc.setFontSize(9);
+      doc.setTextColor(30, 30, 30);
+      doc.text(
+        `Total Records: ${data.length}   |   Grand Total: \u20B9${sumTotal.toFixed(2)}   |   CGST: \u20B9${sumCgst.toFixed(2)}   |   SGST: \u20B9${sumSgst.toFixed(2)}`,
+        14,
+        finalY
+      );
+
+      doc.save(`Invoices_${getExportFileSuffix()}.pdf`);
+      toast.success('PDF exported successfully!');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'PDF export failed');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // ── Close export dropdown on outside click ────────────────────────────────
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const handleOutsideClick = () => setShowExportMenu(false);
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, [showExportMenu]);
 
   return (
     <div className="space-y-8 relative max-w-7xl mx-auto">
@@ -1279,18 +1396,50 @@ export default function Customers() {
                 ))}
               </select>
             </div>
-            <button 
-              onClick={handleExportInvoices}
-              disabled={isExporting}
-              className="btn-secondary flex items-center bg-white/5 hover:bg-white/10 text-white px-4 py-2 border border-white/10 rounded-lg transition-colors"
-            >
-              {isExporting ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
+            {/* Export split-button dropdown */}
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center rounded-lg overflow-hidden border border-white/10">
+                {/* Label side */}
+                <span className="pl-3 pr-2 py-2 text-sm text-white/70 bg-white/5 border-r border-white/10 flex items-center gap-1.5 select-none">
+                  {isExporting
+                    ? <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
+                    : <Download className="h-3.5 w-3.5" />
+                  }
+                  <span>Export</span>
+                </span>
+                {/* Chevron toggle */}
+                <button
+                  onClick={() => setShowExportMenu(prev => !prev)}
+                  disabled={isExporting}
+                  className="px-2 py-2 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors disabled:opacity-50"
+                  title="Choose export format"
+                >
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showExportMenu ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              {/* Dropdown menu */}
+              {showExportMenu && (
+                <div className="absolute right-0 mt-1 w-48 glass-panel border border-white/10 rounded-xl shadow-2xl z-50 py-1 overflow-hidden">
+                  <button
+                    onClick={handleExportExcel}
+                    disabled={isExporting}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 text-emerald-400 shrink-0" />
+                    Export as Excel
+                  </button>
+                  <button
+                    onClick={handleExportPDF}
+                    disabled={isExporting}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    <FileText className="h-4 w-4 text-rose-400 shrink-0" />
+                    Export as PDF
+                  </button>
+                </div>
               )}
-              Export Invoices
-            </button>
+            </div>
           </div>
           <button 
             onClick={openAddModal}
