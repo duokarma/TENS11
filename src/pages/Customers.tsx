@@ -1297,39 +1297,40 @@ export default function Customers() {
           visit.visit_date ? format(new Date(visit.visit_date), 'dd MMM yyyy') : '-',
           visit.visit_services?.map((s: any) => s.service_name).join(', ') || '-',
           visit.visit_products?.map((p: any) => `${p.product_name}(x${p.quantity || 1})`).join(', ') || '-',
-          `\u20B9${Number(visit.service_total || 0).toFixed(2)}`,
-          `\u20B9${Number(visit.product_total || 0).toFixed(2)}`,
-          `\u20B9${grandTotal.toFixed(2)}`,
-          `\u20B9${cgst.toFixed(2)}`,
-          `\u20B9${sgst.toFixed(2)}`,
+          `Rs.${Number(visit.service_total || 0).toFixed(2)}`,
+          `Rs.${Number(visit.product_total || 0).toFixed(2)}`,
+          `Rs.${grandTotal.toFixed(2)}`,
+          `Rs.${cgst.toFixed(2)}`,
+          `Rs.${sgst.toFixed(2)}`,
           visit.payment_method || '-',
         ];
       });
 
       autoTable(doc, {
         startY: 31,
+        margin: { left: 8, right: 8 },
         head: [[
           'Customer', 'Phone', 'Date',
           'Services', 'Products',
-          'Svc Total', 'Prd Total', 'Grand Total',
-          'CGST', 'SGST', 'Payment'
+          'Svc Total (Rs.)', 'Prd Total (Rs.)', 'Grand Total (Rs.)',
+          'CGST (Rs.)', 'SGST (Rs.)', 'Payment'
         ]],
         body: tableRows,
         styles:          { fontSize: 7, cellPadding: 1.8, overflow: 'linebreak' },
-        headStyles:      { fillColor: [20, 20, 20], textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+        headStyles:      { fillColor: [20, 20, 20], textColor: 255, fontStyle: 'bold', fontSize: 6.5 },
         alternateRowStyles: { fillColor: [247, 247, 247] },
         columnStyles: {
-          0: { cellWidth: 28 },
-          1: { cellWidth: 24 },
-          2: { cellWidth: 22 },
-          3: { cellWidth: 45 },
-          4: { cellWidth: 35 },
-          5: { cellWidth: 18, halign: 'right' },
-          6: { cellWidth: 18, halign: 'right' },
-          7: { cellWidth: 20, halign: 'right' },
-          8: { cellWidth: 16, halign: 'right' },
-          9: { cellWidth: 16, halign: 'right' },
-          10: { cellWidth: 18 },
+          0: { cellWidth: 28 },   // Customer
+          1: { cellWidth: 24 },   // Phone
+          2: { cellWidth: 22 },   // Date
+          3: { cellWidth: 50 },   // Services
+          4: { cellWidth: 38 },   // Products
+          5: { cellWidth: 22, halign: 'right' },  // Svc Total
+          6: { cellWidth: 22, halign: 'right' },  // Prd Total
+          7: { cellWidth: 25, halign: 'right' },  // Grand Total
+          8: { cellWidth: 20, halign: 'right' },  // CGST
+          9: { cellWidth: 20, halign: 'right' },  // SGST
+          10: { cellWidth: 16 },  // Payment
         },
         // No rowSpan / colSpan — every cell is independent
         didDrawPage: (hookData: any) => {
@@ -1350,8 +1351,8 @@ export default function Customers() {
       doc.setFontSize(9);
       doc.setTextColor(30, 30, 30);
       doc.text(
-        `Total Records: ${data.length}   |   Grand Total: \u20B9${sumTotal.toFixed(2)}   |   CGST: \u20B9${sumCgst.toFixed(2)}   |   SGST: \u20B9${sumSgst.toFixed(2)}`,
-        14,
+        `Total Records: ${data.length}   |   Grand Total: Rs.${sumTotal.toFixed(2)}   |   CGST: Rs.${sumCgst.toFixed(2)}   |   SGST: Rs.${sumSgst.toFixed(2)}`,
+        8,
         finalY
       );
 
