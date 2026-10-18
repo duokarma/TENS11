@@ -152,9 +152,9 @@ const formatProductOptionLabel = (option: any, { context }: { context: 'menu' | 
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <span className="text-sm font-medium text-white truncate">{option.name || option.label}</span>
         {isOutOfStock ? (
-          <span className="text-[11px] text-rose-400 font-medium shrink-0 flex items-center gap-1 bg-rose-500/10 px-1.5 py-0.5 rounded">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-            Out of stock
+          <span className="text-[11px] text-amber-300 font-medium shrink-0 flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            0 in stock (Available)
           </span>
         ) : isLowStock ? (
           <span className="text-[11px] text-amber-400 font-medium shrink-0 flex items-center gap-1 bg-amber-500/10 px-1.5 py-0.5 rounded">
@@ -638,11 +638,21 @@ export default function Customers() {
       const { data: vpData } = await supabase.from('visit_products').select('product_id, quantity').eq('visit_id', visitId);
       if (vpData) {
         for (const vp of vpData) {
-          const { data: p } = await supabase.from('products').select('current_stock, sold_quantity').eq('id', vp.product_id).single();
+          const { data: p } = await supabase.from('products').select('*').eq('id', vp.product_id).single();
           if (p) {
+            const currentStock = Number(p.current_stock ?? 0);
+            const currentSold = Number(p.sold_quantity ?? 0);
+            const currentConsumed = Number(p.salon_consumption ?? 0);
+            const currentPurchased = Number(p.purchased_quantity ?? 0);
+
+            const restoredStock = currentStock + Number(vp.quantity);
+            const restoredSold = Math.max(0, currentSold - Number(vp.quantity));
+            const restoredPurchased = Math.max(currentPurchased, restoredStock + restoredSold + currentConsumed);
+
             await supabase.from('products').update({
-              current_stock: Number(p.current_stock) + Number(vp.quantity),
-              sold_quantity: Math.max(0, Number(p.sold_quantity) - Number(vp.quantity))
+              current_stock: restoredStock,
+              sold_quantity: restoredSold,
+              purchased_quantity: restoredPurchased
             }).eq('id', vp.product_id);
           }
         }
@@ -888,10 +898,24 @@ export default function Customers() {
             vProductsData.map(vp => ({ visit_id: visitData.id, ...vp }))
           );
           for (const vp of vProductsData) {
-            const p = products.find(x => x.id === vp.product_id)!;
-            const newQty = (Number(p.current_stock || p.currentStock) || 0) - vp.quantity;
-            const newSold = (Number(p.sold_quantity || p.soldQuantity) || 0) + vp.quantity;
-            await supabase.from('products').update({ current_stock: newQty, sold_quantity: newSold }).eq('id', p.id);
+            const { data: dbProd } = await supabase.from('products').select('*').eq('id', vp.product_id).single();
+            const p = dbProd || products.find(x => x.id.toString() === vp.product_id.toString());
+            if (p) {
+              const currentStock = Number(p.current_stock ?? p.currentStock ?? 0);
+              const currentSold = Number(p.sold_quantity ?? p.soldQuantity ?? 0);
+              const currentConsumed = Number(p.salon_consumption ?? p.salonConsumption ?? 0);
+              const currentPurchased = Number(p.purchased_quantity ?? p.purchasedQuantity ?? 0);
+
+              const newStock = Math.max(0, currentStock - vp.quantity);
+              const newSold = currentSold + vp.quantity;
+              const newPurchased = Math.max(currentPurchased, newStock + newSold + currentConsumed);
+
+              await supabase.from('products').update({
+                current_stock: newStock,
+                sold_quantity: newSold,
+                purchased_quantity: newPurchased
+              }).eq('id', p.id);
+            }
           }
         }
 
@@ -1012,11 +1036,21 @@ export default function Customers() {
         const { data: oldVp } = await supabase.from('visit_products').select('product_id, quantity').eq('visit_id', currentVisitId);
         if (oldVp) {
           for (const vp of oldVp) {
-            const p = products.find(x => x.id === vp.product_id);
+            const { data: p } = await supabase.from('products').select('*').eq('id', vp.product_id).single();
             if (p) {
+              const currentStock = Number(p.current_stock ?? 0);
+              const currentSold = Number(p.sold_quantity ?? 0);
+              const currentConsumed = Number(p.salon_consumption ?? 0);
+              const currentPurchased = Number(p.purchased_quantity ?? 0);
+
+              const restoredStock = currentStock + Number(vp.quantity);
+              const restoredSold = Math.max(0, currentSold - Number(vp.quantity));
+              const restoredPurchased = Math.max(currentPurchased, restoredStock + restoredSold + currentConsumed);
+
               await supabase.from('products').update({
-                current_stock: Number(p.current_stock || p.currentStock || 0) + Number(vp.quantity),
-                sold_quantity: Math.max(0, Number(p.sold_quantity || p.soldQuantity || 0) - Number(vp.quantity))
+                current_stock: restoredStock,
+                sold_quantity: restoredSold,
+                purchased_quantity: restoredPurchased
               }).eq('id', vp.product_id);
             }
           }
@@ -1081,10 +1115,23 @@ export default function Customers() {
         if (vpErr) throw vpErr;
 
         for (const vp of vProductsData) {
-          const p = products.find(x => x.id === vp.product_id)!;
-          const newQty = Number(p.current_stock || p.currentStock || 0) - vp.quantity;
-          const newSold = Number(p.sold_quantity || p.soldQuantity || 0) + vp.quantity;
-          await supabase.from('products').update({ current_stock: newQty, sold_quantity: newSold }).eq('id', p.id);
+          const { data: p } = await supabase.from('products').select('*').eq('id', vp.product_id).single();
+          if (p) {
+            const currentStock = Number(p.current_stock ?? 0);
+            const currentSold = Number(p.sold_quantity ?? 0);
+            const currentConsumed = Number(p.salon_consumption ?? 0);
+            const currentPurchased = Number(p.purchased_quantity ?? 0);
+
+            const newStock = Math.max(0, currentStock - vp.quantity);
+            const newSold = currentSold + vp.quantity;
+            const newPurchased = Math.max(currentPurchased, newStock + newSold + currentConsumed);
+
+            await supabase.from('products').update({
+              current_stock: newStock,
+              sold_quantity: newSold,
+              purchased_quantity: newPurchased
+            }).eq('id', p.id);
+          }
         }
       }
 
@@ -1104,11 +1151,13 @@ export default function Customers() {
         await supabase.from('staff_commissions').insert(commissionInserts);
       }
 
-      // 5. Update customer aggregate: amount_paid, services_taken, staff_served
+      // 5. Update customer aggregate: amount_paid, services_taken, staff_served, products_bought
       const difference = visitToEdit ? (grandTotal - Number(visitToEdit.grand_total)) : grandTotal;
       const updatedAmountPaid = Number(visitCustomer.amountPaid || 0) + difference;
       const existingServices = visitCustomer.services_taken || [];
       const newServicesList = Array.from(new Set([...existingServices, ...parsedServiceNames]));
+      const existingProducts = visitCustomer.products_bought || [];
+      const newProductsList = Array.from(new Set([...existingProducts, ...parsedProductNames]));
       const existingStaff = visitCustomer.staff_served || [];
       const newStaffNames = visitStaffIds.map(id => staff.find(s => s.id.toString() === id.toString())?.name || '').filter(Boolean);
       const newStaffList = Array.from(new Set([...existingStaff, ...newStaffNames]));
@@ -1116,6 +1165,7 @@ export default function Customers() {
       await supabase.from('customers').update({
         amount_paid: updatedAmountPaid,
         services_taken: newServicesList,
+        products_bought: newProductsList,
         staff_served: newStaffList,
         updated_at: new Date().toISOString()
       }).eq('id', visitCustomer.id);
@@ -2255,7 +2305,7 @@ export default function Customers() {
                                   components={{ Input: CustomSelectInput }}
                                   options={productOptions.map(opt => ({
                                     ...opt,
-                                    isDisabled: opt.stock <= 0 && opt.value !== cp.productId
+                                    isDisabled: false
                                   }))}
                                   filterOption={customProductFilter}
                                   placeholder="Search and select product..."
@@ -2273,12 +2323,17 @@ export default function Customers() {
                               </div>
 
                               <div className="flex items-center gap-3 shrink-0 justify-between sm:justify-start">
+                                {selectedProd && currentStock <= 0 && (
+                                  <span className="text-[10px] text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded shrink-0">
+                                    Stock 0 (In Store)
+                                  </span>
+                                )}
                                 <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5">
                                   <span className="text-[10px] font-bold uppercase tracking-wider text-white/40 select-none">Qty</span>
                                   <input 
                                     type="number" 
                                     min="1"
-                                    max={currentStock > 0 ? currentStock : 99}
+                                    max="999"
                                     value={cp.quantity || ''}
                                     onChange={(e) => {
                                       const newProds = [...customerProducts];
@@ -2553,7 +2608,7 @@ export default function Customers() {
                               components={{ Input: CustomSelectInput }}
                               options={productOptions.map(opt => ({
                                 ...opt,
-                                isDisabled: opt.stock <= 0 && opt.value !== vp.productId
+                                isDisabled: false
                               }))}
                               filterOption={customProductFilter}
                               placeholder="Search and select product..."
@@ -2571,12 +2626,17 @@ export default function Customers() {
                           </div>
 
                           <div className="flex items-center gap-3 shrink-0 justify-between sm:justify-start">
+                            {selectedProd && currentStock <= 0 && (
+                              <span className="text-[10px] text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded shrink-0">
+                                Stock 0 (In Store)
+                              </span>
+                            )}
                             <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5">
                               <span className="text-[10px] font-bold uppercase tracking-wider text-white/40 select-none">Qty</span>
                               <input
                                 type="number"
                                 min="1"
-                                max={currentStock > 0 ? currentStock : 99}
+                                max="999"
                                 value={vp.quantity || ''}
                                 onChange={(e) => {
                                   const updated = [...visitProducts];

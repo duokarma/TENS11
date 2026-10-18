@@ -63,10 +63,16 @@ export default function Dashboard() {
     if (!editingProduct) return;
     
     try {
+      const newStock = Math.max(0, Number(editingProduct.current_stock) || 0);
+      const sold = Number(editingProduct.sold_quantity) || 0;
+      const consumed = Number(editingProduct.salon_consumption) || 0;
+      const purchased = Math.max(Number(editingProduct.purchased_quantity) || 0, newStock + sold + consumed);
+
       const { error } = await supabase
         .from('products')
         .update({ 
-          current_stock: editingProduct.current_stock,
+          current_stock: newStock,
+          purchased_quantity: purchased,
           low_stock_threshold: editingProduct.low_stock_threshold || 5
         })
         .eq('id', editingProduct.id);

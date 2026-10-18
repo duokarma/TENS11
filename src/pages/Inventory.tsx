@@ -31,13 +31,7 @@ export default function Inventory() {
     current_stock: 0
   });
 
-  // Auto-calculate current stock whenever relevant fields change
-  useEffect(() => {
-    const purchased = Number(formData.purchased_quantity) || 0;
-    const sold = Number(formData.sold_quantity) || 0;
-    const consumed = Number(formData.salon_consumption) || 0;
-    setFormData(prev => ({ ...prev, current_stock: purchased - sold - consumed }));
-  }, [formData.purchased_quantity, formData.sold_quantity, formData.salon_consumption]);
+
 
   // Debounce search
   useEffect(() => {
@@ -119,14 +113,19 @@ export default function Inventory() {
     }
 
     try {
+      const stock = Math.max(0, Number(formData.current_stock) || 0);
+      const sold = Math.max(0, Number(formData.sold_quantity) || 0);
+      const consumed = Math.max(0, Number(formData.salon_consumption) || 0);
+      const purchased = Math.max(Number(formData.purchased_quantity) || 0, stock + sold + consumed);
+
       const payload = {
-        name: formData.name,
-        purchase_price: Number(formData.purchase_price),
-        selling_price: Number(formData.selling_price),
-        purchased_quantity: Number(formData.purchased_quantity),
-        sold_quantity: Number(formData.sold_quantity),
-        salon_consumption: Number(formData.salon_consumption),
-        current_stock: Number(formData.current_stock)
+        name: formData.name.trim(),
+        purchase_price: Number(formData.purchase_price) || 0,
+        selling_price: Number(formData.selling_price) || 0,
+        purchased_quantity: purchased,
+        sold_quantity: sold,
+        salon_consumption: consumed,
+        current_stock: stock
       };
 
       if (productToEdit) {
@@ -337,24 +336,70 @@ export default function Inventory() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Purchased Qty</label>
-                    <input type="number" min="0" value={formData.purchased_quantity} onChange={e => setFormData({...formData, purchased_quantity: Number(e.target.value)})} className="glass-input bg-black/40 w-full px-4 py-3 border-white/10 shadow-sm text-white" />
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={formData.purchased_quantity} 
+                      onChange={e => {
+                        const p = Math.max(0, parseInt(e.target.value) || 0);
+                        const s = Number(formData.sold_quantity) || 0;
+                        const c = Number(formData.salon_consumption) || 0;
+                        setFormData({ ...formData, purchased_quantity: p, current_stock: Math.max(0, p - s - c) });
+                      }} 
+                      className="glass-input bg-black/40 w-full px-4 py-3 border-white/10 shadow-sm text-white" 
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Sold Qty</label>
-                    <input type="number" min="0" value={formData.sold_quantity} onChange={e => setFormData({...formData, sold_quantity: Number(e.target.value)})} className="glass-input bg-black/40 w-full px-4 py-3 border-white/10 shadow-sm text-white" />
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={formData.sold_quantity} 
+                      onChange={e => {
+                        const s = Math.max(0, parseInt(e.target.value) || 0);
+                        const p = Number(formData.purchased_quantity) || 0;
+                        const c = Number(formData.salon_consumption) || 0;
+                        setFormData({ ...formData, sold_quantity: s, current_stock: Math.max(0, p - s - c) });
+                      }} 
+                      className="glass-input bg-black/40 w-full px-4 py-3 border-white/10 shadow-sm text-white" 
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Salon Consumption</label>
-                    <input type="number" min="0" value={formData.salon_consumption} onChange={e => setFormData({...formData, salon_consumption: Number(e.target.value)})} className="glass-input bg-black/40 w-full px-4 py-3 border-white/10 shadow-sm text-white" />
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={formData.salon_consumption} 
+                      onChange={e => {
+                        const c = Math.max(0, parseInt(e.target.value) || 0);
+                        const p = Number(formData.purchased_quantity) || 0;
+                        const s = Number(formData.sold_quantity) || 0;
+                        setFormData({ ...formData, salon_consumption: c, current_stock: Math.max(0, p - s - c) });
+                      }} 
+                      className="glass-input bg-black/40 w-full px-4 py-3 border-white/10 shadow-sm text-white" 
+                    />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Current Stock</label>
-                    <input type="number" disabled value={formData.current_stock} className="glass-input bg-black/5 w-full px-4 py-3 border-white/10 text-white/60 cursor-not-allowed" title="Auto-calculated (Purchased - Sold - Consumed)" />
+                    <label className="block text-xs font-bold tracking-widest text-[var(--gold)] uppercase mb-2">Current Stock</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      value={formData.current_stock} 
+                      onChange={e => {
+                        const st = Math.max(0, parseInt(e.target.value) || 0);
+                        const s = Number(formData.sold_quantity) || 0;
+                        const c = Number(formData.salon_consumption) || 0;
+                        setFormData({ ...formData, current_stock: st, purchased_quantity: st + s + c });
+                      }} 
+                      className="glass-input bg-black/40 w-full px-4 py-3 border-[var(--gold)]/30 text-white font-semibold focus:border-[var(--gold)]" 
+                      placeholder="0"
+                      title="Directly editable stock (syncs with Purchased Qty)"
+                    />
                   </div>
                 </div>
-                <p className="text-xs text-white/60 italic mt-2">Current Stock is auto-calculated as (Purchased Qty - Sold Qty - Salon Consumption).</p>
+                <p className="text-xs text-white/50 italic mt-2">Current Stock and Purchased Qty auto-sync: Current Stock = Purchased Qty - Sold Qty - Salon Consumption. You can adjust Current Stock directly anytime.</p>
               </div>
               <div className="p-6 border-t border-white/10 bg-black/5 rounded-b-2xl flex justify-end gap-3">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary bg-black/40 border-white/10 text-white">Cancel</button>

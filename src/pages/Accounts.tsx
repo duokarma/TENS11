@@ -174,11 +174,21 @@ export default function Accounts() {
         const { data: vpData } = await supabase.from('visit_products').select('product_id, quantity').eq('visit_id', id);
         if (vpData) {
           for (const vp of vpData) {
-            const { data: p } = await supabase.from('products').select('current_stock, sold_quantity').eq('id', vp.product_id).single();
+            const { data: p } = await supabase.from('products').select('*').eq('id', vp.product_id).single();
             if (p) {
+              const currentStock = Number(p.current_stock ?? 0);
+              const currentSold = Number(p.sold_quantity ?? 0);
+              const currentConsumed = Number(p.salon_consumption ?? 0);
+              const currentPurchased = Number(p.purchased_quantity ?? 0);
+
+              const restoredStock = currentStock + Number(vp.quantity);
+              const restoredSold = Math.max(0, currentSold - Number(vp.quantity));
+              const restoredPurchased = Math.max(currentPurchased, restoredStock + restoredSold + currentConsumed);
+
               await supabase.from('products').update({
-                current_stock: Number(p.current_stock) + Number(vp.quantity),
-                sold_quantity: Math.max(0, Number(p.sold_quantity) - Number(vp.quantity))
+                current_stock: restoredStock,
+                sold_quantity: restoredSold,
+                purchased_quantity: restoredPurchased
               }).eq('id', vp.product_id);
             }
           }
