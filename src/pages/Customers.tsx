@@ -18,8 +18,17 @@ import { z } from 'zod';
 import { supabase } from '../lib/supabase';
 import { serviceService } from '../lib/serviceService';
 import type { SalonService } from '../lib/serviceService';
-import Select from 'react-select';
+import Select, { components } from 'react-select';
 import { computeChurnStatus, getChurnBadgeStyle, getServiceRecommendations } from '../lib/aiInsights';
+
+const CustomSelectInput = (props: any) => (
+  <components.Input
+    {...props}
+    autoComplete="off"
+    autoCorrect="off"
+    spellCheck={false}
+  />
+);
 
 const selectStyles = {
   control: (base: any, state: any) => ({
@@ -40,11 +49,11 @@ const selectStyles = {
   }),
   menu: (base: any) => ({
     ...base,
-    background: '#161616',
-    border: '1px solid rgba(255, 255, 255, 0.15)',
+    background: '#141414',
+    border: '1px solid rgba(212, 175, 55, 0.3)',
     borderRadius: '0.75rem',
     overflow: 'hidden',
-    boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08)',
+    boxShadow: '0 24px 48px -8px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.1)',
     zIndex: 99999
   }),
   menuPortal: (base: any) => ({
@@ -54,20 +63,34 @@ const selectStyles = {
   menuList: (base: any) => ({
     ...base,
     padding: '6px',
-    maxHeight: '260px'
+    maxHeight: '420px',
+    '&::-webkit-scrollbar': {
+      width: '6px'
+    },
+    '&::-webkit-scrollbar-track': {
+      background: 'rgba(0, 0, 0, 0.25)',
+      borderRadius: '4px'
+    },
+    '&::-webkit-scrollbar-thumb': {
+      background: 'rgba(212, 175, 55, 0.35)',
+      borderRadius: '4px'
+    },
+    '&::-webkit-scrollbar-thumb:hover': {
+      background: 'rgba(212, 175, 55, 0.6)'
+    }
   }),
   option: (base: any, state: any) => ({
     ...base,
     borderRadius: '0.5rem',
-    margin: '2px 0',
+    margin: '1px 0',
     backgroundColor: state.isSelected
-      ? 'rgba(212, 175, 55, 0.2)'
+      ? 'rgba(212, 175, 55, 0.25)'
       : state.isFocused
         ? 'rgba(255, 255, 255, 0.08)'
         : 'transparent',
     color: state.isDisabled ? 'rgba(255, 255, 255, 0.35)' : '#fff',
     cursor: state.isDisabled ? 'not-allowed' : 'pointer',
-    padding: '8px 12px',
+    padding: '6px 10px',
     '&:active': {
       backgroundColor: state.isDisabled ? 'transparent' : 'rgba(255, 255, 255, 0.14)'
     }
@@ -125,29 +148,27 @@ const formatProductOptionLabel = (option: any, { context }: { context: 'menu' | 
   const isOutOfStock = option.stock <= 0;
   const isLowStock = option.stock > 0 && option.stock <= 5;
   return (
-    <div className="flex items-center justify-between gap-3 py-1 w-full min-w-0">
-      <div className="flex flex-col min-w-0 pr-2">
+    <div className="flex items-center justify-between gap-2.5 py-0.5 w-full min-w-0">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
         <span className="text-sm font-medium text-white truncate">{option.name || option.label}</span>
-        <div className="text-xs mt-0.5 flex items-center gap-2">
-          {isOutOfStock ? (
-            <span className="text-rose-400 font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-              Out of stock
-            </span>
-          ) : isLowStock ? (
-            <span className="text-amber-400 font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-              {option.stock} in stock (Low)
-            </span>
-          ) : (
-            <span className="text-emerald-400 font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              {option.stock} in stock
-            </span>
-          )}
-        </div>
+        {isOutOfStock ? (
+          <span className="text-[11px] text-rose-400 font-medium shrink-0 flex items-center gap-1 bg-rose-500/10 px-1.5 py-0.5 rounded">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+            Out of stock
+          </span>
+        ) : isLowStock ? (
+          <span className="text-[11px] text-amber-400 font-medium shrink-0 flex items-center gap-1 bg-amber-500/10 px-1.5 py-0.5 rounded">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            {option.stock} in stock
+          </span>
+        ) : (
+          <span className="text-[11px] text-emerald-400/90 font-medium shrink-0 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            {option.stock} in stock
+          </span>
+        )}
       </div>
-      <span className="text-xs font-semibold text-[var(--gold)] shrink-0 px-2.5 py-1 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/20 whitespace-nowrap">
+      <span className="text-xs font-semibold text-[var(--gold)] shrink-0 px-2 py-0.5 rounded bg-[var(--gold)]/10 border border-[var(--gold)]/20 whitespace-nowrap">
         ₹{(option.price ?? 0).toLocaleString()}
       </span>
     </div>
@@ -2037,7 +2058,7 @@ export default function Customers() {
               </button>
             </div>
             <form onSubmit={handleSubmit(onSubmitCustomer)} className="flex flex-col flex-1 overflow-hidden min-h-0">
-              <div className="p-6 space-y-5 bg-black/60 overflow-y-auto custom-scrollbar flex-1">
+              <div className="p-6 space-y-5 bg-black/60 overflow-y-auto custom-scrollbar flex-1 pb-16">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Full Name *</label>
@@ -2098,6 +2119,11 @@ export default function Customers() {
                       styles={selectStyles}
                       menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                       menuPosition="fixed"
+                      menuPlacement="auto"
+                      minMenuHeight={280}
+                      maxMenuHeight={380}
+                      menuShouldScrollIntoView={false}
+                      components={{ Input: CustomSelectInput }}
                       options={staff.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
                       value={staff.filter(s => customerStaffIds.includes(s.id.toString())).map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
                       onChange={(selected: any) => setCustomerStaffIds(selected.map((item: any) => item.value))}
@@ -2126,6 +2152,11 @@ export default function Customers() {
                                 styles={selectStyles}
                                 menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                                 menuPosition="fixed"
+                                menuPlacement="auto"
+                                minMenuHeight={280}
+                                maxMenuHeight={380}
+                                menuShouldScrollIntoView={false}
+                                components={{ Input: CustomSelectInput }}
                                 options={serviceOptions}
                                 placeholder="Search & Select Service..."
                                 value={serviceOptions.flatMap(g => g.options).find(o => o.value === cs.serviceId) || null}
@@ -2218,6 +2249,10 @@ export default function Customers() {
                                   menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                                   menuPosition="fixed"
                                   menuPlacement="auto"
+                                  minMenuHeight={300}
+                                  maxMenuHeight={420}
+                                  menuShouldScrollIntoView={false}
+                                  components={{ Input: CustomSelectInput }}
                                   options={productOptions.map(opt => ({
                                     ...opt,
                                     isDisabled: opt.stock <= 0 && opt.value !== cp.productId
@@ -2231,6 +2266,7 @@ export default function Customers() {
                                     setCustomerProducts(newProds);
                                   }}
                                   formatOptionLabel={formatProductOptionLabel}
+                                  noOptionsMessage={() => "No matching products found"}
                                   isClearable
                                   classNamePrefix="react-select"
                                 />
@@ -2355,7 +2391,7 @@ export default function Customers() {
               </button>
             </div>
 
-            <div className="p-6 space-y-6 bg-black/60 overflow-y-auto custom-scrollbar flex-1">
+            <div className="p-6 space-y-6 bg-black/60 overflow-y-auto custom-scrollbar flex-1 pb-16">
               {/* Staff Selector */}
               <div>
                 <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Staff Members</label>
@@ -2364,6 +2400,11 @@ export default function Customers() {
                   styles={selectStyles}
                   menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                   menuPosition="fixed"
+                  menuPlacement="auto"
+                  minMenuHeight={280}
+                  maxMenuHeight={380}
+                  menuShouldScrollIntoView={false}
+                  components={{ Input: CustomSelectInput }}
                   options={staff.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
                   value={staff.filter(s => visitStaffIds.includes(s.id.toString())).map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
                   onChange={(selected: any) => setVisitStaffIds(selected.map((item: any) => item.value))}
@@ -2401,6 +2442,11 @@ export default function Customers() {
                             styles={selectStyles}
                             menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                             menuPosition="fixed"
+                            menuPlacement="auto"
+                            minMenuHeight={280}
+                            maxMenuHeight={380}
+                            menuShouldScrollIntoView={false}
+                            components={{ Input: CustomSelectInput }}
                             options={serviceOptions}
                             placeholder="Search & Select Service..."
                             value={serviceOptions.flatMap(g => g.options).find(o => o.value === vs.serviceId) || null}
@@ -2501,6 +2547,10 @@ export default function Customers() {
                               menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
                               menuPosition="fixed"
                               menuPlacement="auto"
+                              minMenuHeight={300}
+                              maxMenuHeight={420}
+                              menuShouldScrollIntoView={false}
+                              components={{ Input: CustomSelectInput }}
                               options={productOptions.map(opt => ({
                                 ...opt,
                                 isDisabled: opt.stock <= 0 && opt.value !== vp.productId
@@ -2514,6 +2564,7 @@ export default function Customers() {
                                 setVisitProducts(updated);
                               }}
                               formatOptionLabel={formatProductOptionLabel}
+                              noOptionsMessage={() => "No matching products found"}
                               isClearable
                               classNamePrefix="react-select"
                             />
