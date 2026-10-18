@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import {
   CalendarCheck, Plus, X, Trash2, Check, RotateCcw,
   MessageCircle, Search, Clock, User, Scissors, ChevronDown,
-  CalendarDays, CheckCircle2, XCircle, Loader2, Pencil
+  CalendarDays, CheckCircle2, XCircle, Loader2, Pencil, Package
 } from 'lucide-react';
 import { format, isToday, isFuture, startOfMonth, endOfMonth, parseISO, isSameDay } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -16,37 +16,74 @@ const selectStyles = {
   control: (base: any, state: any) => ({
     ...base,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderColor: state.isFocused ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+    borderColor: state.isFocused ? 'rgba(212, 175, 55, 0.45)' : 'rgba(255, 255, 255, 0.12)',
     borderRadius: '0.75rem',
-    padding: '0.3rem',
-    boxShadow: 'none',
+    minHeight: '44px',
+    padding: '2px 4px',
+    boxShadow: state.isFocused ? '0 0 0 1px rgba(212, 175, 55, 0.25)' : 'none',
     '&:hover': {
-      borderColor: 'rgba(255, 255, 255, 0.2)',
+      borderColor: state.isFocused ? 'rgba(212, 175, 55, 0.6)' : 'rgba(255, 255, 255, 0.25)',
     }
+  }),
+  valueContainer: (base: any) => ({
+    ...base,
+    padding: '2px 8px'
   }),
   menu: (base: any) => ({
     ...base,
-    backgroundColor: '#1a1a1a',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#161616',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
     borderRadius: '0.75rem',
-    backdropFilter: 'blur(16px)',
+    overflow: 'hidden',
+    boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08)',
+    zIndex: 99999
+  }),
+  menuPortal: (base: any) => ({
+    ...base,
+    zIndex: 99999
+  }),
+  menuList: (base: any) => ({
+    ...base,
+    padding: '6px',
+    maxHeight: '260px'
   }),
   option: (base: any, state: any) => ({
     ...base,
-    backgroundColor: state.isFocused ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-    color: 'white',
-    cursor: 'pointer',
+    borderRadius: '0.5rem',
+    margin: '2px 0',
+    backgroundColor: state.isSelected 
+      ? 'rgba(212, 175, 55, 0.2)' 
+      : state.isFocused 
+        ? 'rgba(255, 255, 255, 0.08)' 
+        : 'transparent',
+    color: state.isDisabled ? 'rgba(255, 255, 255, 0.35)' : '#fff',
+    cursor: state.isDisabled ? 'not-allowed' : 'pointer',
+    padding: '8px 12px',
     '&:active': {
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      backgroundColor: state.isDisabled ? 'transparent' : 'rgba(255, 255, 255, 0.14)'
     }
   }),
   singleValue: (base: any) => ({
     ...base,
     color: 'white',
+    maxWidth: 'calc(100% - 8px)'
   }),
   input: (base: any) => ({
     ...base,
     color: 'white',
+    margin: 0,
+    padding: 0
+  }),
+  placeholder: (base: any) => ({
+    ...base,
+    color: 'rgba(255, 255, 255, 0.35)',
+    fontSize: '0.875rem'
+  }),
+  noOptionsMessage: (base: any) => ({
+    ...base,
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: '0.875rem',
+    padding: '12px'
   }),
   groupHeading: (base: any) => ({
     ...base,
@@ -57,6 +94,58 @@ const selectStyles = {
     letterSpacing: '0.05em',
   }),
 };
+
+const customProductFilter = (candidate: any, input: string) => {
+  if (!input) return true;
+  const q = input.toLowerCase().trim();
+  const name = (candidate.data.name || candidate.data.label || '').toLowerCase();
+  const price = candidate.data.price !== undefined ? candidate.data.price.toString() : '';
+  const barcode = (candidate.data.barcode || '').toLowerCase();
+  const category = (candidate.data.category || '').toLowerCase();
+  return name.includes(q) || price.includes(q) || barcode.includes(q) || category.includes(q);
+};
+
+const formatProductOptionLabel = (option: any, { context }: { context: 'menu' | 'value' }) => {
+  if (context === 'value') {
+    return (
+      <div className="flex items-center justify-between gap-2 w-full text-sm font-medium text-white min-w-0">
+        <span className="truncate">{option.name || option.label}</span>
+        <span className="text-[var(--gold)] font-semibold shrink-0">₹{(option.price ?? 0).toLocaleString()}</span>
+      </div>
+    );
+  }
+  const isOutOfStock = option.stock <= 0;
+  const isLowStock = option.stock > 0 && option.stock <= 5;
+  return (
+    <div className="flex items-center justify-between gap-3 py-1 w-full min-w-0">
+      <div className="flex flex-col min-w-0 pr-2">
+        <span className="text-sm font-medium text-white truncate">{option.name || option.label}</span>
+        <div className="text-xs mt-0.5 flex items-center gap-2">
+          {isOutOfStock ? (
+            <span className="text-rose-400 font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+              Out of stock
+            </span>
+          ) : isLowStock ? (
+            <span className="text-amber-400 font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              {option.stock} in stock (Low)
+            </span>
+          ) : (
+            <span className="text-emerald-400 font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              {option.stock} in stock
+            </span>
+          )}
+        </div>
+      </div>
+      <span className="text-xs font-semibold text-[var(--gold)] shrink-0 px-2.5 py-1 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/20 whitespace-nowrap">
+        ₹{(option.price ?? 0).toLocaleString()}
+      </span>
+    </div>
+  );
+};
+
 
 type AppointmentStatus = 'scheduled' | 'checked_in' | 'cancelled';
 
@@ -181,6 +270,23 @@ export default function Appointments() {
       originalName: c.name
     }));
   }, [customers]);
+
+  const productOptions = useMemo(() => {
+    return products.map(p => {
+      const stock = Number(p.current_stock ?? p.currentStock ?? 0);
+      const price = Number(p.selling_price ?? p.sellingPrice ?? 0);
+      return {
+        value: p.id.toString(),
+        label: `${p.name} - ₹${price}`,
+        name: p.name,
+        price: price,
+        stock: stock,
+        barcode: p.barcode || '',
+        category: p.category || ''
+      };
+    });
+  }, [products]);
+
 
   // Stats
   const todayCount = appointments.filter(a => a.status === 'scheduled' && isToday(parseISO(a.appointment_date))).length;
@@ -1017,6 +1123,8 @@ export default function Appointments() {
                 <Select
                   isMulti
                   styles={selectStyles}
+                  menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+                  menuPosition="fixed"
                   options={staff.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
                   value={staff.filter(s => checkInStaffIds.includes(s.id.toString())).map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
                   onChange={(selected: any) => setCheckInStaffIds(selected.map((item: any) => item.value))}
@@ -1027,15 +1135,21 @@ export default function Appointments() {
 
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <label className="text-xs font-bold tracking-widest text-white/60 uppercase">Services Done</label>
-                  <button onClick={() => setCheckInServices([...checkInServices, { serviceId: '' }])} className="text-xs font-bold text-white bg-black/5 hover:bg-black/10 border border-white/10 px-3 py-1.5 rounded-lg">+ Add</button>
+                  <label className="text-xs font-bold tracking-widest text-white/60 uppercase flex items-center gap-1.5">
+                    <Scissors className="w-3.5 h-3.5" /> Services Done
+                  </label>
+                  <button onClick={() => setCheckInServices([...checkInServices, { serviceId: '' }])} className="text-xs font-bold text-white bg-black/5 hover:bg-black/10 border border-white/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                    <Plus className="w-3 h-3" /> Add Service
+                  </button>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {checkInServices.map((cs, idx) => (
                     <div key={idx} className="flex gap-2">
                       <div className="flex-1">
                         <Select
                           styles={selectStyles}
+                          menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+                          menuPosition="fixed"
                           options={serviceOptions}
                           placeholder="Search & Select Service..."
                           value={serviceOptions.flatMap(g => g.options).find(o => o.value === cs.serviceId) || null}
@@ -1055,24 +1169,100 @@ export default function Appointments() {
                 </div>
               </div>
 
-              <div>
+              <div className="mt-4 pt-4 border-t border-white/10">
                 <div className="flex justify-between items-center mb-3">
-                  <label className="text-xs font-bold tracking-widest text-white/60 uppercase">Products Bought</label>
-                  <button onClick={() => setCheckInProducts([...checkInProducts, { productId: '', quantity: 1 }])} className="text-xs font-bold text-white bg-black/5 hover:bg-black/10 border border-white/10 px-3 py-1.5 rounded-lg">+ Add</button>
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-blue-400" />
+                    <label className="text-xs font-bold tracking-widest text-white/70 uppercase">Products Bought</label>
+                    {checkInProducts.length > 0 && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-400/15 text-blue-400 border border-blue-400/25">
+                        {checkInProducts.length}
+                      </span>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => setCheckInProducts([...checkInProducts, { productId: '', quantity: 1 }])} 
+                    className="text-xs font-bold text-white bg-black/5 hover:bg-black/10 border border-white/10 px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Product
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  {checkInProducts.map((cp, idx) => (
-                    <div key={idx} className="flex gap-2">
-                      <select value={cp.productId} onChange={e => { const updated = [...checkInProducts]; updated[idx].productId = e.target.value; setCheckInProducts(updated); }} className="glass-input flex-[2] px-4 py-3 appearance-none bg-black/40 text-sm">
-                        <option value="">-- Select Product --</option>
-                        {products.map(p => <option key={p.id} value={p.id} disabled={Number(p.current_stock || 0) <= 0}>{p.name} (Stock: {p.current_stock}) — ₹{p.selling_price || p.sellingPrice || 0}</option>)}
-                      </select>
-                      <input type="number" min="1" value={cp.quantity} onChange={e => { const updated = [...checkInProducts]; updated[idx].quantity = parseInt(e.target.value) || 1; setCheckInProducts(updated); }} className="glass-input flex-1 px-4 py-3 bg-black/40 text-sm" placeholder="Qty" />
-                      <button onClick={() => setCheckInProducts(checkInProducts.filter((_, i) => i !== idx))} className="p-2.5 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 shrink-0"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  ))}
-                  {checkInProducts.length === 0 && <p className="text-xs text-white/30 italic">No products added.</p>}
-                </div>
+                {checkInProducts.length === 0 ? (
+                  <div className="text-sm text-white/40 font-light italic p-4 bg-black/20 rounded-xl border border-dashed border-white/10 text-center flex flex-col items-center justify-center gap-1">
+                    <Package className="w-5 h-5 text-white/20 mb-1" />
+                    <span>No products added.</span>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {checkInProducts.map((cp, idx) => {
+                      const selectedProd = products.find(p => p.id.toString() === cp.productId.toString());
+                      const currentStock = Number(selectedProd?.current_stock ?? selectedProd?.currentStock ?? 99);
+                      const unitPrice = Number(selectedProd?.selling_price ?? selectedProd?.sellingPrice ?? 0);
+                      const lineTotal = unitPrice * (cp.quantity || 1);
+
+                      return (
+                        <div key={idx} className="p-3 rounded-xl bg-black/25 border border-white/10 hover:border-white/20 transition-all flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <Select
+                              instanceId={`checkin-product-${idx}`}
+                              styles={selectStyles}
+                              menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+                              menuPosition="fixed"
+                              menuPlacement="auto"
+                              options={productOptions.map(opt => ({
+                                ...opt,
+                                isDisabled: opt.stock <= 0 && opt.value !== cp.productId
+                              }))}
+                              filterOption={customProductFilter}
+                              placeholder="Search and select product..."
+                              value={productOptions.find(o => o.value === cp.productId) || null}
+                              onChange={(selected: any) => {
+                                const updated = [...checkInProducts];
+                                updated[idx].productId = selected ? selected.value : '';
+                                setCheckInProducts(updated);
+                              }}
+                              formatOptionLabel={formatProductOptionLabel}
+                              isClearable
+                              classNamePrefix="react-select"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-2.5 shrink-0 justify-between sm:justify-start">
+                            <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-white/40 select-none">Qty</span>
+                              <input 
+                                type="number" 
+                                min="1" 
+                                max={currentStock > 0 ? currentStock : 99}
+                                value={cp.quantity || ''} 
+                                onChange={e => { 
+                                  const updated = [...checkInProducts]; 
+                                  updated[idx].quantity = Math.max(1, parseInt(e.target.value) || 1); 
+                                  setCheckInProducts(updated); 
+                                }} 
+                                className="w-12 bg-transparent text-center font-semibold text-white focus:outline-none text-sm" 
+                                placeholder="1" 
+                              />
+                            </div>
+
+                            {selectedProd && (
+                              <div className="text-right px-2 min-w-[70px]">
+                                <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Subtotal</div>
+                                <div className="text-sm font-semibold text-emerald-400">
+                                  ₹{lineTotal.toLocaleString()}
+                                </div>
+                              </div>
+                            )}
+
+                            <button onClick={() => setCheckInProducts(checkInProducts.filter((_, i) => i !== idx))} className="p-2.5 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 shrink-0" title="Remove Product">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               
               <div className="bg-black/20 p-4 rounded-xl border border-blue-400/20 flex justify-between items-center">

@@ -25,43 +25,74 @@ const selectStyles = {
   control: (base: any, state: any) => ({
     ...base,
     background: 'rgba(0, 0, 0, 0.4)',
-    borderColor: state.isFocused ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.1)',
+    borderColor: state.isFocused ? 'rgba(212, 175, 55, 0.45)' : 'rgba(255, 255, 255, 0.12)',
     borderRadius: '0.75rem',
-    padding: '2px',
-    boxShadow: 'none',
+    minHeight: '44px',
+    padding: '2px 4px',
+    boxShadow: state.isFocused ? '0 0 0 1px rgba(212, 175, 55, 0.25)' : 'none',
     '&:hover': {
-      borderColor: 'rgba(255, 255, 255, 0.2)'
+      borderColor: state.isFocused ? 'rgba(212, 175, 55, 0.6)' : 'rgba(255, 255, 255, 0.25)'
     }
+  }),
+  valueContainer: (base: any) => ({
+    ...base,
+    padding: '2px 8px'
   }),
   menu: (base: any) => ({
     ...base,
-    background: 'rgba(20, 20, 20, 0.95)',
-    backdropFilter: 'blur(16px)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    background: '#161616',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
     borderRadius: '0.75rem',
     overflow: 'hidden',
-    zIndex: 9999
+    boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08)',
+    zIndex: 99999
+  }),
+  menuPortal: (base: any) => ({
+    ...base,
+    zIndex: 99999
+  }),
+  menuList: (base: any) => ({
+    ...base,
+    padding: '6px',
+    maxHeight: '260px'
   }),
   option: (base: any, state: any) => ({
     ...base,
-    backgroundColor: state.isFocused ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-    color: state.isFocused ? '#fff' : 'rgba(255, 255, 255, 0.7)',
-    cursor: 'pointer',
+    borderRadius: '0.5rem',
+    margin: '2px 0',
+    backgroundColor: state.isSelected
+      ? 'rgba(212, 175, 55, 0.2)'
+      : state.isFocused
+        ? 'rgba(255, 255, 255, 0.08)'
+        : 'transparent',
+    color: state.isDisabled ? 'rgba(255, 255, 255, 0.35)' : '#fff',
+    cursor: state.isDisabled ? 'not-allowed' : 'pointer',
+    padding: '8px 12px',
     '&:active': {
-      backgroundColor: 'rgba(255, 255, 255, 0.15)'
+      backgroundColor: state.isDisabled ? 'transparent' : 'rgba(255, 255, 255, 0.14)'
     }
   }),
   singleValue: (base: any) => ({
     ...base,
-    color: '#fff'
+    color: '#fff',
+    maxWidth: 'calc(100% - 8px)'
   }),
   input: (base: any) => ({
     ...base,
-    color: '#fff'
+    color: '#fff',
+    margin: 0,
+    padding: 0
   }),
   placeholder: (base: any) => ({
     ...base,
-    color: 'rgba(255, 255, 255, 0.3)'
+    color: 'rgba(255, 255, 255, 0.35)',
+    fontSize: '0.875rem'
+  }),
+  noOptionsMessage: (base: any) => ({
+    ...base,
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: '0.875rem',
+    padding: '12px'
   }),
   groupHeading: (base: any) => ({
     ...base,
@@ -71,6 +102,58 @@ const selectStyles = {
     textTransform: 'uppercase'
   })
 };
+
+const customProductFilter = (candidate: any, input: string) => {
+  if (!input) return true;
+  const q = input.toLowerCase().trim();
+  const name = (candidate.data.name || candidate.data.label || '').toLowerCase();
+  const price = candidate.data.price !== undefined ? candidate.data.price.toString() : '';
+  const barcode = (candidate.data.barcode || '').toLowerCase();
+  const category = (candidate.data.category || '').toLowerCase();
+  return name.includes(q) || price.includes(q) || barcode.includes(q) || category.includes(q);
+};
+
+const formatProductOptionLabel = (option: any, { context }: { context: 'menu' | 'value' }) => {
+  if (context === 'value') {
+    return (
+      <div className="flex items-center justify-between gap-2 w-full text-sm font-medium text-white min-w-0">
+        <span className="truncate">{option.name || option.label}</span>
+        <span className="text-[var(--gold)] font-semibold shrink-0">₹{(option.price ?? 0).toLocaleString()}</span>
+      </div>
+    );
+  }
+  const isOutOfStock = option.stock <= 0;
+  const isLowStock = option.stock > 0 && option.stock <= 5;
+  return (
+    <div className="flex items-center justify-between gap-3 py-1 w-full min-w-0">
+      <div className="flex flex-col min-w-0 pr-2">
+        <span className="text-sm font-medium text-white truncate">{option.name || option.label}</span>
+        <div className="text-xs mt-0.5 flex items-center gap-2">
+          {isOutOfStock ? (
+            <span className="text-rose-400 font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+              Out of stock
+            </span>
+          ) : isLowStock ? (
+            <span className="text-amber-400 font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              {option.stock} in stock (Low)
+            </span>
+          ) : (
+            <span className="text-emerald-400 font-medium flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              {option.stock} in stock
+            </span>
+          )}
+        </div>
+      </div>
+      <span className="text-xs font-semibold text-[var(--gold)] shrink-0 px-2.5 py-1 rounded-lg bg-[var(--gold)]/10 border border-[var(--gold)]/20 whitespace-nowrap">
+        ₹{(option.price ?? 0).toLocaleString()}
+      </span>
+    </div>
+  );
+};
+
 
 const customerSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -199,6 +282,23 @@ export default function Customers() {
       }))
     }));
   }, [groupedServices]);
+
+  const productOptions = useMemo(() => {
+    return products.map(p => {
+      const stock = Number(p.current_stock ?? p.currentStock ?? 0);
+      const price = Number(p.selling_price ?? p.sellingPrice ?? 0);
+      return {
+        value: p.id.toString(),
+        label: `${p.name} - ₹${price}`,
+        name: p.name,
+        price: price,
+        stock: stock,
+        barcode: p.barcode || '',
+        category: p.category || ''
+      };
+    });
+  }, [products]);
+
 
   // Discount & Payment state for Add Customer modal
   const [addFinalAmount, setAddFinalAmount] = useState<string>('');
@@ -1929,7 +2029,7 @@ export default function Customers() {
       {/* Add/Edit Customer Modal (No Billing) */}
       {isCustomerModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md flex flex-col animate-in zoom-in-95 duration-200 max-h-[90vh]">
+          <div className="glass-panel w-full max-w-2xl flex flex-col animate-in zoom-in-95 duration-200 max-h-[90vh]">
             <div className="flex items-center justify-between p-6 border-b border-white/10 bg-black/40 rounded-t-2xl shrink-0">
               <h3 className="text-xl font-light tracking-tight text-white">{customerToEdit ? 'Edit Customer' : 'Add New Customer'}</h3>
               <button onClick={() => setIsCustomerModalOpen(false)} className="p-2 hover:bg-black/5 rounded-full text-white/60 transition-colors">
@@ -1938,50 +2038,56 @@ export default function Customers() {
             </div>
             <form onSubmit={handleSubmit(onSubmitCustomer)} className="flex flex-col flex-1 overflow-hidden min-h-0">
               <div className="p-6 space-y-5 bg-black/60 overflow-y-auto custom-scrollbar flex-1">
-                <div>
-                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Full Name *</label>
-                  <input type="text" {...register("name")} className="glass-input w-full px-4 py-3" placeholder="e.g. Jane Doe" />
-                  {errors.name && <p className="text-danger text-xs mt-1.5">{errors.name.message}</p>}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Full Name *</label>
+                    <input type="text" {...register("name")} className="glass-input w-full px-4 py-3" placeholder="e.g. Jane Doe" />
+                    {errors.name && <p className="text-danger text-xs mt-1.5">{errors.name.message}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Phone Number *</label>
+                    <input type="tel" {...register("phone")} className="glass-input w-full px-4 py-3" placeholder="e.g. 9876543210" />
+                    {errors.phone && <p className="text-danger text-xs mt-1.5">{errors.phone.message}</p>}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Phone Number *</label>
-                  <input type="tel" {...register("phone")} className="glass-input w-full px-4 py-3" placeholder="e.g. 9876543210" />
-                  {errors.phone && <p className="text-danger text-xs mt-1.5">{errors.phone.message}</p>}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Payment Due (₹)</label>
+                    <input type="number" {...register("payment_due")} className="glass-input w-full px-4 py-3" placeholder="e.g. 500" />
+                    {errors.payment_due && <p className="text-danger text-xs mt-1.5">{errors.payment_due.message}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Date of Birth</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <select {...register("dobDay")} className="glass-input w-full px-2.5 py-3 appearance-none cursor-pointer bg-black/40 text-sm">
+                        <option value="" className="text-white/60">Day</option>
+                        {Array.from({length: 31}, (_, i) => i + 1).map(d => (
+                          <option key={d} value={d.toString().padStart(2, '0')} className="text-white">{d}</option>
+                        ))}
+                      </select>
+                      <select {...register("dobMonth")} className="glass-input w-full px-2.5 py-3 appearance-none cursor-pointer bg-black/40 text-sm">
+                        <option value="" className="text-white/60">Month</option>
+                        {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                          <option key={m} value={m.toString().padStart(2, '0')} className="text-white">
+                            {format(new Date(2000, m - 1, 1), 'MMM')}
+                          </option>
+                        ))}
+                      </select>
+                      <select {...register("dobYear")} className="glass-input w-full px-2.5 py-3 appearance-none cursor-pointer bg-black/40 text-sm">
+                        <option value="" className="text-white/60">Year</option>
+                        {Array.from({length: 100}, (_, i) => new Date().getFullYear() - i).map(y => (
+                          <option key={y} value={y} className="text-white">{y}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Payment Due (₹)</label>
-                  <input type="number" {...register("payment_due")} className="glass-input w-full px-4 py-3" placeholder="e.g. 500" />
-                  {errors.payment_due && <p className="text-danger text-xs mt-1.5">{errors.payment_due.message}</p>}
-                </div>
+
                 <div>
                   <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Personal Note (Optional)</label>
-                  <textarea {...register("notes")} className="glass-input w-full px-4 py-3 min-h-[80px]" placeholder="e.g. Likes a specific type of coffee, allergic to some products..." />
+                  <textarea {...register("notes")} rows={2} className="glass-input w-full px-4 py-2.5 text-sm" placeholder="e.g. Likes a specific type of coffee, allergic to some products..." />
                   {errors.notes && <p className="text-danger text-xs mt-1.5">{errors.notes.message}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Date of Birth</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    <select {...register("dobDay")} className="glass-input w-full px-4 py-3 appearance-none cursor-pointer bg-black/40">
-                      <option value="" className="text-white/60">Day</option>
-                      {Array.from({length: 31}, (_, i) => i + 1).map(d => (
-                        <option key={d} value={d.toString().padStart(2, '0')} className="text-white">{d}</option>
-                      ))}
-                    </select>
-                    <select {...register("dobMonth")} className="glass-input w-full px-4 py-3 appearance-none cursor-pointer bg-black/40">
-                      <option value="" className="text-white/60">Month</option>
-                      {Array.from({length: 12}, (_, i) => i + 1).map(m => (
-                        <option key={m} value={m.toString().padStart(2, '0')} className="text-white">
-                          {format(new Date(2000, m - 1, 1), 'MMM')}
-                        </option>
-                      ))}
-                    </select>
-                    <select {...register("dobYear")} className="glass-input w-full px-4 py-3 appearance-none cursor-pointer bg-black/40">
-                      <option value="" className="text-white/60">Year</option>
-                      {Array.from({length: 100}, (_, i) => new Date().getFullYear() - i).map(y => (
-                        <option key={y} value={y} className="text-white">{y}</option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
 
                 {!customerToEdit && (
@@ -1990,6 +2096,8 @@ export default function Customers() {
                     <Select
                       isMulti
                       styles={selectStyles}
+                      menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+                      menuPosition="fixed"
                       options={staff.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
                       value={staff.filter(s => customerStaffIds.includes(s.id.toString())).map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
                       onChange={(selected: any) => setCustomerStaffIds(selected.map((item: any) => item.value))}
@@ -2007,7 +2115,7 @@ export default function Customers() {
                       </button>
                     </div>
                     {customerServices.length === 0 ? (
-                      <div className="text-sm text-white/60/60 font-light italic p-6 bg-black/5 rounded-2xl border border-dashed border-white/10 text-center">No services added. Click above to add.</div>
+                      <div className="text-sm text-white/60 font-light italic p-5 bg-black/5 rounded-2xl border border-dashed border-white/10 text-center">No services added. Click above to add.</div>
                     ) : (
                       <div className="space-y-3">
                         {customerServices.map((cs, idx) => (
@@ -2016,6 +2124,8 @@ export default function Customers() {
                               <Select
                                 instanceId={`customer-service-${idx}`}
                                 styles={selectStyles}
+                                menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+                                menuPosition="fixed"
                                 options={serviceOptions}
                                 placeholder="Search & Select Service..."
                                 value={serviceOptions.flatMap(g => g.options).find(o => o.value === cs.serviceId) || null}
@@ -2063,54 +2173,108 @@ export default function Customers() {
                 )}
                 {!customerToEdit && (
                   /* Products Purchased Section */
-                  <div className="mt-5">
+                  <div className="mt-6 pt-5 border-t border-white/10">
                     <div className="flex justify-between items-center mb-3">
-                      <label className="block text-xs font-bold tracking-widest text-white/60 uppercase">Products Purchased</label>
-                      <button type="button" onClick={() => setCustomerProducts([...customerProducts, {productId: '', quantity: 1}])} className="text-xs font-bold text-[var(--gold)] bg-[var(--gold)]/10 hover:bg-[var(--gold)]/20 border border-[var(--gold)]/20 px-3 py-1.5 rounded-lg transition-colors flex items-center">
-                        <Package className="w-3 h-3 mr-1" /> Add Product
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-[var(--gold)]" />
+                        <label className="text-xs font-bold tracking-widest text-white/70 uppercase">Products Purchased</label>
+                        {customerProducts.length > 0 && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--gold)]/15 text-[var(--gold)] border border-[var(--gold)]/25">
+                            {customerProducts.length}
+                          </span>
+                        )}
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => setCustomerProducts([...customerProducts, {productId: '', quantity: 1}])} 
+                        className="text-xs font-bold text-[var(--gold)] bg-[var(--gold)]/10 hover:bg-[var(--gold)]/20 border border-[var(--gold)]/20 px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add Product
                       </button>
                     </div>
                     {customerProducts.length === 0 ? (
-                      <div className="text-sm text-white/60/60 font-light italic p-6 bg-black/5 rounded-2xl border border-dashed border-white/10 text-center">No products added. Click above to add.</div>
+                      <div className="text-sm text-white/40 font-light italic p-5 bg-black/20 rounded-xl border border-dashed border-white/10 text-center flex flex-col items-center justify-center gap-1">
+                        <Package className="w-6 h-6 text-white/20 mb-1" />
+                        <span>No products added for this customer.</span>
+                        <span className="text-xs text-white/30">Click "+ Add Product" above if they purchased any items.</span>
+                      </div>
                     ) : (
                       <div className="space-y-3">
-                        {customerProducts.map((cp, idx) => (
-                          <div key={idx} className="flex items-center gap-3">
-                            <select 
-                              value={cp.productId} 
-                              onChange={(e) => {
-                                const newProds = [...customerProducts];
-                                newProds[idx].productId = e.target.value;
-                                setCustomerProducts(newProds);
-                              }}
-                              className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40 w-full"
+                        {customerProducts.map((cp, idx) => {
+                          const selectedProd = products.find(p => p.id.toString() === cp.productId.toString());
+                          const currentStock = Number(selectedProd?.current_stock ?? selectedProd?.currentStock ?? 99);
+                          const unitPrice = Number(selectedProd?.selling_price ?? selectedProd?.sellingPrice ?? 0);
+                          const lineTotal = unitPrice * (cp.quantity || 1);
+
+                          return (
+                            <div 
+                              key={idx} 
+                              className="p-3.5 rounded-xl bg-black/25 border border-white/10 hover:border-white/20 transition-all flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
                             >
-                              <option value="" className="text-white/60">-- Select Product --</option>
-                              {products.filter(p => p.current_stock > 0 || p.currentStock > 0 || cp.productId === p.id.toString()).map(p => (
-                                <option key={p.id} value={p.id} className="text-white">
-                                  {p.name} - ₹{p.selling_price || p.sellingPrice} (Stock: {p.current_stock || p.currentStock})
-                                </option>
-                              ))}
-                            </select>
-                            <input 
-                              type="number" 
-                              min="1"
-                              max={products.find(p => p.id.toString() === cp.productId)?.current_stock || 99}
-                              value={cp.quantity || ''}
-                              onChange={(e) => {
-                                const newProds = [...customerProducts];
-                                newProds[idx].quantity = parseInt(e.target.value) || 1;
-                                setCustomerProducts(newProds);
-                              }}
-                              className="glass-input px-3 py-3 text-center bg-black/40 shrink-0"
-                              style={{ width: '80px', flexBasis: '80px' }}
-                              placeholder="Qty"
-                            />
-                            <button type="button" onClick={() => setCustomerProducts(customerProducts.filter((_, i) => i !== idx))} className="p-3 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 transition-colors shrink-0">
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          </div>
-                        ))}
+                              <div className="flex-1 min-w-0">
+                                <Select
+                                  instanceId={`customer-product-${idx}`}
+                                  styles={selectStyles}
+                                  menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+                                  menuPosition="fixed"
+                                  menuPlacement="auto"
+                                  options={productOptions.map(opt => ({
+                                    ...opt,
+                                    isDisabled: opt.stock <= 0 && opt.value !== cp.productId
+                                  }))}
+                                  filterOption={customProductFilter}
+                                  placeholder="Search and select product..."
+                                  value={productOptions.find(o => o.value === cp.productId) || null}
+                                  onChange={(selected: any) => {
+                                    const newProds = [...customerProducts];
+                                    newProds[idx].productId = selected ? selected.value : '';
+                                    setCustomerProducts(newProds);
+                                  }}
+                                  formatOptionLabel={formatProductOptionLabel}
+                                  isClearable
+                                  classNamePrefix="react-select"
+                                />
+                              </div>
+
+                              <div className="flex items-center gap-3 shrink-0 justify-between sm:justify-start">
+                                <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/40 select-none">Qty</span>
+                                  <input 
+                                    type="number" 
+                                    min="1"
+                                    max={currentStock > 0 ? currentStock : 99}
+                                    value={cp.quantity || ''}
+                                    onChange={(e) => {
+                                      const newProds = [...customerProducts];
+                                      newProds[idx].quantity = Math.max(1, parseInt(e.target.value) || 1);
+                                      setCustomerProducts(newProds);
+                                    }}
+                                    className="w-12 bg-transparent text-center font-semibold text-white focus:outline-none text-sm"
+                                    placeholder="1"
+                                  />
+                                </div>
+
+                                {selectedProd && (
+                                  <div className="text-right px-2 min-w-[76px]">
+                                    <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Subtotal</div>
+                                    <div className="text-sm font-semibold text-emerald-400">
+                                      ₹{lineTotal.toLocaleString()}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <button 
+                                  type="button" 
+                                  onClick={() => setCustomerProducts(customerProducts.filter((_, i) => i !== idx))} 
+                                  className="p-2.5 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 transition-colors shrink-0"
+                                  title="Remove Product"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -2123,36 +2287,41 @@ export default function Customers() {
                     const finalAmt = addFinalAmount !== '' ? Number(addFinalAmount) : calcTotal;
                     const discountAmt = Math.max(0, calcTotal - finalAmt);
                     return (
-                      <div className="mt-6 space-y-3">
-                        <div className="bg-black/20 p-5 rounded-xl border border-[var(--gold)]/30 flex justify-between items-center">
-                          <span className="text-xs font-bold tracking-widest text-[var(--gold)] uppercase">Calculated Total</span>
+                      <div className="mt-6 space-y-4 pt-4 border-t border-white/10">
+                        <div className="bg-black/30 p-4 rounded-xl border border-[var(--gold)]/30 flex justify-between items-center shadow-lg">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold tracking-widest text-[var(--gold)] uppercase">Calculated Total</span>
+                            <span className="text-[11px] text-white/40">Includes services & products</span>
+                          </div>
                           <span className="text-2xl font-light text-white">₹{calcTotal.toLocaleString()}</span>
                         </div>
-                        <div>
-                          <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Final Amount (Edit for Discount)</label>
-                          <input
-                            type="number"
-                            value={addFinalAmount}
-                            onChange={e => setAddFinalAmount(e.target.value)}
-                            placeholder={calcTotal.toString()}
-                            className="glass-input w-full px-4 py-3"
-                          />
-                          {discountAmt > 0 && (
-                            <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1">
-                              <Tag className="w-3 h-3" /> ₹{discountAmt.toLocaleString()} discount applied — Final: ₹{finalAmt.toLocaleString()}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Payment Method</label>
-                          <select
-                            value={addPaymentMethod}
-                            onChange={(e) => setAddPaymentMethod(e.target.value)}
-                            className="glass-input w-full px-4 py-3 appearance-none bg-black/40"
-                          >
-                            <option value="Cash" className="text-white">Cash</option>
-                            <option value="UPI" className="text-white">UPI</option>
-                          </select>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Final Amount (Edit for Discount)</label>
+                            <input
+                              type="number"
+                              value={addFinalAmount}
+                              onChange={e => setAddFinalAmount(e.target.value)}
+                              placeholder={calcTotal.toString()}
+                              className="glass-input w-full px-4 py-3"
+                            />
+                            {discountAmt > 0 && (
+                              <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1">
+                                <Tag className="w-3 h-3" /> ₹{discountAmt.toLocaleString()} discount applied — Final: ₹{finalAmt.toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Payment Method</label>
+                            <select
+                              value={addPaymentMethod}
+                              onChange={(e) => setAddPaymentMethod(e.target.value)}
+                              className="glass-input w-full px-4 py-3 appearance-none bg-black/40"
+                            >
+                              <option value="Cash" className="text-white">Cash</option>
+                              <option value="UPI" className="text-white">UPI</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
                     );
@@ -2172,7 +2341,7 @@ export default function Customers() {
       {/* Record Visit Modal */}
       {isRecordVisitOpen && visitCustomer && (
         <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-lg flex flex-col animate-in zoom-in-95 duration-200 max-h-[90vh]">
+          <div className="glass-panel w-full max-w-2xl flex flex-col animate-in zoom-in-95 duration-200 max-h-[90vh]">
             <div className="flex items-center justify-between p-6 border-b border-white/10 bg-black/40 rounded-t-2xl shrink-0">
               <div>
                 <h3 className="text-xl font-light tracking-tight text-white flex items-center gap-2">
@@ -2193,6 +2362,8 @@ export default function Customers() {
                 <Select
                   isMulti
                   styles={selectStyles}
+                  menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+                  menuPosition="fixed"
                   options={staff.map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
                   value={staff.filter(s => visitStaffIds.includes(s.id.toString())).map(s => ({ value: s.id.toString(), label: `${s.name} (${s.role})` }))}
                   onChange={(selected: any) => setVisitStaffIds(selected.map((item: any) => item.value))}
@@ -2205,18 +2376,21 @@ export default function Customers() {
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <label className="block text-xs font-bold tracking-widest text-white/60 uppercase flex items-center gap-1">
-                    <Scissors className="w-3 h-3" /> Services *
+                    <Scissors className="w-3 h-3 text-white/60" /> Services *
                   </label>
                   <button
                     type="button"
                     onClick={() => setVisitServices([...visitServices, { serviceId: '' }])}
-                    className="text-xs font-bold text-white bg-black/5 hover:bg-black/10 border border-white/10 px-3 py-1.5 rounded-lg transition-colors"
+                    className="text-xs font-bold text-white bg-black/5 hover:bg-black/10 border border-white/10 px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
                   >
-                    + Add Service
+                    <Plus className="w-3.5 h-3.5" /> Add Service
                   </button>
                 </div>
                 {visitServices.length === 0 ? (
-                  <div className="text-sm text-white/40 font-light italic p-4 bg-black/5 rounded-xl border border-dashed border-white/10 text-center">No services added.</div>
+                  <div className="text-sm text-white/40 font-light italic p-5 bg-black/20 rounded-xl border border-dashed border-white/10 text-center flex flex-col items-center justify-center gap-1">
+                    <Scissors className="w-6 h-6 text-white/20 mb-1" />
+                    <span>No services added.</span>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {visitServices.map((vs, idx) => (
@@ -2225,6 +2399,8 @@ export default function Customers() {
                           <Select
                             instanceId={`visit-service-${idx}`}
                             styles={selectStyles}
+                            menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+                            menuPosition="fixed"
                             options={serviceOptions}
                             placeholder="Search & Select Service..."
                             value={serviceOptions.flatMap(g => g.options).find(o => o.value === vs.serviceId) || null}
@@ -2280,64 +2456,108 @@ export default function Customers() {
               </div>
 
               {/* Products */}
-              <div>
+              <div className="mt-6 pt-5 border-t border-white/10">
                 <div className="flex justify-between items-center mb-3">
-                  <label className="block text-xs font-bold tracking-widest text-white/60 uppercase flex items-center gap-1">
-                    <Package className="w-3 h-3" /> Products
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-emerald-400" />
+                    <label className="text-xs font-bold tracking-widest text-white/70 uppercase">Products Purchased</label>
+                    {visitProducts.length > 0 && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-400/15 text-emerald-400 border border-emerald-400/25">
+                        {visitProducts.length}
+                      </span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => setVisitProducts([...visitProducts, { productId: '', quantity: 1 }])}
-                    className="text-xs font-bold text-[var(--gold)] bg-[var(--gold)]/10 hover:bg-[var(--gold)]/20 border border-[var(--gold)]/20 px-3 py-1.5 rounded-lg transition-colors flex items-center"
+                    className="text-xs font-bold text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400/20 border border-emerald-400/20 px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
                   >
-                    <Package className="w-3 h-3 mr-1" /> Add Product
+                    <Plus className="w-3.5 h-3.5" /> Add Product
                   </button>
                 </div>
                 {visitProducts.length === 0 ? (
-                  <div className="text-sm text-white/40 font-light italic p-4 bg-black/5 rounded-xl border border-dashed border-white/10 text-center">No products added.</div>
+                  <div className="text-sm text-white/40 font-light italic p-5 bg-black/20 rounded-xl border border-dashed border-white/10 text-center flex flex-col items-center justify-center gap-1">
+                    <Package className="w-6 h-6 text-white/20 mb-1" />
+                    <span>No products added for this visit.</span>
+                    <span className="text-xs text-white/30">Click "+ Add Product" above if the customer bought products.</span>
+                  </div>
                 ) : (
                   <div className="space-y-3">
-                    {visitProducts.map((vp, idx) => (
-                      <div key={idx} className="flex items-center gap-3">
-                        <select
-                          value={vp.productId}
-                          onChange={(e) => {
-                            const updated = [...visitProducts];
-                            updated[idx].productId = e.target.value;
-                            setVisitProducts(updated);
-                          }}
-                          className="glass-input flex-1 px-4 py-3 appearance-none bg-black/40"
+                    {visitProducts.map((vp, idx) => {
+                      const selectedProd = products.find(p => p.id.toString() === vp.productId.toString());
+                      const currentStock = Number(selectedProd?.current_stock ?? selectedProd?.currentStock ?? 99);
+                      const unitPrice = Number(selectedProd?.selling_price ?? selectedProd?.sellingPrice ?? 0);
+                      const lineTotal = unitPrice * (vp.quantity || 1);
+
+                      return (
+                        <div 
+                          key={idx} 
+                          className="p-3.5 rounded-xl bg-black/25 border border-white/10 hover:border-white/20 transition-all flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
                         >
-                          <option value="">-- Select Product --</option>
-                          {products.filter(p => p.current_stock > 0 || vp.productId === p.id.toString()).map(p => (
-                            <option key={p.id} value={p.id}>
-                              {p.name} - ₹{p.selling_price} (Stock: {p.current_stock})
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          type="number"
-                          min="1"
-                          max={products.find(p => p.id.toString() === vp.productId)?.current_stock || 99}
-                          value={vp.quantity || ''}
-                          onChange={(e) => {
-                            const updated = [...visitProducts];
-                            updated[idx].quantity = parseInt(e.target.value) || 1;
-                            setVisitProducts(updated);
-                          }}
-                          className="glass-input px-3 py-3 text-center bg-black/40 shrink-0"
-                          style={{ width: '80px' }}
-                          placeholder="Qty"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setVisitProducts(visitProducts.filter((_, i) => i !== idx))}
-                          className="p-3 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 transition-colors shrink-0"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
+                          <div className="flex-1 min-w-0">
+                            <Select
+                              instanceId={`visit-product-${idx}`}
+                              styles={selectStyles}
+                              menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
+                              menuPosition="fixed"
+                              menuPlacement="auto"
+                              options={productOptions.map(opt => ({
+                                ...opt,
+                                isDisabled: opt.stock <= 0 && opt.value !== vp.productId
+                              }))}
+                              filterOption={customProductFilter}
+                              placeholder="Search and select product..."
+                              value={productOptions.find(o => o.value === vp.productId) || null}
+                              onChange={(selected: any) => {
+                                const updated = [...visitProducts];
+                                updated[idx].productId = selected ? selected.value : '';
+                                setVisitProducts(updated);
+                              }}
+                              formatOptionLabel={formatProductOptionLabel}
+                              isClearable
+                              classNamePrefix="react-select"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0 justify-between sm:justify-start">
+                            <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 rounded-xl px-2.5 py-1.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-white/40 select-none">Qty</span>
+                              <input
+                                type="number"
+                                min="1"
+                                max={currentStock > 0 ? currentStock : 99}
+                                value={vp.quantity || ''}
+                                onChange={(e) => {
+                                  const updated = [...visitProducts];
+                                  updated[idx].quantity = Math.max(1, parseInt(e.target.value) || 1);
+                                  setVisitProducts(updated);
+                                }}
+                                className="w-12 bg-transparent text-center font-semibold text-white focus:outline-none text-sm"
+                                placeholder="1"
+                              />
+                            </div>
+
+                            {selectedProd && (
+                              <div className="text-right px-2 min-w-[76px]">
+                                <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider">Subtotal</div>
+                                <div className="text-sm font-semibold text-emerald-400">
+                                  ₹{lineTotal.toLocaleString()}
+                                </div>
+                              </div>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => setVisitProducts(visitProducts.filter((_, i) => i !== idx))}
+                              className="p-2.5 text-danger hover:bg-danger/20 rounded-xl bg-danger/10 border border-danger/20 transition-colors shrink-0"
+                              title="Remove Product"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -2350,36 +2570,41 @@ export default function Customers() {
                 const finalAmt = visitFinalAmount !== '' ? Number(visitFinalAmount) : calcTotal;
                 const discountAmt = Math.max(0, calcTotal - finalAmt);
                 return (
-                  <div className="space-y-3">
-                    <div className="bg-black/20 p-5 rounded-xl border border-emerald-400/30 flex justify-between items-center">
-                      <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Calculated Total</span>
+                  <div className="space-y-4 pt-4 border-t border-white/10">
+                    <div className="bg-black/30 p-4 rounded-xl border border-emerald-400/30 flex justify-between items-center shadow-lg">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold tracking-widest text-emerald-400 uppercase">Calculated Total</span>
+                        <span className="text-[11px] text-white/40">Includes services & products</span>
+                      </div>
                       <span className="text-2xl font-light text-white">₹{calcTotal.toLocaleString()}</span>
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Final Amount (Edit for Discount)</label>
-                      <input
-                        type="number"
-                        value={visitFinalAmount}
-                        onChange={e => setVisitFinalAmount(e.target.value)}
-                        placeholder={calcTotal.toString()}
-                        className="glass-input w-full px-4 py-3"
-                      />
-                      {discountAmt > 0 && (
-                        <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1">
-                          <Tag className="w-3 h-3" /> ₹{discountAmt.toLocaleString()} discount applied — Final: ₹{finalAmt.toLocaleString()}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Payment Method</label>
-                      <select
-                        value={visitPaymentMethod}
-                        onChange={(e) => setVisitPaymentMethod(e.target.value)}
-                        className="glass-input w-full px-4 py-3 appearance-none bg-black/40"
-                      >
-                        <option value="Cash" className="text-white">Cash</option>
-                        <option value="UPI" className="text-white">UPI</option>
-                      </select>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Final Amount (Edit for Discount)</label>
+                        <input
+                          type="number"
+                          value={visitFinalAmount}
+                          onChange={e => setVisitFinalAmount(e.target.value)}
+                          placeholder={calcTotal.toString()}
+                          className="glass-input w-full px-4 py-3"
+                        />
+                        {discountAmt > 0 && (
+                          <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1">
+                            <Tag className="w-3 h-3" /> ₹{discountAmt.toLocaleString()} discount applied — Final: ₹{finalAmt.toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold tracking-widest text-white/60 uppercase mb-2">Payment Method</label>
+                        <select
+                          value={visitPaymentMethod}
+                          onChange={(e) => setVisitPaymentMethod(e.target.value)}
+                          className="glass-input w-full px-4 py-3 appearance-none bg-black/40"
+                        >
+                          <option value="Cash" className="text-white">Cash</option>
+                          <option value="UPI" className="text-white">UPI</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 );
