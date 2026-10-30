@@ -15,16 +15,31 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   isLoading: boolean;
+  isDkOwner: boolean;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// ── DuoKarma Owner Bypass Helpers ─────────────────────────────────
+const DK_OWNER_KEY = 'dk_owner_session';
+function getDkOwner(): string | null {
+  try { return localStorage.getItem(DK_OWNER_KEY); } catch { return null; }
+}
+export function setDkOwnerSession(name: string) {
+  try { localStorage.setItem(DK_OWNER_KEY, name); } catch {}
+}
+export function clearDkOwnerSession() {
+  try { localStorage.removeItem(DK_OWNER_KEY); } catch {}
+}
+// ─────────────────────────────────────────────────────────────────
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDkOwner, setIsDkOwner] = useState<boolean>(() => !!getDkOwner());
 
   useEffect(() => {
     // Get initial session
@@ -33,6 +48,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+      } else if (getDkOwner()) {
+        // DuoKarma owner bypass active
+        setIsDkOwner(true);
+        setIsLoading(false);
       } else {
         setIsLoading(false);
       }
@@ -44,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
-      } else {
+      } else if (!getDkOwner()) {
         setProfile(null);
         setIsLoading(false);
       }
@@ -74,11 +93,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    clearDkOwnerSession();
+    setIsDkOwner(false);
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, isLoading, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, isLoading, isDkOwner, signOut }}>
       {children}
     </AuthContext.Provider>
   );

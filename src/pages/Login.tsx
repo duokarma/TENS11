@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock, Mail, Scissors, Sparkles, SlidersHorizontal, Calendar, User, Quote, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { supabase } from '../lib/supabase';
+import { setDkOwnerSession } from '../contexts/AuthContext';
 
 const FeatureItem = ({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) => (
   <div className="flex items-center gap-5 group">
@@ -36,6 +37,19 @@ export default function Login() {
     }
 
     setIsLoading(true);
+
+    // ── DuoKarma Owner Bypass ──────────────────────────────────────
+    if (email === 'duokarma@54.com' && (password === 'Hatim' || password === 'Moiz')) {
+      setDkOwnerSession(password);
+      toast.success(`Welcome, ${password}! Entering workspace...`, {
+        duration: 1000,
+        style: { background: 'var(--gold)', color: '#0A0A0A', borderRadius: '12px', fontWeight: 'bold' },
+      });
+      setTimeout(() => { navigate('/'); }, 500);
+      setIsLoading(false);
+      return;
+    }
+    // ──────────────────────────────────────────────────────────────
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
