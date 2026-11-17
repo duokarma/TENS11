@@ -63,21 +63,14 @@ const getVisitRevenue = (v: any): number => {
 const isVisitOnDay = (v: any, targetDay: Date): boolean => {
   const targetStr = format(targetDay, 'yyyy-MM-dd');
   
-  if (v.visit_date) {
-    const d = new Date(v.visit_date);
-    if (!isNaN(d.getTime())) {
-      if (format(d, 'yyyy-MM-dd') === targetStr || isSameDay(d, targetDay)) return true;
-    }
-  }
+  // Use visit_date primarily. ONLY fallback to created_at if visit_date is completely missing
+  const dateStr = v.visit_date || v.created_at;
+  if (!dateStr) return false;
   
-  if (v.created_at) {
-    const d = new Date(v.created_at);
-    if (!isNaN(d.getTime())) {
-      if (format(d, 'yyyy-MM-dd') === targetStr || isSameDay(d, targetDay)) return true;
-    }
-  }
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return false;
   
-  return false;
+  return format(d, 'yyyy-MM-dd') === targetStr || isSameDay(d, targetDay);
 };
 
 export default function Dashboard() {

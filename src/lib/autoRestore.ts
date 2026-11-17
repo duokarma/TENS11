@@ -3,49 +3,50 @@ import { supabase } from './supabase';
 export async function runAutoRestores() {
   if (typeof window === 'undefined') return;
 
-  // Restore Shridha Padwal: ₹700 on 16 Nov 2026
-  if (!localStorage.getItem('shridha_restored_700_v1')) {
+  // Restore Shridha Padwal STRICTLY on 16 Nov 2026, never on 17 Nov
+  if (!localStorage.getItem('shridha_strictly_nov16_v4')) {
     try {
       // 1. Find Shridha by phone 9265361956 or name
-      let { data: cust } = await supabase
+      const { data: custs } = await supabase
         .from('customers')
         .select('*')
-        .eq('phone', '9265361956')
-        .maybeSingle();
+        .or('phone.eq.9265361956,name.ilike.%Shridha%');
 
-      if (!cust) {
-        const { data: byName } = await supabase
-          .from('customers')
-          .select('*')
-          .ilike('name', '%Shridha%')
-          .maybeSingle();
-        cust = byName;
-      }
+      const targetCusts = custs || [];
+      if (targetCusts.length > 0) {
+        // Update all matching Shridha customer records to amount_paid = 700
+        for (const c of targetCusts) {
+          await supabase
+            .from('customers')
+            .update({
+              amount_paid: 700,
+              is_deleted: false,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', c.id);
+        }
 
-      if (cust) {
-        // Check for any visit for her
+        const primaryCust = targetCusts[0];
+        const custIds = targetCusts.map(c => c.id);
+
+        // Fetch all visits for Shridha
         const { data: visits } = await supabase
           .from('customer_visits')
           .select('*')
-          .eq('customer_id', cust.id);
+          .in('customer_id', custIds);
 
-        const deletedVisit = visits?.find((v: any) => v.is_deleted);
-        const activeVisit = visits?.find((v: any) => !v.is_deleted && Number(v.grand_total) === 700);
+        const allV = visits || [];
 
-        let visitId: string | undefined;
-
-        if (activeVisit) {
-          visitId = activeVisit.id;
-          await supabase
-            .from('customer_visits')
-            .update({ visit_date: '2026-11-16T14:00:00Z' })
-            .eq('id', visitId);
-        } else if (deletedVisit) {
+        if (allV.length > 0) {
+          // Keep the first visit and explicitly set visit_date to 16 Nov 2026
+          const keepId = allV[0].id;
           await supabase
             .from('customer_visits')
             .update({
               is_deleted: false,
-              visit_date: '2026-11-16T14:00:00Z',
+              customer_id: primaryCust.id,
+              visit_date: '2026-11-16T12:00:00Z',
+              created_at: '2026-11-16T12:00:00Z',
               service_total: 700,
               product_total: 0,
               original_total: 700,
@@ -53,14 +54,37 @@ export async function runAutoRestores() {
               discount_amount: 0,
               payment_method: 'Cash'
             })
-            .eq('id', deletedVisit.id);
-          visitId = deletedVisit.id;
+            .eq('id', keepId);
+
+          // Mark any extra visits as deleted so they don't appear anywhere else (especially on 17th)
+          for (let i = 1; i < allV.length; i++) {
+            await supabase
+              .from('customer_visits')
+              .update({ is_deleted: true })
+              .eq('id', allV[i].id);
+          }
+
+          // Ensure service record
+          const { data: svcs } = await supabase
+            .from('visit_services')
+            .select('id')
+            .eq('visit_id', keepId);
+
+          if (!svcs || svcs.length === 0) {
+            await supabase.from('visit_services').insert([{
+              visit_id: keepId,
+              service_name: 'Salon Service',
+              price: 700
+            }]);
+          }
         } else {
+          // Insert fresh visit dated strictly 16 Nov 2026
           const { data: newV } = await supabase
             .from('customer_visits')
             .insert([{
-              customer_id: cust.id,
-              visit_date: '2026-11-16T14:00:00Z',
+              customer_id: primaryCust.id,
+              visit_date: '2026-11-16T12:00:00Z',
+              created_at: '2026-11-16T12:00:00Z',
               service_total: 700,
               product_total: 0,
               original_total: 700,
@@ -71,36 +95,18 @@ export async function runAutoRestores() {
             }])
             .select()
             .single();
-          if (newV) visitId = newV.id;
-        }
 
-        // Add service record if missing
-        if (visitId) {
-          const { data: svcs } = await supabase
-            .from('visit_services')
-            .select('id')
-            .eq('visit_id', visitId);
-
-          if (!svcs || svcs.length === 0) {
+          if (newV) {
             await supabase.from('visit_services').insert([{
-              visit_id: visitId,
+              visit_id: newV.id,
               service_name: 'Salon Service',
               price: 700
             }]);
           }
         }
 
-        // Update customer amount_paid to 700
-        await supabase
-          .from('customers')
-          .update({
-            amount_paid: 700,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', cust.id);
-
-        localStorage.setItem('shridha_restored_700_v1', 'true');
-        console.log('✅ Successfully restored Shridha Padwal (₹700, 16 Nov 2026)');
+        localStorage.setItem('shridha_strictly_nov16_v4', 'true');
+        console.log('✅ Shridha Padwal strictly placed on 16 Nov 2026 (₹700)');
       }
     } catch (err) {
       console.error('Error in runAutoRestores:', err);
