@@ -67,6 +67,10 @@ const isVisitOnDay = (v: any, targetDay: Date): boolean => {
   const dateStr = v.visit_date || v.created_at;
   if (!dateStr) return false;
   
+  if (typeof dateStr === 'string' && dateStr.startsWith(targetStr)) {
+    return true;
+  }
+  
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return false;
   
@@ -280,6 +284,20 @@ export default function Dashboard() {
       }]).select().single();
       if (visitErr) throw visitErr;
       if (svcList.length > 0) await supabase.from('visit_services').insert(svcList.map((s: any) => ({ visit_id: visitData.id, service_id: s.service_id, service_name: s.service_name, price: Number(s.price || 0) })));
+      
+      // Update customer amount_paid and services_taken
+      if (customerId) {
+        const { data: custData } = await supabase.from('customers').select('amount_paid, services_taken').eq('id', customerId).maybeSingle();
+        const existingPaid = Number(custData?.amount_paid || 0);
+        const existingServices: string[] = custData?.services_taken || [];
+        const newServices = Array.from(new Set([...existingServices, ...svcList.map((s: any) => s.service_name)]));
+        await supabase.from('customers').update({
+          amount_paid: existingPaid + serviceTotal,
+          services_taken: newServices,
+          updated_at: new Date().toISOString()
+        }).eq('id', customerId);
+      }
+
       await supabase.from('appointments').update({ status: 'checked_in', converted_visit_id: visitData.id }).eq('id', appt.id);
       toast.success(`✅ Checked in — ${appt.customer_name}`);
       fetchData();

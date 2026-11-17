@@ -509,7 +509,7 @@ export default function Customers() {
         supabase.from('staff').select('*').eq('is_deleted', false),
         supabase.from('products').select('*').eq('is_deleted', false),
         customerService.getCustomerStats(),
-        supabase.from('customer_visits').select('customer_id, visit_date, visit_services(service_name)').eq('is_deleted', false).order('visit_date', { ascending: false }).limit(5000),
+        supabase.from('customer_visits').select('customer_id, grand_total, visit_date, visit_services(service_name)').eq('is_deleted', false).order('visit_date', { ascending: false }).limit(5000),
         supabase.from('customers').select('id, name, phone, amount_paid, payment_due, notes, dob, created_at').eq('is_deleted', false).order('created_at', { ascending: false }).limit(2000)
       ]);
       setCustomers(custData.data);
@@ -1080,6 +1080,7 @@ export default function Customers() {
           .from('customer_visits')
           .insert([{
             customer_id: visitCustomer.id,
+            visit_date: new Date().toISOString(),
             service_total: serviceTotal,
             product_total: productTotal,
             original_total: originalTotal,
@@ -1195,10 +1196,17 @@ export default function Customers() {
     customers.find(c => c.id === selectedCustomerForHistory) ||
     allCustomersForHealth.find(c => c.id === selectedCustomerForHistory);
 
-  // We can't synchronously calculate total spend across 50k customers in UI for the table.
-  // The 'amount_paid' field on customer table aggregates this on save, let's use it!
+  // The 'amount_paid' field on customer table aggregates this on save.
+  // If amountPaid is not set or 0, fallback to calculating directly from visits loaded in memory
   const getCustomerTotalSpend = (customer: Customer) => {
-    return customer.amountPaid || 0;
+    if (customer.amountPaid && Number(customer.amountPaid) > 0) {
+      return Number(customer.amountPaid);
+    }
+    const custVisits = allVisitsForChurn.filter(v => String(v.customer_id) === String(customer.id));
+    if (custVisits.length > 0) {
+      return custVisits.reduce((sum, v) => sum + Number(v.grand_total || 0), 0);
+    }
+    return 0;
   };
   
   // Similarly, visit count isn't readily available without an RPC. 
