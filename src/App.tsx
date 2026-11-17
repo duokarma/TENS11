@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from './components/layout/ProtectedRoute';
@@ -15,6 +16,7 @@ import Appointments from './pages/Appointments';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
+import { runAutoRestores } from './lib/autoRestore';
 
 // Placeholders for other pages
 const Placeholder = ({ title }: { title: string }) => (
@@ -24,6 +26,9 @@ const Placeholder = ({ title }: { title: string }) => (
 );
 
 function App() {
+  useEffect(() => {
+    runAutoRestores();
+  }, []);
   return (
     <ErrorBoundary>
       <Toaster position="top-right" />

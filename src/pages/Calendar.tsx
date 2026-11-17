@@ -175,7 +175,7 @@ export default function CalendarView() {
             ))}
             {daysInMonth.map((day, i) => {
               const dayVisits = filter !== 'appointments' ? visits.filter(v => isVisitOnDay(v, day)) : [];
-              const dayAppts = filter !== 'visits' ? appointments.filter(a => a.appointment_date && isSameDay(parseISO(a.appointment_date), day) && a.status === 'scheduled') : [];
+              const dayAppts = filter !== 'visits' ? appointments.filter(a => a.appointment_date && isSameDay(parseISO(a.appointment_date), day)) : [];
               const dayRevenue = dayVisits.reduce((sum, v) => sum + getVisitRevenue(v), 0);
               const isSelected = isSameDay(day, selectedDate);
 
@@ -224,7 +224,14 @@ export default function CalendarView() {
             {(filter === 'all' || filter === 'appointments') && (
               <div className="p-4 rounded-2xl" style={{ background: 'rgba(96,165,250,0.05)', border: '1px solid rgba(96,165,250,0.15)' }}>
                 <p className="text-xs font-bold uppercase tracking-widest mb-1 text-blue-400">Appointments</p>
-                <p className="text-2xl font-light text-blue-300">{selectedDateAppts.filter(a => a.status === 'scheduled').length}</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-2xl font-light text-blue-300">{selectedDateAppts.length}</p>
+                  {selectedDateAppts.some(a => a.status === 'scheduled') && (
+                    <span className="text-xs text-blue-400/80">
+                      ({selectedDateAppts.filter(a => a.status === 'scheduled').length} scheduled)
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -233,7 +240,7 @@ export default function CalendarView() {
             {/* Appointments Section */}
             {(filter === 'all' || filter === 'appointments') && selectedDateAppts.length > 0 && (
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-3 flex items-center gap-1"><CalendarCheck className="w-3 h-3" /> Appointments</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-3 flex items-center gap-1"><CalendarCheck className="w-3 h-3" /> Appointments ({selectedDateAppts.length})</p>
                 <div className="space-y-3">
                   {selectedDateAppts.map((a, i) => (
                     <div key={a.id || i} className="rounded-xl p-4" style={{ background: 'rgba(96,165,250,0.05)', border: '1px solid rgba(96,165,250,0.15)' }}>
@@ -242,7 +249,7 @@ export default function CalendarView() {
                         <span className="text-xs text-blue-400">{format(parseISO(a.appointment_date), 'hh:mm a')}</span>
                       </div>
                       {a.staff?.name && <p className="text-xs text-white/40 mb-2">with {a.staff.name}</p>}
-                      {a.status === 'scheduled' && (
+                      {a.status === 'scheduled' ? (
                         <button
                           onClick={() => handleCheckIn(a)}
                           disabled={checkingIn === a.id}
@@ -251,6 +258,10 @@ export default function CalendarView() {
                         >
                           {checkingIn === a.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Check In
                         </button>
+                      ) : (
+                        <span className="inline-flex items-center text-[10px] text-emerald-400 font-semibold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                          ✓ Checked In
+                        </span>
                       )}
                     </div>
                   ))}
