@@ -1410,6 +1410,7 @@ export default function Customers() {
         'Payment Method': '',
       });
 
+      // @ts-ignore
       const { utils, writeFile } = await import('xlsx');
       const ws = utils.json_to_sheet(rows);
       const wb = utils.book_new();

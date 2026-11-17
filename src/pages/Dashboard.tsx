@@ -43,6 +43,43 @@ const itemVariants: Variants = {
   show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
 };
 
+// Robust revenue resolver: fallback to service_total + product_total - discount_amount or line item sums if grand_total is 0/null
+const getVisitRevenue = (v: any): number => {
+  const gt = Number(v.grand_total);
+  if (!isNaN(gt) && gt > 0) return gt;
+  const st = Number(v.service_total || 0);
+  const pt = Number(v.product_total || 0);
+  const disc = Number(v.discount_amount || 0);
+  const calculated = Math.max(0, st + pt - disc);
+  if (calculated > 0) return calculated;
+  if (v.visit_services && Array.isArray(v.visit_services) && v.visit_services.length > 0) {
+    const svcsTotal = v.visit_services.reduce((s: number, item: any) => s + Number(item.price || 0), 0);
+    if (svcsTotal > 0) return Math.max(0, svcsTotal - disc);
+  }
+  return !isNaN(gt) ? Math.max(0, gt) : 0;
+};
+
+// Robust day matcher that handles UTC strings, ISO timestamps, and local dates
+const isVisitOnDay = (v: any, targetDay: Date): boolean => {
+  const targetStr = format(targetDay, 'yyyy-MM-dd');
+  
+  if (v.visit_date) {
+    const d = new Date(v.visit_date);
+    if (!isNaN(d.getTime())) {
+      if (format(d, 'yyyy-MM-dd') === targetStr || isSameDay(d, targetDay)) return true;
+    }
+  }
+  
+  if (v.created_at) {
+    const d = new Date(v.created_at);
+    if (!isNaN(d.getTime())) {
+      if (format(d, 'yyyy-MM-dd') === targetStr || isSameDay(d, targetDay)) return true;
+    }
+  }
+  
+  return false;
+};
+
 export default function Dashboard() {
   const [visits, setVisits] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -97,7 +134,7 @@ export default function Dashboard() {
         { data: customersData },
         { data: visitProductsData }
       ] = await Promise.all([
-        supabase.from('customer_visits').select('*, customer:customer_id(is_deleted), visit_services(*), visit_products(*)').eq('is_deleted', false).order('visit_date', { ascending: false }),
+        supabase.from('customer_visits').select('*, customer:customer_id(is_deleted), visit_services(*), visit_products(*)').eq('is_deleted', false).order('visit_date', { ascending: false }).limit(10000),
         supabase.from('expenses').select('*').eq('is_deleted', false).order('date', { ascending: false }),
         supabase.from('products').select('*').eq('is_deleted', false),
         supabase.from('customers').select('id, created_at, name, dob, phone').eq('is_deleted', false),
@@ -187,11 +224,11 @@ export default function Dashboard() {
   }, [birthdayCustomers.length]);
 
   // --- Row 1: Metrics ---
-  const todayVisits = visits.filter(v => v.visit_date && isSameDay(new Date(v.visit_date), today));
+  const todayVisits = visits.filter(v => isVisitOnDay(v, today));
   const uniqueCustomerIds = new Set(todayVisits.map(v => v.customer_id).filter(Boolean));
   const todayCustomersCount = uniqueCustomerIds.size;
   
-  const todayRevenue = todayVisits.reduce((sum, v) => sum + (Number(v.grand_total) || 0), 0);
+  const todayRevenue = todayVisits.reduce((sum, v) => sum + getVisitRevenue(v), 0);
   
   const todayExpensesItems = expenses.filter(exp => exp.date && isSameDay(new Date(exp.date), today));
   const todayExpensesAmount = todayExpensesItems.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
@@ -199,7 +236,7 @@ export default function Dashboard() {
 
   // --- Lifetime Metrics ---
   const lifetimeCustomersCount = customers.length;
-  const lifetimeRevenue = visits.reduce((sum, v) => sum + (Number(v.grand_total) || 0), 0);
+  const lifetimeRevenue = visits.reduce((sum, v) => sum + getVisitRevenue(v), 0);
   const lifetimeExpensesAmount = expenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
   const lifetimeProfit = lifetimeRevenue - lifetimeExpensesAmount;
 
@@ -238,8 +275,15 @@ export default function Dashboard() {
       const svcList = appt.appointment_services || [];
       const serviceTotal = svcList.reduce((s: number, x: any) => s + Number(x.price || 0), 0);
       const { data: visitData, error: visitErr } = await supabase.from('customer_visits').insert([{
-        customer_id: customerId, service_total: serviceTotal, product_total: 0,
-        grand_total: serviceTotal, original_total: serviceTotal, discount_amount: 0, staff_id: appt.staff_ids?.length > 0 ? appt.staff_ids[0] : (appt.staff_id || null), staff_ids: appt.staff_ids || (appt.staff_id ? [appt.staff_id] : []),
+        customer_id: customerId,
+        visit_date: appt.appointment_date || new Date().toISOString(),
+        service_total: serviceTotal,
+        product_total: 0,
+        grand_total: serviceTotal,
+        original_total: serviceTotal,
+        discount_amount: 0,
+        staff_id: appt.staff_ids?.length > 0 ? appt.staff_ids[0] : (appt.staff_id || null),
+        staff_ids: appt.staff_ids || (appt.staff_id ? [appt.staff_id] : []),
       }]).select().single();
       if (visitErr) throw visitErr;
       if (svcList.length > 0) await supabase.from('visit_services').insert(svcList.map((s: any) => ({ visit_id: visitData.id, service_id: s.service_id, service_name: s.service_name, price: Number(s.price || 0) })));

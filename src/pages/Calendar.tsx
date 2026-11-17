@@ -6,6 +6,43 @@ import toast from 'react-hot-toast';
 
 type CalendarFilter = 'all' | 'visits' | 'appointments';
 
+// Robust revenue resolver: fallback to service_total + product_total - discount_amount or line item sums if grand_total is 0/null
+const getVisitRevenue = (v: any): number => {
+  const gt = Number(v.grand_total);
+  if (!isNaN(gt) && gt > 0) return gt;
+  const st = Number(v.service_total || 0);
+  const pt = Number(v.product_total || 0);
+  const disc = Number(v.discount_amount || 0);
+  const calculated = Math.max(0, st + pt - disc);
+  if (calculated > 0) return calculated;
+  if (v.visit_services && Array.isArray(v.visit_services) && v.visit_services.length > 0) {
+    const svcsTotal = v.visit_services.reduce((s: number, item: any) => s + Number(item.price || 0), 0);
+    if (svcsTotal > 0) return Math.max(0, svcsTotal - disc);
+  }
+  return !isNaN(gt) ? Math.max(0, gt) : 0;
+};
+
+// Robust day matcher that handles UTC strings, ISO timestamps, and local dates
+const isVisitOnDay = (v: any, targetDay: Date): boolean => {
+  const targetStr = format(targetDay, 'yyyy-MM-dd');
+  
+  if (v.visit_date) {
+    const d = new Date(v.visit_date);
+    if (!isNaN(d.getTime())) {
+      if (format(d, 'yyyy-MM-dd') === targetStr || isSameDay(d, targetDay)) return true;
+    }
+  }
+  
+  if (v.created_at) {
+    const d = new Date(v.created_at);
+    if (!isNaN(d.getTime())) {
+      if (format(d, 'yyyy-MM-dd') === targetStr || isSameDay(d, targetDay)) return true;
+    }
+  }
+  
+  return false;
+};
+
 export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -18,8 +55,8 @@ export default function CalendarView() {
     const [vRes, aRes] = await Promise.all([
       supabase.from('customer_visits').select(`
         *, customer:customer_id(name, is_deleted), staff:staff_id(name), visit_services(*), visit_products(*)
-      `).eq('is_deleted', false),
-      supabase.from('appointments').select('*, staff:staff_id(name), appointment_services(*)').eq('is_deleted', false),
+      `).eq('is_deleted', false).order('visit_date', { ascending: false }).limit(5000),
+      supabase.from('appointments').select('*, staff:staff_id(name), appointment_services(*)').eq('is_deleted', false).limit(5000),
     ]);
     if (vRes.data) setVisits(vRes.data.filter((v: any) => !v.customer || !v.customer.is_deleted));
     if (aRes.data) setAppointments(aRes.data);
@@ -44,9 +81,9 @@ export default function CalendarView() {
   const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
-  const selectedDateVisits = visits.filter(v => v.visit_date && isSameDay(new Date(v.visit_date), selectedDate));
+  const selectedDateVisits = visits.filter(v => isVisitOnDay(v, selectedDate));
   const selectedDateAppts = appointments.filter(a => a.appointment_date && isSameDay(parseISO(a.appointment_date), selectedDate));
-  const totalRevenue = selectedDateVisits.reduce((sum, v) => sum + (Number(v.grand_total) || 0), 0);
+  const totalRevenue = selectedDateVisits.reduce((sum, v) => sum + getVisitRevenue(v), 0);
 
   const handleCheckIn = async (appt: any) => {
     setCheckingIn(appt.id);
@@ -64,8 +101,15 @@ export default function CalendarView() {
       const svcList = appt.appointment_services || [];
       const serviceTotal = svcList.reduce((s: number, x: any) => s + Number(x.price || 0), 0);
       const { data: visitData, error: visitErr } = await supabase.from('customer_visits').insert([{
-        customer_id: customerId, service_total: serviceTotal, product_total: 0,
-        grand_total: serviceTotal, original_total: serviceTotal, discount_amount: 0, staff_id: appt.staff_ids?.length > 0 ? appt.staff_ids[0] : (appt.staff_id || null), staff_ids: appt.staff_ids || (appt.staff_id ? [appt.staff_id] : []),
+        customer_id: customerId,
+        visit_date: appt.appointment_date || new Date().toISOString(),
+        service_total: serviceTotal,
+        product_total: 0,
+        grand_total: serviceTotal,
+        original_total: serviceTotal,
+        discount_amount: 0,
+        staff_id: appt.staff_ids?.length > 0 ? appt.staff_ids[0] : (appt.staff_id || null),
+        staff_ids: appt.staff_ids || (appt.staff_id ? [appt.staff_id] : []),
       }]).select().single();
       if (visitErr) throw visitErr;
       if (svcList.length > 0) {
@@ -130,9 +174,9 @@ export default function CalendarView() {
               <div key={`pad-${i}`} className="rounded-xl border border-transparent opacity-30" style={{ background: 'rgba(17,17,17,0.5)' }} />
             ))}
             {daysInMonth.map((day, i) => {
-              const dayVisits = filter !== 'appointments' ? visits.filter(v => v.visit_date && isSameDay(new Date(v.visit_date), day)) : [];
+              const dayVisits = filter !== 'appointments' ? visits.filter(v => isVisitOnDay(v, day)) : [];
               const dayAppts = filter !== 'visits' ? appointments.filter(a => a.appointment_date && isSameDay(parseISO(a.appointment_date), day) && a.status === 'scheduled') : [];
-              const dayRevenue = dayVisits.reduce((sum, v) => sum + (Number(v.grand_total) || 0), 0);
+              const dayRevenue = dayVisits.reduce((sum, v) => sum + getVisitRevenue(v), 0);
               const isSelected = isSameDay(day, selectedDate);
 
               return (
