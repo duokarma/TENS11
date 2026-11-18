@@ -6,17 +6,20 @@ import { supabase } from './supabase';
 // ─── SALON MASTER TAX CONSTANTS ──────────────────────────────────────────────
 export const SALON_INFO = {
   name: 'TEN11 SALON & SKIN CARE',
-  tradeName: 'TEN11 LUXURY HAIR & BEAUTY',
-  addressLine1: 'Luxury Hair & Beauty, tower, F13, Khushil, First floor, 14/6',
-  addressLine2: 'Govindnagar, Dahod, Gujarat 389151',
+  tradeName: 'TEN11 Dahod Luxury Hair & Beauty',
+  gstin: '24HDQPM1606E1ZM', // Official Registered GSTIN for Gujarat (24)
+  pan: 'HDQPM1606E',
   state: 'Gujarat',
   stateCode: '24',
-  gstin: '24AARCIJE1234F1Z1',
-  phone: '+91 98785 43210',
+  addressLine1: 'Luxury Hair & Beauty, tower, F13, Khushil',
+  addressLine2: 'First floor, 14/6, Govindnagar, Dahod, Gujarat 389151',
+  pincode: '389151',
+  phone: '+91 99099 11011',
   email: 'contact@ten11salon.com',
   bankName: 'Bank of Baroda',
   accountNo: '33300200000841',
   ifscCode: 'BARB0GODIRD',
+  branch: 'Dahod Station Road',
   upiId: 'ten19327841@barodampay'
 };
 
@@ -25,28 +28,27 @@ export const SALON_INFO = {
 const SAC_MAP: Record<string, { code: string; desc: string }> = {
   haircut: { code: '999721', desc: 'Haircut & Hairdressing Services' },
   styling: { code: '999721', desc: 'Hair Styling & Blow Dry' },
-  wash: { code: '999721', desc: 'Hair Wash & Conditioning' },
-  color: { code: '999721', desc: 'Hair Coloring & Treatment' },
-  spa: { code: '999721', desc: 'Hair Spa & Scalp Therapy' },
-  facial: { code: '999722', desc: 'Skin Care & Facial Services' },
-  cleanup: { code: '999722', desc: 'Skin Cleanup & Exfoliation' },
-  peel: { code: '999722', desc: 'Cosmetic Peel & Skin Treatment' },
-  retinol: { code: '999722', desc: 'Advanced Retinol Skin Care' },
-  manicure: { code: '999722', desc: 'Manicure & Nail Grooming' },
+  shave: { code: '999721', desc: 'Beard Trimming & Shaving' },
+  color: { code: '999721', desc: 'Hair Coloring & Highlights' },
+  keratin: { code: '999721', desc: 'Hair Smoothening / Keratin Treatment' },
+  spa: { code: '999721', desc: 'Hair Spa & Conditioning' },
+  facial: { code: '999722', desc: 'Facial & Skin Care Services' },
+  clean: { code: '999722', desc: 'Deep Cleansing & Cleanup' },
+  peel: { code: '999722', desc: 'Derma Peel & Exfoliation' },
+  hydra: { code: '999722', desc: 'Hydra Facial Treatment' },
+  wax: { code: '999722', desc: 'Waxing & Depilation' },
+  manicure: { code: '999722', desc: 'Manicure & Hand Care' },
   pedicure: { code: '999722', desc: 'Pedicure & Foot Care' },
-  waxing: { code: '999722', desc: 'Depilatory & Waxing Services' },
-  threading: { code: '999722', desc: 'Eyebrow Threading & Shaping' },
-  massage: { code: '999729', desc: 'Physical Well-being & Body Massage' },
-  makeup: { code: '999722', desc: 'Beauty & Makeup Services' },
-  bridal: { code: '999722', desc: 'Bridal Makeover & Styling' },
+  makeup: { code: '999722', desc: 'Bridal & Party Makeup' },
+  massage: { code: '999722', desc: 'Head & Body Relaxation' },
   default: { code: '999721', desc: 'Salon & Beauty Treatment Services' }
 };
 
 export function getSACDetails(serviceName: string): { code: string; desc: string } {
   const lower = (serviceName || '').toLowerCase();
-  for (const [key, val] of Object.entries(SAC_MAP)) {
+  for (const [key, details] of Object.entries(SAC_MAP)) {
     if (key !== 'default' && lower.includes(key)) {
-      return val;
+      return details;
     }
   }
   return SAC_MAP.default;
@@ -54,8 +56,14 @@ export function getSACDetails(serviceName: string): { code: string; desc: string
 
 export function getProductHSNDetails(productName: string): { code: string; desc: string } {
   const lower = (productName || '').toLowerCase();
-  if (lower.includes('shampoo') || lower.includes('conditioner') || lower.includes('serum') || lower.includes('oil')) {
-    return { code: '33051090', desc: 'Hair Care Preparations' };
+  if (lower.includes('shampoo') || lower.includes('wash')) {
+    return { code: '33051090', desc: 'Hair Care - Shampoos & Cleansers' };
+  }
+  if (lower.includes('serum') || lower.includes('oil')) {
+    return { code: '33059011', desc: 'Hair Oil & Treatment Serums' };
+  }
+  if (lower.includes('cream') || lower.includes('lotion') || lower.includes('mask')) {
+    return { code: '33049910', desc: 'Face Cream & Skin Moisturizers' };
   }
   return { code: '33049910', desc: 'Beauty & Skin Care Preparations' };
 }
@@ -98,7 +106,7 @@ export function calculateLineTax(
   }
 
   const cgst = Math.round((totalGst / 2) * 100) / 100;
-  const sgst = Math.round((totalGst - cgst) * 100) / 100; // Exact match to avoid 1-paise split diff
+  const sgst = Math.round((totalGst - cgst) * 100) / 100;
 
   return {
     taxableAmount: taxable,
@@ -108,6 +116,18 @@ export function calculateLineTax(
     totalGst,
     total: Math.round((taxable + cgst + sgst) * 100) / 100
   };
+}
+
+// ─── CANONICAL INDIAN CURRENCY FORMATTER (SAFE FOR ALL PDFS) ─────────────────
+// Formats strictly using ASCII characters ("Rs." or pure numbers) to eliminate
+// the jsPDF Helvetica encoding bug that injects null-bytes and spaces between digits.
+export function formatINR(val: number, showPrefix: boolean = false): string {
+  const n = Number(val || 0);
+  const formatted = n.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  return showPrefix ? `Rs. ${formatted}` : formatted;
 }
 
 // ─── NUMBER TO WORDS ─────────────────────────────────────────────────────────
@@ -155,12 +175,40 @@ export function numberToWords(num: number): string {
   return result + ' Only';
 }
 
+// ─── RELIABLE EXCEL WORKBOOK DOWNLOADER ──────────────────────────────────────
+export async function downloadExcelWorkbook(wb: any, filename: string): Promise<void> {
+  const { write, writeFile } = await import('xlsx');
+  try {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      const wbout = write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 200);
+      return;
+    }
+    writeFile(wb, filename);
+  } catch (err) {
+    console.warn('Direct Blob download failed, attempting writeFile fallback:', err);
+    writeFile(wb, filename);
+  }
+}
+
 // ─── INTERFACES ──────────────────────────────────────────────────────────────
 export interface InvoiceLineItem {
   name: string;
-  code: string; // SAC or HSN
-  codeDesc: string;
   type: 'service' | 'product';
+  code: string;
+  codeDesc: string;
   quantity: number;
   rate: number;
   grossAmount: number;
@@ -176,7 +224,7 @@ export interface InvoiceLineItem {
 export interface ProcessedInvoice {
   visitId: string;
   invoiceNumber: string;
-  invoiceDate: string; // ISO
+  invoiceDate: string;
   formattedDate: string;
   customerName: string;
   customerPhone: string;
@@ -212,13 +260,13 @@ export interface HSNBreakdown {
 
 export interface GSTReportSummary {
   invoiceCount: number;
-  totalItemsCount: number;
+  totalSalesValue: number;
   taxableSales: number;
   cgstTotal: number;
   sgstTotal: number;
   igstTotal: number;
   totalGst: number;
-  totalSalesValue: number;
+  totalItemsCount: number;
   b2bCount: number;
   b2cCount: number;
   b2bTaxable: number;
@@ -234,8 +282,6 @@ export async function fetchInvoicesForPeriod(options: {
   startDate?: string; // 'YYYY-MM-DD'
   endDate?: string; // 'YYYY-MM-DD'
 }): Promise<any[]> {
-  // CRITICAL FIX: Only select columns that genuinely exist on the customers table!
-  // 'address' and 'gstin' do NOT exist in the Supabase customers table schema.
   let query = supabase
     .from('customer_visits')
     .select(`
@@ -279,7 +325,6 @@ export async function fetchInvoicesForPeriod(options: {
     throw error;
   }
 
-  // Filter out any soft-deleted customer visits
   return (data || []).filter((v: any) => !v.customer || !v.customer.is_deleted);
 }
 
@@ -293,14 +338,12 @@ export function processInvoices(
     const dateObj = new Date(rawDate);
     const displayDate = format(dateObj, 'dd MMM yyyy');
 
-    // Deterministic GST-compliant invoice numbering
     const shortId = (visit.id || '').replace(/-/g, '').substring(0, 6).toUpperCase() || '000000';
     const invoiceNumber = `T11-${format(dateObj, 'yyyyMMdd')}-${shortId}`;
 
     const customer = visit.customer || {};
     const customerName = customer.name || 'Walk-in Client';
     const customerPhone = customer.phone || '-';
-    // Address & GSTIN fallbacks (handled gracefully since not in db schema)
     const customerGstin = customer.gstin || '';
     const customerAddress = customer.address || 'Dahod, Gujarat';
     const isB2B = Boolean(customerGstin && customerGstin.trim().length >= 15);
@@ -311,7 +354,6 @@ export function processInvoices(
     const grandTotal = Number(visit.grand_total || 0);
     const discountAmount = Number(visit.discount_amount || 0);
 
-    // Extract raw lines
     const rawServices = visit.visit_services || [];
     const rawProducts = visit.visit_products || [];
 
@@ -325,7 +367,6 @@ export function processInvoices(
       gstRate: number;
     }[] = [];
 
-    // Hair & Salon Services (SAC 999721 / 999722)
     rawServices.forEach((s: any) => {
       const sac = getSACDetails(s.service_name);
       rawItems.push({
@@ -335,11 +376,10 @@ export function processInvoices(
         type: 'service',
         code: sac.code,
         codeDesc: sac.desc,
-        gstRate: serviceGstRate // 5% approved salon inclusive, or 18%
+        gstRate: serviceGstRate
       });
     });
 
-    // Cosmetic / Retail Products (HSN 33049910 / 33051090) -> Statutory 18% GST
     rawProducts.forEach((p: any) => {
       const hsn = getProductHSNDetails(p.product_name);
       rawItems.push({
@@ -353,7 +393,6 @@ export function processInvoices(
       });
     });
 
-    // Fallback if visit has no child lines recorded
     if (rawItems.length === 0) {
       const sac = SAC_MAP.default;
       rawItems.push({
@@ -370,45 +409,42 @@ export function processInvoices(
     const grossTotalSum = rawItems.reduce((acc, it) => acc + (it.qty * it.rate), 0);
     const effectiveGross = grossTotalSum > 0 ? grossTotalSum : grandTotal;
 
-    // Line-item tax calculations
-    const items: InvoiceLineItem[] = rawItems.map((it) => {
-      const lineGross = it.qty * it.rate;
-      const proportion = effectiveGross > 0 ? lineGross / effectiveGross : (1 / rawItems.length);
-      const lineDiscount = Math.round(discountAmount * proportion * 100) / 100;
-      const lineNet = Math.max(0, lineGross - lineDiscount);
+    const items: InvoiceLineItem[] = rawItems.map(item => {
+      const itemGross = item.qty * item.rate;
+      const itemDiscount = grossTotalSum > 0 
+        ? Math.round((discountAmount * (itemGross / grossTotalSum)) * 100) / 100 
+        : 0;
+      const netLineGross = Math.max(0, itemGross - itemDiscount);
 
-      const tax = calculateLineTax(lineNet, it.gstRate, isInterstate);
+      const taxCalc = calculateLineTax(netLineGross, item.gstRate, isInterstate);
 
       return {
-        name: it.name,
-        code: it.code,
-        codeDesc: it.codeDesc,
-        type: it.type,
-        quantity: it.qty,
-        rate: it.rate,
-        grossAmount: lineGross,
-        discount: lineDiscount,
-        taxableAmount: tax.taxableAmount,
-        gstRate: it.gstRate,
-        cgst: tax.cgst,
-        sgst: tax.sgst,
-        igst: tax.igst,
-        total: lineNet
+        name: item.name,
+        type: item.type,
+        code: item.code,
+        codeDesc: item.codeDesc,
+        quantity: item.qty,
+        rate: item.rate,
+        grossAmount: itemGross,
+        discount: itemDiscount,
+        taxableAmount: taxCalc.taxableAmount,
+        gstRate: item.gstRate,
+        cgst: taxCalc.cgst,
+        sgst: taxCalc.sgst,
+        igst: taxCalc.igst,
+        total: taxCalc.total
       };
     });
 
-    // Sum up items
     let invTaxable = Math.round(items.reduce((s, i) => s + i.taxableAmount, 0) * 100) / 100;
     let invCgst = Math.round(items.reduce((s, i) => s + i.cgst, 0) * 100) / 100;
     let invSgst = Math.round(items.reduce((s, i) => s + i.sgst, 0) * 100) / 100;
     let invIgst = Math.round(items.reduce((s, i) => s + i.igst, 0) * 100) / 100;
     let invTotalGst = Math.round((invCgst + invSgst + invIgst) * 100) / 100;
 
-    // Reconcile line totals with grand_total down to the last paisa
     const sumLines = Math.round(items.reduce((s, i) => s + i.total, 0) * 100) / 100;
     const diff = Math.round((grandTotal - sumLines) * 100) / 100;
     if (Math.abs(diff) > 0 && items.length > 0) {
-      // Adjust on largest item
       const largestItem = items.reduce((max, it) => it.total > max.total ? it : max, items[0]);
       largestItem.total = Math.round((largestItem.total + diff) * 100) / 100;
     }
@@ -480,7 +516,6 @@ export function calculateReportSummary(invoices: ProcessedInvoice[]): GSTReportS
     paymentBreakdown[pMethod] = (paymentBreakdown[pMethod] || 0) + inv.grandTotal;
 
     for (const it of inv.items) {
-      // HSN summary
       const hKey = `${it.code}-${it.gstRate}`;
       if (!hsnMap[hKey]) {
         hsnMap[hKey] = {
@@ -503,50 +538,42 @@ export function calculateReportSummary(invoices: ProcessedInvoice[]): GSTReportS
       hsnMap[hKey].sgst += it.sgst;
       hsnMap[hKey].igst += it.igst;
 
-      // Rate buckets
-      if (!rateBuckets[it.gstRate]) {
-        rateBuckets[it.gstRate] = { taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 };
+      const rate = it.gstRate;
+      if (!rateBuckets[rate]) {
+        rateBuckets[rate] = { taxable: 0, cgst: 0, sgst: 0, igst: 0, total: 0 };
       }
-      rateBuckets[it.gstRate].taxable += it.taxableAmount;
-      rateBuckets[it.gstRate].cgst += it.cgst;
-      rateBuckets[it.gstRate].sgst += it.sgst;
-      rateBuckets[it.gstRate].igst += it.igst;
-      rateBuckets[it.gstRate].total += it.total;
+      rateBuckets[rate].taxable += it.taxableAmount;
+      rateBuckets[rate].cgst += it.cgst;
+      rateBuckets[rate].sgst += it.sgst;
+      rateBuckets[rate].igst += it.igst;
+      rateBuckets[rate].total += it.total;
     }
   }
 
   return {
     invoiceCount: invoices.length,
-    totalItemsCount,
+    totalSalesValue: Math.round(totalSalesValue * 100) / 100,
     taxableSales: Math.round(taxableSales * 100) / 100,
     cgstTotal: Math.round(cgstTotal * 100) / 100,
     sgstTotal: Math.round(sgstTotal * 100) / 100,
     igstTotal: Math.round(igstTotal * 100) / 100,
     totalGst: Math.round(totalGst * 100) / 100,
-    totalSalesValue: Math.round(totalSalesValue * 100) / 100,
+    totalItemsCount,
     b2bCount,
     b2cCount,
     b2bTaxable: Math.round(b2bTaxable * 100) / 100,
     b2cTaxable: Math.round(b2cTaxable * 100) / 100,
-    paymentBreakdown,
     rateBuckets,
-    hsnSummary: Object.values(hsnMap).map(h => ({
-      ...h,
-      totalValue: Math.round(h.totalValue * 100) / 100,
-      taxableValue: Math.round(h.taxableValue * 100) / 100,
-      cgst: Math.round(h.cgst * 100) / 100,
-      sgst: Math.round(h.sgst * 100) / 100,
-      igst: Math.round(h.igst * 100) / 100
-    }))
+    paymentBreakdown,
+    hsnSummary: Object.values(hsnMap)
   };
 }
 
-// ─── 4. LOGO HELPER ──────────────────────────────────────────────────────────
+// ─── 4. LOGO LOADER HELPER ───────────────────────────────────────────────────
 async function loadLogoDataUrl(): Promise<string | null> {
   try {
-    const response = await fetch('/logo.png');
-    if (!response.ok) return null;
-    const blob = await response.blob();
+    const res = await fetch('/logo.png');
+    const blob = await res.blob();
     return await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
@@ -558,7 +585,7 @@ async function loadLogoDataUrl(): Promise<string | null> {
   }
 }
 
-// ─── 5. ALL SALES INVOICES — ONE COMBINED PDF (HIGHEST PRIORITY) ─────────────
+// ─── 5. ALL SALES INVOICES — ONE COMBINED PDF (CONSOLIDATED BOOK) ─────────────
 export async function generateAllInvoicesCombinedPDF(options: {
   invoices: ProcessedInvoice[];
   summary: GSTReportSummary;
@@ -582,39 +609,52 @@ export async function generateAllInvoicesCombinedPDF(options: {
   for (let idx = 0; idx < invoices.length; idx++) {
     const inv = invoices[idx];
 
-    // Page break between invoices
     if (idx > 0) doc.addPage();
 
     let y = 14;
 
-    // Header Banner
+    // Header Banner (Height 22mm)
     doc.setFillColor(18, 18, 18);
-    doc.rect(leftMargin, y, printableWidth, 18, 'F');
+    doc.rect(leftMargin, y, printableWidth, 22, 'F');
 
     if (logoDataUrl) {
       try {
-        doc.addImage(logoDataUrl, 'PNG', leftMargin + 2, y + 2, 22, 14);
+        doc.addImage(logoDataUrl, 'PNG', leftMargin + 3, y + 3, 22, 16);
       } catch (_e) { /* fallback */ }
     }
 
     doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(212, 175, 55);
-    doc.text(SALON_INFO.name, leftMargin + 27, y + 7);
+    doc.text(SALON_INFO.name, leftMargin + 28, y + 8);
 
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(200, 200, 200);
-    doc.text(`${SALON_INFO.addressLine1}, ${SALON_INFO.addressLine2} | GSTIN: ${SALON_INFO.gstin}`, leftMargin + 27, y + 13);
+    doc.text(
+      SALON_INFO.addressLine1,
+      leftMargin + 28,
+      y + 13.5,
+      { maxWidth: printableWidth - 70 }
+    );
+    doc.text(
+      `GSTIN: ${SALON_INFO.gstin} | State: ${SALON_INFO.state} (${SALON_INFO.stateCode}) | Phone: ${SALON_INFO.phone}`,
+      leftMargin + 28,
+      y + 18,
+      { maxWidth: printableWidth - 70 }
+    );
 
+    // TAX INVOICE badge safely framed inside banner
+    const badgeW = 28;
+    const badgeH = 8.5;
     doc.setFillColor(212, 175, 55);
-    doc.rect(rightEdge - 32, y + 4, 30, 9, 'F');
-    doc.setFontSize(8);
+    doc.rect(rightEdge - badgeW - 2, y + 6.5, badgeW, badgeH, 'F');
+    doc.setFontSize(8.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('TAX INVOICE', rightEdge - 17, y + 10, { align: 'center' });
+    doc.text('TAX INVOICE', rightEdge - 2 - (badgeW / 2), y + 12, { align: 'center' });
 
-    y += 24;
+    y += 26;
 
     // Two-Column Party & Invoice Details Box
     doc.setDrawColor(210, 210, 210);
@@ -667,36 +707,36 @@ export async function generateAllInvoicesCombinedPDF(options: {
       it.name,
       it.code,
       it.quantity.toString(),
-      it.rate.toFixed(2),
-      it.discount > 0 ? it.discount.toFixed(2) : '-',
-      it.taxableAmount.toFixed(2),
+      formatINR(it.rate),
+      it.discount > 0 ? formatINR(it.discount) : '-',
+      formatINR(it.taxableAmount),
       `${it.gstRate}%`,
-      it.cgst > 0 ? it.cgst.toFixed(2) : '-',
-      it.sgst > 0 ? it.sgst.toFixed(2) : '-',
-      it.igst > 0 ? it.igst.toFixed(2) : '-',
-      it.total.toFixed(2)
+      it.cgst > 0 ? formatINR(it.cgst) : '-',
+      it.sgst > 0 ? formatINR(it.sgst) : '-',
+      it.igst > 0 ? formatINR(it.igst) : '-',
+      formatINR(it.total)
     ]);
 
     tableBody.push([
-      { content: 'Invoice Totals:', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold', fillColor: [242, 242, 242] } },
-      { content: inv.totalQty.toString(), styles: { halign: 'center', fontStyle: 'bold', fillColor: [242, 242, 242] } },
-      { content: '-', styles: { halign: 'center', fillColor: [242, 242, 242] } },
-      { content: inv.discountAmount > 0 ? inv.discountAmount.toFixed(2) : '-', styles: { halign: 'right', fillColor: [242, 242, 242] } },
-      { content: inv.taxableAmount.toFixed(2), styles: { halign: 'right', fontStyle: 'bold', fillColor: [242, 242, 242] } },
-      { content: '-', styles: { halign: 'center', fillColor: [242, 242, 242] } },
-      { content: inv.cgst.toFixed(2), styles: { halign: 'right', fontStyle: 'bold', fillColor: [242, 242, 242] } },
-      { content: inv.sgst.toFixed(2), styles: { halign: 'right', fontStyle: 'bold', fillColor: [242, 242, 242] } },
-      { content: inv.igst > 0 ? inv.igst.toFixed(2) : '-', styles: { halign: 'right', fontStyle: 'bold', fillColor: [242, 242, 242] } },
-      { content: `₹${inv.grandTotal.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: [230, 242, 255], textColor: [0, 51, 153] } }
+      { content: 'Invoice Totals:', colSpan: 3, styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [242, 242, 242] } },
+      { content: inv.totalQty.toString(), styles: { halign: 'center' as const, fontStyle: 'bold' as const, fillColor: [242, 242, 242] } },
+      { content: '-', styles: { halign: 'center' as const, fillColor: [242, 242, 242] } },
+      { content: inv.discountAmount > 0 ? formatINR(inv.discountAmount) : '-', styles: { halign: 'right' as const, fillColor: [242, 242, 242] } },
+      { content: formatINR(inv.taxableAmount), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [242, 242, 242] } },
+      { content: '-', styles: { halign: 'center' as const, fillColor: [242, 242, 242] } },
+      { content: formatINR(inv.cgst), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [242, 242, 242] } },
+      { content: formatINR(inv.sgst), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [242, 242, 242] } },
+      { content: inv.igst > 0 ? formatINR(inv.igst) : '-', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [242, 242, 242] } },
+      { content: formatINR(inv.grandTotal, true), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [230, 242, 255], textColor: [0, 51, 153] } }
     ]);
 
     autoTable(doc, {
       startY: y,
-      head: [['#', 'Product / Service Description', 'HSN/SAC', 'Qty', 'Rate', 'Disc', 'Taxable', 'GST%', 'CGST', 'SGST', 'IGST', 'Total']],
+      head: [['#', 'Product / Service Description', 'HSN/SAC', 'Qty', 'Rate (Rs)', 'Disc (Rs)', 'Taxable (Rs)', 'GST%', 'CGST (Rs)', 'SGST (Rs)', 'IGST (Rs)', 'Total (Rs)']],
       body: tableBody,
       theme: 'grid',
-      headStyles: { fillColor: [30, 30, 30], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.5, halign: 'center', cellPadding: 2 },
-      styles: { fontSize: 7.5, cellPadding: 2, textColor: [30, 30, 30], lineColor: [210, 210, 210], lineWidth: 0.2 },
+      headStyles: { fillColor: [30, 30, 30], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center', cellPadding: 2 },
+      styles: { fontSize: 7, cellPadding: 2, textColor: [30, 30, 30], lineColor: [210, 210, 210], lineWidth: 0.2 },
       columnStyles: {
         0: { halign: 'center', cellWidth: 8 },
         1: { cellWidth: 'auto' },
@@ -709,7 +749,7 @@ export async function generateAllInvoicesCombinedPDF(options: {
         8: { halign: 'right', cellWidth: 14 },
         9: { halign: 'right', cellWidth: 14 },
         10: { halign: 'right', cellWidth: 14 },
-        11: { halign: 'right', cellWidth: 18 }
+        11: { halign: 'right', cellWidth: 20 }
       }
     });
 
@@ -743,10 +783,11 @@ export async function generateAllInvoicesCombinedPDF(options: {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(80, 80, 80);
-    doc.text('NET AMOUNT PAYABLE:', rightEdge - 55, currentY + 9);
-    doc.setFontSize(14);
+    doc.text('NET AMOUNT PAYABLE:', rightEdge - 6, currentY + 8, { align: 'right' });
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 102, 51);
-    doc.text(`₹${inv.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, rightEdge - 4, currentY + 18, { align: 'right' });
+    doc.text(formatINR(inv.grandTotal, true), rightEdge - 6, currentY + 17, { align: 'right' });
   }
 
   // ═════════════════════════════════════════════════════════════════════════════
@@ -774,9 +815,9 @@ export async function generateAllInvoicesCombinedPDF(options: {
   const cardW = (printableWidth - 9) / 4;
   const cards = [
     { title: 'TOTAL INVOICES', value: summary.invoiceCount.toString(), sub: `${summary.totalItemsCount} items sold` },
-    { title: 'TAXABLE SALES', value: `₹${summary.taxableSales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, sub: 'Outward taxable supply' },
-    { title: 'TOTAL GST (CGST+SGST)', value: `₹${summary.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, sub: `CGST: ₹${summary.cgstTotal.toFixed(2)} | SGST: ₹${summary.sgstTotal.toFixed(2)}` },
-    { title: 'TOTAL INVOICE VALUE', value: `₹${summary.totalSalesValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, sub: 'Authoritative gross revenue' }
+    { title: 'TAXABLE SALES', value: formatINR(summary.taxableSales, true), sub: 'Outward taxable supply' },
+    { title: 'TOTAL GST (CGST+SGST)', value: formatINR(summary.totalGst, true), sub: `CGST: ${formatINR(summary.cgstTotal, true)} | SGST: ${formatINR(summary.sgstTotal, true)}` },
+    { title: 'TOTAL INVOICE VALUE', value: formatINR(summary.totalSalesValue, true), sub: 'Authoritative gross revenue' }
   ];
 
   cards.forEach((c, i) => {
@@ -790,7 +831,7 @@ export async function generateAllInvoicesCombinedPDF(options: {
     doc.setTextColor(110, 110, 110);
     doc.text(c.title, cardX + 3, sumY + 5);
 
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     doc.setTextColor(20, 20, 20);
     doc.text(c.value, cardX + 3, sumY + 12);
 
@@ -815,28 +856,28 @@ export async function generateAllInvoicesCombinedPDF(options: {
     h.desc,
     h.type.toUpperCase(),
     h.quantity.toString(),
-    `₹${h.taxableValue.toFixed(2)}`,
+    formatINR(h.taxableValue),
     `${h.gstRate}%`,
-    `₹${h.cgst.toFixed(2)}`,
-    `₹${h.sgst.toFixed(2)}`,
-    `₹${h.igst.toFixed(2)}`,
-    `₹${h.totalValue.toFixed(2)}`
+    formatINR(h.cgst),
+    formatINR(h.sgst),
+    formatINR(h.igst),
+    formatINR(h.totalValue)
   ]);
 
   hsnRows.push([
-    { content: 'Total HSN Aggregates:', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold', fillColor: [240, 240, 240] } },
-    { content: summary.totalItemsCount.toString(), styles: { halign: 'center', fontStyle: 'bold', fillColor: [240, 240, 240] } },
-    { content: `₹${summary.taxableSales.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: [240, 240, 240] } },
-    { content: '-', styles: { halign: 'center', fillColor: [240, 240, 240] } },
-    { content: `₹${summary.cgstTotal.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: [240, 240, 240] } },
-    { content: `₹${summary.sgstTotal.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: [240, 240, 240] } },
-    { content: `₹${summary.igstTotal.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: [240, 240, 240] } },
-    { content: `₹${summary.totalSalesValue.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: [230, 242, 255] } }
+    { content: 'Total HSN Aggregates:', colSpan: 4, styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 240, 240] } },
+    { content: summary.totalItemsCount.toString(), styles: { halign: 'center' as const, fontStyle: 'bold' as const, fillColor: [240, 240, 240] } },
+    { content: formatINR(summary.taxableSales), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 240, 240] } },
+    { content: '-', styles: { halign: 'center' as const, fillColor: [240, 240, 240] } },
+    { content: formatINR(summary.cgstTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 240, 240] } },
+    { content: formatINR(summary.sgstTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 240, 240] } },
+    { content: formatINR(summary.igstTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 240, 240] } },
+    { content: formatINR(summary.totalSalesValue, true), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [230, 242, 255] } }
   ]);
 
   autoTable(doc, {
     startY: sumY,
-    head: [['#', 'HSN/SAC', 'Description', 'Type', 'Qty', 'Taxable Value', 'Rate', 'CGST', 'SGST', 'IGST', 'Total Value']],
+    head: [['#', 'HSN/SAC', 'Description', 'Type', 'Qty', 'Taxable (Rs)', 'Rate', 'CGST (Rs)', 'SGST (Rs)', 'IGST (Rs)', 'Total (Rs)']],
     body: hsnRows,
     theme: 'grid',
     headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
@@ -866,7 +907,7 @@ export async function generateAllInvoicesCombinedPDF(options: {
 
   const paymentRows = Object.entries(summary.paymentBreakdown).map(([mode, amt]) => [
     mode,
-    `₹${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+    formatINR(amt, true),
     summary.totalSalesValue > 0 ? `${((amt / summary.totalSalesValue) * 100).toFixed(1)}%` : '0%'
   ]);
 
@@ -910,7 +951,6 @@ export async function generateAllInvoicesCombinedPDF(options: {
   doc.setFont('helvetica', 'normal');
   doc.text('Authorized Signatory / CA', rightEdge - 50, sumY + 18);
 
-  // Running header and footer
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
@@ -919,11 +959,6 @@ export async function generateAllInvoicesCombinedPDF(options: {
     doc.setTextColor(140, 140, 140);
     doc.text(`${SALON_INFO.name} | Complete Sales Invoices PDF | Period: ${periodLabel}`, leftMargin, 8);
     doc.text(`Generated: ${generationTimestamp}`, rightEdge, 8, { align: 'right' });
-    doc.setDrawColor(220, 220, 220);
-    doc.line(leftMargin, 9.5, rightEdge, 9.5);
-
-    doc.line(leftMargin, pageHeight - 10, rightEdge, pageHeight - 10);
-    doc.text(`GSTIN: ${SALON_INFO.gstin} | State: 24-Gujarat | Statutory CA Report`, leftMargin, pageHeight - 6);
     doc.text(`Page ${p} of ${totalPages}`, rightEdge, pageHeight - 6, { align: 'right' });
   }
 
@@ -946,112 +981,114 @@ export async function generateSingleInvoicePDF(invoice: ProcessedInvoice): Promi
 
   // Header Banner
   doc.setFillColor(18, 18, 18);
-  doc.rect(leftMargin, y, printableWidth, 20, 'F');
+  doc.rect(leftMargin, y, printableWidth, 22, 'F');
 
   if (logoDataUrl) {
     try {
-      doc.addImage(logoDataUrl, 'PNG', leftMargin + 3, y + 2.5, 24, 15);
+      doc.addImage(logoDataUrl, 'PNG', leftMargin + 3, y + 3, 22, 16);
     } catch (_e) { /* fallback */ }
   }
 
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(212, 175, 55);
-  doc.text(SALON_INFO.name, leftMargin + 30, y + 8);
+  doc.text(SALON_INFO.name, leftMargin + 28, y + 8);
 
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(220, 220, 220);
-  doc.text(`${SALON_INFO.addressLine1}, ${SALON_INFO.addressLine2}`, leftMargin + 30, y + 13);
-  doc.text(`GSTIN: ${SALON_INFO.gstin} | Phone: ${SALON_INFO.phone}`, leftMargin + 30, y + 17.5);
+  doc.setTextColor(200, 200, 200);
+  doc.text(SALON_INFO.addressLine1, leftMargin + 28, y + 13.5, { maxWidth: printableWidth - 70 });
+  doc.text(`GSTIN: ${SALON_INFO.gstin} | State: ${SALON_INFO.state} (${SALON_INFO.stateCode}) | Phone: ${SALON_INFO.phone}`, leftMargin + 28, y + 18, { maxWidth: printableWidth - 70 });
 
+  const badgeW = 28;
+  const badgeH = 8.5;
   doc.setFillColor(212, 175, 55);
-  doc.rect(rightEdge - 34, y + 4.5, 32, 11, 'F');
-  doc.setFontSize(9);
+  doc.rect(rightEdge - badgeW - 2, y + 6.5, badgeW, badgeH, 'F');
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('TAX INVOICE', rightEdge - 18, y + 11.5, { align: 'center' });
+  doc.text('TAX INVOICE', rightEdge - 2 - (badgeW / 2), y + 12, { align: 'center' });
 
   y += 26;
 
   // Bill To Box
   doc.setDrawColor(210, 210, 210);
   doc.setFillColor(250, 250, 250);
-  doc.roundedRect(leftMargin, y, printableWidth, 28, 2, 2, 'FD');
+  doc.roundedRect(leftMargin, y, printableWidth, 26, 2, 2, 'FD');
 
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(110, 110, 110);
-  doc.text('CLIENT DETAILS (BILL TO):', leftMargin + 4, y + 6);
+  doc.text('CLIENT DETAILS (BILL TO):', leftMargin + 4, y + 5);
 
-  doc.setFontSize(10.5);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(20, 20, 20);
-  doc.text(invoice.customerName, leftMargin + 4, y + 13);
+  doc.text(invoice.customerName, leftMargin + 4, y + 11);
 
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(60, 60, 60);
-  doc.text(`Phone: ${invoice.customerPhone}`, leftMargin + 4, y + 19);
-  doc.text(`GSTIN: ${invoice.customerGstin || 'URP (Unregistered Person)'} | ${invoice.isB2B ? 'B2B Client' : 'B2C Supply'}`, leftMargin + 4, y + 24);
+  doc.text(`Phone: ${invoice.customerPhone}`, leftMargin + 4, y + 16);
+  doc.text(`GSTIN: ${invoice.customerGstin || 'URP (Unregistered Person)'} | ${invoice.isB2B ? 'B2B Client' : 'B2C Supply'}`, leftMargin + 4, y + 21);
 
   const col2X = leftMargin + (printableWidth / 2) + 10;
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(110, 110, 110);
-  doc.text('INVOICE IDENTIFICATION:', col2X, y + 6);
+  doc.text('INVOICE IDENTIFICATION:', col2X, y + 5);
 
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(20, 20, 20);
-  doc.text('Invoice Number:', col2X, y + 13);
+  doc.text('Invoice Number:', col2X, y + 11);
   doc.setFont('helvetica', 'bold');
-  doc.text(invoice.invoiceNumber, rightEdge - 4, y + 13, { align: 'right' });
+  doc.text(invoice.invoiceNumber, rightEdge - 4, y + 11, { align: 'right' });
 
   doc.setFont('helvetica', 'normal');
-  doc.text('Invoice Date:', col2X, y + 19);
+  doc.text('Invoice Date:', col2X, y + 16);
   doc.setFont('helvetica', 'bold');
-  doc.text(invoice.formattedDate, rightEdge - 4, y + 19, { align: 'right' });
+  doc.text(invoice.formattedDate, rightEdge - 4, y + 16, { align: 'right' });
 
   doc.setFont('helvetica', 'normal');
-  doc.text('Place of Supply:', col2X, y + 24);
+  doc.text('Place of Supply:', col2X, y + 21);
   doc.setFont('helvetica', 'bold');
-  doc.text(invoice.placeOfSupply, rightEdge - 4, y + 24, { align: 'right' });
+  doc.text(invoice.placeOfSupply, rightEdge - 4, y + 21, { align: 'right' });
 
-  y += 34;
+  y += 30;
 
   const tableBody: any[] = invoice.items.map((it, idx) => [
     (idx + 1).toString(),
     it.name,
     it.code,
     it.quantity.toString(),
-    it.rate.toFixed(2),
-    it.discount > 0 ? it.discount.toFixed(2) : '-',
-    it.taxableAmount.toFixed(2),
+    formatINR(it.rate),
+    it.discount > 0 ? formatINR(it.discount) : '-',
+    formatINR(it.taxableAmount),
     `${it.gstRate}%`,
-    it.cgst > 0 ? it.cgst.toFixed(2) : '-',
-    it.sgst > 0 ? it.sgst.toFixed(2) : '-',
-    it.total.toFixed(2)
+    it.cgst > 0 ? formatINR(it.cgst) : '-',
+    it.sgst > 0 ? formatINR(it.sgst) : '-',
+    formatINR(it.total)
   ]);
 
   tableBody.push([
-    { content: 'Invoice Totals:', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold', fillColor: [240, 240, 240] } },
-    { content: invoice.totalQty.toString(), styles: { halign: 'center', fontStyle: 'bold', fillColor: [240, 240, 240] } },
-    { content: '-', styles: { halign: 'center', fillColor: [240, 240, 240] } },
-    { content: invoice.discountAmount > 0 ? invoice.discountAmount.toFixed(2) : '-', styles: { halign: 'right', fillColor: [240, 240, 240] } },
-    { content: invoice.taxableAmount.toFixed(2), styles: { halign: 'right', fontStyle: 'bold', fillColor: [240, 240, 240] } },
-    { content: '-', styles: { halign: 'center', fillColor: [240, 240, 240] } },
-    { content: invoice.cgst.toFixed(2), styles: { halign: 'right', fontStyle: 'bold', fillColor: [240, 240, 240] } },
-    { content: invoice.sgst.toFixed(2), styles: { halign: 'right', fontStyle: 'bold', fillColor: [240, 240, 240] } },
-    { content: `₹${invoice.grandTotal.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: [230, 242, 255], textColor: [0, 51, 153] } }
+    { content: 'Invoice Totals:', colSpan: 3, styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 240, 240] } },
+    { content: invoice.totalQty.toString(), styles: { halign: 'center' as const, fontStyle: 'bold' as const, fillColor: [240, 240, 240] } },
+    { content: '-', styles: { halign: 'center' as const, fillColor: [240, 240, 240] } },
+    { content: invoice.discountAmount > 0 ? formatINR(invoice.discountAmount) : '-', styles: { halign: 'right' as const, fillColor: [240, 240, 240] } },
+    { content: formatINR(invoice.taxableAmount), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 240, 240] } },
+    { content: '-', styles: { halign: 'center' as const, fillColor: [240, 240, 240] } },
+    { content: formatINR(invoice.cgst), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 240, 240] } },
+    { content: formatINR(invoice.sgst), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 240, 240] } },
+    { content: formatINR(invoice.grandTotal, true), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [230, 242, 255], textColor: [0, 51, 153] } }
   ]);
 
   autoTable(doc, {
     startY: y,
-    head: [['#', 'Description', 'HSN/SAC', 'Qty', 'Rate', 'Disc', 'Taxable', 'GST%', 'CGST', 'SGST', 'Total']],
+    head: [['#', 'Description', 'HSN/SAC', 'Qty', 'Rate (Rs)', 'Disc (Rs)', 'Taxable (Rs)', 'GST%', 'CGST (Rs)', 'SGST (Rs)', 'Total (Rs)']],
     body: tableBody,
     theme: 'grid',
-    headStyles: { fillColor: [30, 30, 30], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8, halign: 'center' },
-    styles: { fontSize: 8, cellPadding: 2.5, lineColor: [210, 210, 210] },
+    headStyles: { fillColor: [30, 30, 30], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
+    styles: { fontSize: 7.5, cellPadding: 2, lineColor: [210, 210, 210] },
     columnStyles: {
       0: { halign: 'center', cellWidth: 8 },
       1: { cellWidth: 'auto' },
@@ -1067,282 +1104,483 @@ export async function generateSingleInvoicePDF(invoice: ProcessedInvoice): Promi
     }
   });
 
-  const finalY = (doc as any).lastAutoTable.finalY + 8;
+  const finalY = (doc as any).lastAutoTable.finalY + 6;
 
   doc.setFillColor(248, 248, 248);
-  doc.roundedRect(leftMargin, finalY, printableWidth, 32, 2, 2, 'FD');
+  doc.roundedRect(leftMargin, finalY, printableWidth, 26, 2, 2, 'FD');
 
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text('Amount in Words:', leftMargin + 4, finalY + 7);
+  doc.text('Amount in Words:', leftMargin + 4, finalY + 6);
   doc.setFont('helvetica', 'normal');
-  doc.text(numberToWords(invoice.grandTotal), leftMargin + 34, finalY + 7);
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Payment Method:', leftMargin + 4, finalY + 14);
-  doc.setFont('helvetica', 'normal');
-  doc.text(invoice.paymentMethod, leftMargin + 34, finalY + 14);
+  doc.text(numberToWords(invoice.grandTotal), leftMargin + 32, finalY + 6);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Bank Account:', leftMargin + 4, finalY + 21);
+  doc.text('Payment Method:', leftMargin + 4, finalY + 12);
   doc.setFont('helvetica', 'normal');
-  doc.text(`${SALON_INFO.bankName} | A/C: ${SALON_INFO.accountNo} | IFSC: ${SALON_INFO.ifscCode}`, leftMargin + 34, finalY + 21);
+  doc.text(invoice.paymentMethod, leftMargin + 32, finalY + 12);
 
-  doc.text('Tax Rates: Services 5% / 18% | Cosmetics 18% (GST Inclusive under Section 9 CGST Act)', leftMargin + 4, finalY + 27);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Bank Account:', leftMargin + 4, finalY + 18);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${SALON_INFO.bankName} | A/C: ${SALON_INFO.accountNo} | IFSC: ${SALON_INFO.ifscCode}`, leftMargin + 32, finalY + 18);
 
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(80, 80, 80);
-  doc.text('TOTAL AMOUNT PAYABLE:', rightEdge - 55, finalY + 12);
-  doc.setFontSize(16);
+  doc.text('TOTAL AMOUNT PAYABLE:', rightEdge - 6, finalY + 8, { align: 'right' });
+  doc.setFontSize(14);
   doc.setTextColor(0, 102, 51);
-  doc.text(`₹${invoice.grandTotal.toFixed(2)}`, rightEdge - 4, finalY + 24, { align: 'right' });
+  doc.text(formatINR(invoice.grandTotal, true), rightEdge - 6, finalY + 17, { align: 'right' });
 
-  doc.line(leftMargin, pageHeight - 12, rightEdge, pageHeight - 12);
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'italic');
-  doc.setTextColor(120, 120, 120);
-  doc.text('Thank you for choosing TEN11 Salon & Skin Care! Computer-generated tax invoice.', pageWidth / 2, pageHeight - 7, { align: 'center' });
-
-  doc.save(`TEN11_Invoice_${invoice.invoiceNumber}.pdf`);
+  doc.save(`Invoice_${invoice.invoiceNumber}.pdf`);
 }
 
-// ─── 7. EXPORT INVOICE REGISTER (EXCEL) ───────────────────────────────────────
+// ─── 7. EXPORT INVOICE REGISTER EXCEL ─────────────────────────────────────────
 export async function exportInvoiceRegisterExcel(options: {
   invoices: ProcessedInvoice[];
   summary: GSTReportSummary;
   periodLabel: string;
 }): Promise<void> {
   const { invoices, summary, periodLabel } = options;
-  const { utils, writeFile } = await import('xlsx');
+  const { utils } = await import('xlsx');
 
-  const registerRows = invoices.map(inv => ({
+  const registerRows = invoices.map((inv, idx) => ({
+    'Sr No': idx + 1,
     'Invoice Number': inv.invoiceNumber,
-    'Invoice Date': format(new Date(inv.invoiceDate), 'dd-MM-yyyy'),
+    'Invoice Date': inv.formattedDate,
     'Customer Name': inv.customerName,
-    'Phone': inv.customerPhone,
-    'Customer GSTIN': inv.customerGstin || 'URP',
-    'Customer Type': inv.isB2B ? 'B2B' : 'B2C',
+    'Customer Phone': inv.customerPhone,
+    'GSTIN': inv.customerGstin,
+    'Supply Type': inv.isB2B ? 'B2B' : 'B2C',
     'Place of Supply': inv.placeOfSupply,
-    'Item Summary': inv.items.map(i => `${i.name} (x${i.quantity})`).join(', '),
-    'Total Items': inv.totalQty,
-    'Gross Amount (₹)': inv.grossTotal,
-    'Discount (₹)': inv.discountAmount,
-    'Taxable Value (₹)': inv.taxableAmount,
-    'CGST (₹)': inv.cgst,
-    'SGST (₹)': inv.sgst,
-    'IGST (₹)': inv.igst,
-    'Total GST (₹)': inv.totalGst,
-    'Grand Total (₹)': inv.grandTotal,
-    'Payment Method': inv.paymentMethod
+    'Payment Method': inv.paymentMethod,
+    'Gross Amount (Rs)': inv.grossTotal,
+    'Discount (Rs)': inv.discountAmount,
+    'Taxable Value (Rs)': inv.taxableAmount,
+    'CGST (Rs)': inv.cgst,
+    'SGST (Rs)': inv.sgst,
+    'IGST (Rs)': inv.igst,
+    'Total GST (Rs)': inv.totalGst,
+    'Grand Total (Rs)': inv.grandTotal
   }));
 
-  registerRows.push({
-    'Invoice Number': 'TOTAL SUMMARY',
-    'Invoice Date': '',
-    'Customer Name': `${summary.invoiceCount} Invoices`,
-    'Phone': '',
-    'Customer GSTIN': '',
-    'Customer Type': '',
-    'Place of Supply': '',
-    'Item Summary': '',
-    'Total Items': summary.totalItemsCount,
-    'Gross Amount (₹)': Math.round((summary.totalSalesValue + invoices.reduce((s, i) => s + i.discountAmount, 0)) * 100) / 100,
-    'Discount (₹)': Math.round(invoices.reduce((s, i) => s + i.discountAmount, 0) * 100) / 100,
-    'Taxable Value (₹)': summary.taxableSales,
-    'CGST (₹)': summary.cgstTotal,
-    'SGST (₹)': summary.sgstTotal,
-    'IGST (₹)': summary.igstTotal,
-    'Total GST (₹)': summary.totalGst,
-    'Grand Total (₹)': summary.totalSalesValue,
-    'Payment Method': ''
-  });
+  if (registerRows.length > 0) {
+    registerRows.push({
+      'Sr No': 'TOTAL',
+      'Invoice Number': `Total Invoices: ${summary.invoiceCount}`,
+      'Invoice Date': '',
+      'Customer Name': '',
+      'Customer Phone': '',
+      'GSTIN': '',
+      'Supply Type': '',
+      'Place of Supply': '',
+      'Payment Method': '',
+      'Gross Amount (Rs)': Math.round((summary.totalSalesValue + invoices.reduce((s, i) => s + i.discountAmount, 0)) * 100) / 100,
+      'Discount (Rs)': Math.round(invoices.reduce((s, i) => s + i.discountAmount, 0) * 100) / 100,
+      'Taxable Value (Rs)': summary.taxableSales,
+      'CGST (Rs)': summary.cgstTotal,
+      'SGST (Rs)': summary.sgstTotal,
+      'IGST (Rs)': summary.igstTotal,
+      'Total GST (Rs)': summary.totalGst,
+      'Grand Total (Rs)': summary.totalSalesValue
+    } as any);
+  }
 
   const itemRows: any[] = [];
+  let globalItemIdx = 1;
   invoices.forEach(inv => {
     inv.items.forEach(it => {
       itemRows.push({
+        '#': globalItemIdx++,
         'Invoice Number': inv.invoiceNumber,
-        'Invoice Date': format(new Date(inv.invoiceDate), 'dd-MM-yyyy'),
-        'Customer Name': inv.customerName,
+        'Invoice Date': inv.formattedDate,
+        'Customer': inv.customerName,
         'Item Description': it.name,
         'Category': it.type.toUpperCase(),
         'HSN / SAC Code': it.code,
         'Quantity': it.quantity,
-        'Rate (₹)': it.rate,
-        'Gross (₹)': it.grossAmount,
-        'Discount (₹)': it.discount,
-        'Taxable Amount (₹)': it.taxableAmount,
+        'Rate (Rs)': it.rate,
+        'Gross (Rs)': it.grossAmount,
+        'Discount (Rs)': it.discount,
+        'Taxable Amount (Rs)': it.taxableAmount,
         'GST Rate': `${it.gstRate}%`,
-        'CGST (₹)': it.cgst,
-        'SGST (₹)': it.sgst,
-        'IGST (₹)': it.igst,
-        'Line Total (₹)': it.total
+        'CGST (Rs)': it.cgst,
+        'SGST (Rs)': it.sgst,
+        'IGST (Rs)': it.igst,
+        'Line Total (Rs)': it.total
       });
     });
   });
 
-  const hsnRows = summary.hsnSummary.map(h => ({
+  const hsnRows = (summary.hsnSummary || []).map((h, i) => ({
+    '#': i + 1,
     'HSN / SAC': h.code,
     'Description': h.desc,
     'Type': h.type.toUpperCase(),
     'Total Quantity': h.quantity,
     'GST Rate': `${h.gstRate}%`,
-    'Taxable Value (₹)': h.taxableValue,
-    'CGST (₹)': h.cgst,
-    'SGST (₹)': h.sgst,
-    'IGST (₹)': h.igst,
-    'Total Value (₹)': h.totalValue
+    'Taxable Value (Rs)': h.taxableValue,
+    'CGST (Rs)': h.cgst,
+    'SGST (Rs)': h.sgst,
+    'IGST (Rs)': h.igst,
+    'Total Value (Rs)': h.totalValue
   }));
 
   const wb = utils.book_new();
-  utils.book_append_sheet(wb, utils.json_to_sheet(registerRows), 'Invoice Register');
-  utils.book_append_sheet(wb, utils.json_to_sheet(itemRows), 'Itemized Register');
-  utils.book_append_sheet(wb, utils.json_to_sheet(hsnRows), 'HSN SAC Summary');
+  utils.book_append_sheet(wb, utils.json_to_sheet(registerRows.length > 0 ? registerRows : [{ 'Message': 'No invoices recorded' }]), 'Invoice Register');
+  utils.book_append_sheet(wb, utils.json_to_sheet(itemRows.length > 0 ? itemRows : [{ 'Message': 'No line items recorded' }]), 'Itemized Register');
+  utils.book_append_sheet(wb, utils.json_to_sheet(hsnRows.length > 0 ? hsnRows : [{ 'Message': 'No HSN records' }]), 'HSN SAC Summary');
 
-  writeFile(wb, `TEN11_Sales_Register_${periodLabel.replace(/[\s,]+/g, '_')}.xlsx`);
+  await downloadExcelWorkbook(wb, `TEN11_Sales_Register_${periodLabel.replace(/[\s,]+/g, '_')}.xlsx`);
 }
 
-// ─── 8. GENERATE GSTR-1 SUMMARY PDF ──────────────────────────────────────────
+// ─── 8. GENERATE OFFICIAL GOVT-STYLE GSTR-1 SUMMARY PDF ─────────────────────
 export async function generateGSTR1PDF(options: {
   invoices: ProcessedInvoice[];
   summary: GSTReportSummary;
   periodLabel: string;
 }): Promise<void> {
-  const { invoices, summary, periodLabel } = options;
+  const { invoices = [], summary, periodLabel } = options;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const leftMargin = 14;
-  const printableWidth = pageWidth - 28;
+  const rightEdge = pageWidth - 14;
+  const printableWidth = rightEdge - leftMargin;
 
   let y = 14;
 
-  // Header Banner
-  doc.setFillColor(20, 20, 20);
-  doc.rect(leftMargin, y, printableWidth, 22, 'F');
-
+  // Official Govt Form Header
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(212, 175, 55);
-  doc.text('FORM GSTR-1: DETAILS OF OUTWARD SUPPLIES', leftMargin + 6, y + 9);
+  doc.setTextColor(20, 25, 30);
+  doc.text('FORM GSTR-1', leftMargin, y + 5);
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(70, 70, 70);
+  doc.text('[See rule 59(1)]', leftMargin, y + 10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Details of Outward Supplies of Goods or Services', leftMargin, y + 15);
+
+  // Government Form Preview Badge
+  doc.setDrawColor(180, 40, 40);
+  doc.setFillColor(254, 242, 242);
+  doc.rect(rightEdge - 75, y + 2, 75, 14, 'FD');
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(180, 40, 40);
+  doc.text('PREVIEW / WORKING REPORT', rightEdge - 37.5, y + 7, { align: 'center' });
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text('NOT FILED WITH GST PORTAL', rightEdge - 37.5, y + 12, { align: 'center' });
+
+  y += 20;
+
+  // Tables 1 - 3: Taxpayer Basic Information Box
+  doc.setDrawColor(200, 205, 210);
+  doc.setFillColor(248, 250, 252);
+  doc.rect(leftMargin, y, printableWidth, 24, 'FD');
 
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(220, 220, 220);
-  doc.text(`Legal Name: ${SALON_INFO.name} | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel}`, leftMargin + 6, y + 16);
-
-  y += 28;
-
-  // Table 4: B2B Invoices
-  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(20, 20, 20);
-  doc.text(`4. Taxable Outward Supplies to Registered Persons (B2B) — Total: ${summary.b2bCount}`, leftMargin, y);
+  doc.setTextColor(40, 40, 40);
+  doc.text('1. GSTIN:', leftMargin + 4, y + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.text(SALON_INFO.gstin, leftMargin + 20, y + 6);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Year:', rightEdge - 55, y + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.text('2026-27', rightEdge - 42, y + 6);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Tax Period:', rightEdge - 28, y + 6);
+  doc.setFont('helvetica', 'normal');
+  doc.text(periodLabel, rightEdge - 4, y + 6, { align: 'right' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('2. (a) Legal name of the registered person:', leftMargin + 4, y + 12);
+  doc.setFont('helvetica', 'normal');
+  doc.text(SALON_INFO.name, leftMargin + 65, y + 12);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('2. (b) Trade name, if any:', leftMargin + 4, y + 18);
+  doc.setFont('helvetica', 'normal');
+  doc.text(SALON_INFO.tradeName, leftMargin + 45, y + 18);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('3. (a) Preceding FY Aggregate Turnover:', rightEdge - 75, y + 18);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Active / Regular Taxpayer', rightEdge - 4, y + 18, { align: 'right' });
+
+  y += 29;
+
+  // ── Table 4: B2B Invoices ──
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(20, 25, 30);
+  doc.text('4. Taxable outward supplies made to registered persons (other than reverse charge) - B2B Supplies', leftMargin, y);
   y += 4;
 
   const b2bInvoices = invoices.filter(i => i.isB2B);
-  const b2bRows = b2bInvoices.length > 0 ? b2bInvoices.map((inv, idx) => [
-    (idx + 1).toString(),
-    inv.customerGstin,
-    inv.customerName,
-    inv.invoiceNumber,
-    format(new Date(inv.invoiceDate), 'dd-MM-yyyy'),
-    `₹${inv.grandTotal.toFixed(2)}`,
-    inv.placeOfSupply,
-    '5%',
-    `₹${inv.taxableAmount.toFixed(2)}`,
-    `₹${inv.cgst.toFixed(2)}`,
-    `₹${inv.sgst.toFixed(2)}`
-  ]) : [['-', 'No B2B Supplies during this period (All supplies were B2C Unregistered)', '-', '-', '-', '-', '-', '-', '-', '-', '-']];
+  let b2bTotalVal = 0;
+  let b2bTotalTaxable = 0;
+  let b2bTotalCgst = 0;
+  let b2bTotalSgst = 0;
 
-  autoTable(doc, {
-    startY: y,
-    head: [['#', 'GSTIN', 'Party Name', 'Invoice #', 'Date', 'Inv Value', 'POS', 'Rate', 'Taxable', 'CGST', 'SGST']],
-    body: b2bRows,
-    theme: 'grid',
-    headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
-    styles: { fontSize: 7, cellPadding: 2 }
+  const b2bRows: any[] = b2bInvoices.map((inv, idx) => {
+    b2bTotalVal += inv.grandTotal;
+    b2bTotalTaxable += inv.taxableAmount;
+    b2bTotalCgst += inv.cgst;
+    b2bTotalSgst += inv.sgst;
+    return [
+      (idx + 1).toString(),
+      inv.customerGstin,
+      inv.customerName,
+      inv.invoiceNumber,
+      format(new Date(inv.invoiceDate), 'dd-MM-yyyy'),
+      formatINR(inv.grandTotal),
+      inv.placeOfSupply,
+      '5%',
+      formatINR(inv.taxableAmount),
+      formatINR(inv.cgst),
+      formatINR(inv.sgst)
+    ];
   });
 
-  y = (doc as any).lastAutoTable.finalY + 8;
-
-  // Table 7: B2C (Small) Supplies (Rate-wise grouping: 5% & 18%)
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`7. Taxable Supplies to Unregistered Persons (B2C Small) — Total Invoices: ${summary.b2cCount}`, leftMargin, y);
-  y += 4;
-
-  const b2cRows: any[] = Object.entries(summary.rateBuckets).map(([rate, vals]) => [
-    'Intra-State (Gujarat - 24)',
-    'OE (Other than E-Commerce)',
-    `${rate}.0%`,
-    `₹${vals.taxable.toFixed(2)}`,
-    `₹${vals.igst.toFixed(2)}`,
-    `₹${vals.cgst.toFixed(2)}`,
-    `₹${vals.sgst.toFixed(2)}`,
-    '₹0.00'
-  ]);
-
-  if (b2cRows.length === 0) {
-    b2cRows.push(['Intra-State (Gujarat - 24)', 'OE', '5.0%', '₹0.00', '₹0.00', '₹0.00', '₹0.00', '₹0.00']);
+  if (b2bRows.length > 0) {
+    b2bRows.push([
+      { content: 'TOTAL B2B:', colSpan: 5, styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(b2bTotalVal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '-', styles: { halign: 'center' as const, fillColor: [240, 243, 246] } },
+      { content: '-', styles: { halign: 'center' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(b2bTotalTaxable), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(b2bTotalCgst), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(b2bTotalSgst), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } }
+    ]);
+  } else {
+    b2bRows.push([
+      { content: '1', styles: { halign: 'center' as const } },
+      { content: 'No B2B Supplies during this period (All supplies were B2C Unregistered Consumers)', colSpan: 10, styles: { halign: 'center' as const, fontStyle: 'italic' as const, textColor: [120, 120, 120] } }
+    ]);
   }
 
   autoTable(doc, {
     startY: y,
-    head: [['Supply Type & POS', 'Type', 'Rate', 'Taxable Value', 'Integrated Tax', 'Central Tax', 'State/UT Tax', 'Cess']],
-    body: b2cRows,
+    head: [['#', 'GSTIN/UIN', 'Receiver Name', 'Invoice #', 'Date', 'Invoice Value (Rs)', 'POS', 'Rate', 'Taxable (Rs)', 'CGST (Rs)', 'SGST (Rs)']],
+    body: b2bRows as any,
     theme: 'grid',
-    headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
-    styles: { fontSize: 7.5, cellPadding: 2.5, halign: 'center' },
+    headStyles: { fillColor: [45, 55, 72], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 2, textColor: [30, 30, 30] }
+  });
+
+  y = (doc as any).lastAutoTable.finalY + 7;
+
+  // ── Table 5: B2C Large Supplies (Inter-State > Rs 2.5 Lakh) ──
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('5. Taxable outward inter-State supplies to unregistered persons (Invoice Value > Rs. 2.5 Lakh) - B2C Large', leftMargin, y);
+  y += 4;
+
+  const table5Rows = [
+    [
+      { content: '1', styles: { halign: 'center' as const } },
+      { content: 'NIL / No inter-State B2C supplies exceeding Rs 2.5 Lakh', colSpan: 6, styles: { halign: 'center' as const, fontStyle: 'italic' as const, textColor: [120, 120, 120] } }
+    ]
+  ];
+
+  autoTable(doc, {
+    startY: y,
+    head: [['#', 'Place of Supply', 'Applicable % of Tax Rate', 'Rate', 'Taxable Value (Rs)', 'Integrated Tax (Rs)', 'Cess (Rs)']],
+    body: table5Rows as any,
+    theme: 'grid',
+    headStyles: { fillColor: [74, 85, 104], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 1.8 }
+  });
+
+  y = (doc as any).lastAutoTable.finalY + 7;
+
+  // Check page height before Table 7
+  if (y > pageHeight - 80) {
+    doc.addPage();
+    y = 16;
+  }
+
+  // ── Table 7: B2C Small Supplies ──
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`7. Taxable supplies (Net of debit/credit notes) to unregistered persons (B2C Small) — Total: ${summary.b2cCount} Invoices`, leftMargin, y);
+  y += 4;
+
+  let b2cTotalTaxable = 0;
+  let b2cTotalIgst = 0;
+  let b2cTotalCgst = 0;
+  let b2cTotalSgst = 0;
+
+  const rateEntries = Object.entries(summary.rateBuckets || {});
+  const b2cRows: any[] = rateEntries.map(([rate, vals], idx) => {
+    b2cTotalTaxable += vals.taxable;
+    b2cTotalIgst += vals.igst;
+    b2cTotalCgst += vals.cgst;
+    b2cTotalSgst += vals.sgst;
+    return [
+      (idx + 1).toString(),
+      'OE (Other than E-Commerce)',
+      `${SALON_INFO.state} (${SALON_INFO.stateCode})`,
+      `${rate}.0%`,
+      formatINR(vals.taxable),
+      formatINR(vals.igst),
+      formatINR(vals.cgst),
+      formatINR(vals.sgst),
+      '0.00'
+    ];
+  });
+
+  if (b2cRows.length === 0) {
+    b2cRows.push([
+      '1',
+      'OE',
+      `${SALON_INFO.state} (${SALON_INFO.stateCode})`,
+      '5.0%',
+      '0.00',
+      '0.00',
+      '0.00',
+      '0.00',
+      '0.00'
+    ]);
+  }
+
+  b2cRows.push([
+    { content: 'TOTAL B2C SUPPLIES:', colSpan: 4, styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+    { content: formatINR(b2cTotalTaxable), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+    { content: formatINR(b2cTotalIgst), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+    { content: formatINR(b2cTotalCgst), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+    { content: formatINR(b2cTotalSgst), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+    { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } }
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [['#', 'Type', 'Place of Supply (POS)', 'Rate', 'Taxable Value (Rs)', 'Integrated Tax (Rs)', 'Central Tax (Rs)', 'State/UT Tax (Rs)', 'Cess (Rs)']],
+    body: b2cRows as any,
+    theme: 'grid',
+    headStyles: { fillColor: [45, 55, 72], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 2, halign: 'center' },
     columnStyles: {
-      0: { halign: 'left', cellWidth: 45 },
-      3: { halign: 'right' },
+      0: { cellWidth: 8, halign: 'center' },
+      1: { halign: 'left', cellWidth: 35 },
+      2: { halign: 'left', cellWidth: 32 },
       4: { halign: 'right' },
       5: { halign: 'right' },
-      6: { halign: 'right' }
+      6: { halign: 'right' },
+      7: { halign: 'right' },
+      8: { halign: 'right' }
     }
   });
 
-  y = (doc as any).lastAutoTable.finalY + 8;
+  y = (doc as any).lastAutoTable.finalY + 7;
 
-  // Table 12: HSN Summary
-  doc.setFontSize(10);
+  // ── Table 8: Nil Rated / Exempted ──
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text('12. HSN / SAC-wise Summary of Outward Supplies', leftMargin, y);
+  doc.text('8. Nil rated, exempted and non-GST outward supplies', leftMargin, y);
   y += 4;
 
-  const hsnTableData = summary.hsnSummary.map((h, idx) => [
+  const table8Rows = [
+    ['1', 'Inter-State supplies to registered persons', '0.00', '0.00', '0.00'],
+    ['2', 'Intra-State supplies to registered persons', '0.00', '0.00', '0.00'],
+    ['3', 'Inter-State supplies to unregistered persons', '0.00', '0.00', '0.00'],
+    ['4', 'Intra-State supplies to unregistered persons', '0.00', '0.00', '0.00'],
+    [
+      { content: 'TOTAL EXEMPT / NIL RATED:', colSpan: 2, styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } }
+    ]
+  ];
+
+  autoTable(doc, {
+    startY: y,
+    head: [['#', 'Description', 'Nil Rated Supplies (Rs)', 'Exempted (Rs)', 'Non-GST Supplies (Rs)']],
+    body: table8Rows as any,
+    theme: 'grid',
+    headStyles: { fillColor: [74, 85, 104], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 1.8 }
+  });
+
+  y = (doc as any).lastAutoTable.finalY + 7;
+
+  // Page break for Table 12 & Table 13
+  doc.addPage();
+  y = 16;
+
+  // ── Table 12: HSN Summary ──
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('12. HSN / SAC-wise summary of outward supplies', leftMargin, y);
+  y += 4;
+
+  const hsnSummary = summary.hsnSummary || [];
+  const hsnTableData: any[] = hsnSummary.map((h, idx) => [
     (idx + 1).toString(),
     h.code,
     h.desc,
     'OTH',
     h.quantity.toString(),
-    `₹${h.totalValue.toFixed(2)}`,
-    `₹${h.taxableValue.toFixed(2)}`,
+    formatINR(h.totalValue),
+    formatINR(h.taxableValue),
     `${h.gstRate}%`,
-    `₹${h.cgst.toFixed(2)}`,
-    `₹${h.sgst.toFixed(2)}`
+    formatINR(h.cgst),
+    formatINR(h.sgst)
   ]);
+
+  if (hsnTableData.length > 0) {
+    hsnTableData.push([
+      { content: 'TOTAL HSN / SAC:', colSpan: 4, styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: summary.totalItemsCount.toString(), styles: { halign: 'center' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.totalSalesValue), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.taxableSales), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '-', styles: { halign: 'center' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.cgstTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.sgstTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } }
+    ]);
+  } else {
+    hsnTableData.push([
+      { content: '1', styles: { halign: 'center' as const } },
+      { content: 'No Outward Supplies Recorded', colSpan: 9, styles: { halign: 'center' as const, fontStyle: 'italic' as const } }
+    ]);
+  }
 
   autoTable(doc, {
     startY: y,
-    head: [['#', 'HSN/SAC', 'Description', 'UQC', 'Total Qty', 'Total Value', 'Taxable Value', 'Rate', 'CGST', 'SGST']],
-    body: hsnTableData.length > 0 ? hsnTableData : [['-', 'No Records', '-', '-', '0', '₹0.00', '₹0.00', '-', '₹0.00', '₹0.00']],
+    head: [['#', 'HSN/SAC', 'Description', 'UQC', 'Total Qty', 'Total Value (Rs)', 'Taxable Value (Rs)', 'Rate', 'CGST (Rs)', 'SGST (Rs)']],
+    body: hsnTableData as any,
     theme: 'grid',
-    headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
-    styles: { fontSize: 7, cellPadding: 2 }
+    headStyles: { fillColor: [45, 55, 72], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 2 },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' },
+      4: { halign: 'center', cellWidth: 12 },
+      5: { halign: 'right' },
+      6: { halign: 'right' },
+      7: { halign: 'center', cellWidth: 12 },
+      8: { halign: 'right' },
+      9: { halign: 'right' }
+    }
   });
 
-  y = (doc as any).lastAutoTable.finalY + 8;
+  y = (doc as any).lastAutoTable.finalY + 7;
 
-  // Table 13: Documents Issued
-  doc.setFontSize(10);
+  // ── Table 13: Documents Issued ──
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.text('13. Documents Issued During the Tax Period', leftMargin, y);
+  doc.text('13. Documents issued during the tax period', leftMargin, y);
   y += 4;
 
-  const firstInv = invoices[0]?.invoiceNumber || '-';
-  const lastInv = invoices[invoices.length - 1]?.invoiceNumber || '-';
+  const firstInv = invoices[0]?.invoiceNumber || 'N/A';
+  const lastInv = invoices[invoices.length - 1]?.invoiceNumber || 'N/A';
 
   const docRows = [
     [
@@ -1353,19 +1591,71 @@ export async function generateGSTR1PDF(options: {
       summary.invoiceCount.toString(),
       '0',
       summary.invoiceCount.toString()
+    ],
+    [
+      { content: 'TOTAL DOCUMENTS:', colSpan: 4, styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: summary.invoiceCount.toString(), styles: { halign: 'center' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0', styles: { halign: 'center' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: summary.invoiceCount.toString(), styles: { halign: 'center' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } }
     ]
   ];
 
   autoTable(doc, {
     startY: y,
     head: [['#', 'Nature of Document', 'From Serial #', 'To Serial #', 'Total Number', 'Cancelled', 'Net Issued']],
-    body: docRows,
+    body: docRows as any,
     theme: 'grid',
-    headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
-    styles: { fontSize: 7.5, cellPadding: 2.5, halign: 'center' }
+    headStyles: { fillColor: [45, 55, 72], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 2, halign: 'center' },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' },
+      1: { halign: 'left', cellWidth: 65 }
+    }
   });
 
-  doc.save(`GSTR1_Summary_${periodLabel.replace(/[\s,]+/g, '_')}.pdf`);
+  y = (doc as any).lastAutoTable.finalY + 8;
+
+  // ── Statutory Form Declaration & Verification ──
+  doc.setDrawColor(180, 190, 200);
+  doc.setFillColor(248, 250, 252);
+  doc.rect(leftMargin, y, printableWidth, 34, 'FD');
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 30, 30);
+  doc.text('Verification & Statutory Declaration:', leftMargin + 4, y + 6);
+
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(70, 70, 70);
+  doc.text(
+    'I hereby solemnly affirm and declare that the information given herein above is true and correct to the best of my knowledge and belief and nothing has been concealed there from. This report reconciles all outward supplies, rate categories, and documents issued.',
+    leftMargin + 4,
+    y + 11,
+    { maxWidth: printableWidth - 8 }
+  );
+
+  doc.text('Place: Dahod, Gujarat', leftMargin + 4, y + 21);
+  doc.text(`Date of Extraction: ${format(new Date(), 'dd-MM-yyyy')}`, leftMargin + 4, y + 26);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(20, 20, 20);
+  doc.text('For TEN11 SALON & SKIN CARE', rightEdge - 55, y + 21);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Authorized Signatory / Taxpayer', rightEdge - 55, y + 26);
+
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(120, 120, 120);
+    doc.text(`FORM GSTR-1 | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel}`, leftMargin, 8);
+    doc.text(`PREVIEW ONLY - NOT FILED`, pageWidth / 2, 8, { align: 'center' });
+    doc.text(`Page ${p} of ${totalPages}`, rightEdge, pageHeight - 6, { align: 'right' });
+  }
+
+  doc.save(`FORM_GSTR1_${periodLabel.replace(/[\s,]+/g, '_')}.pdf`);
 }
 
 // ─── 9. EXPORT GSTR-1 EXCEL (GOVT OFFLINE TOOL TEMPLATE) ─────────────────────
@@ -1374,10 +1664,10 @@ export async function exportGSTR1Excel(options: {
   summary: GSTReportSummary;
   periodLabel: string;
 }): Promise<void> {
-  const { invoices, summary, periodLabel } = options;
-  const { utils, writeFile } = await import('xlsx');
+  const { invoices = [], summary, periodLabel } = options;
+  const { utils } = await import('xlsx');
 
-  const b2bData = invoices.filter(i => i.isB2B).map(inv => ({
+  const b2bData = (invoices || []).filter(i => i.isB2B).map(inv => ({
     'GSTIN/UIN of Recipient': inv.customerGstin,
     'Receiver Name': inv.customerName,
     'Invoice Number': inv.invoiceNumber,
@@ -1393,7 +1683,8 @@ export async function exportGSTR1Excel(options: {
     'Cess Amount': 0
   }));
 
-  const b2csData = Object.entries(summary.rateBuckets).map(([rate, vals]) => ({
+  const rateBuckets = summary?.rateBuckets || {};
+  const b2csData = Object.entries(rateBuckets).map(([rate, vals]) => ({
     'Type': 'OE',
     'Place Of Supply': `${SALON_INFO.stateCode}-${SALON_INFO.state}`,
     'Applicable % of Tax Rate': '',
@@ -1409,13 +1700,14 @@ export async function exportGSTR1Excel(options: {
       'Place Of Supply': `${SALON_INFO.stateCode}-${SALON_INFO.state}`,
       'Applicable % of Tax Rate': '',
       'Rate': 5,
-      'Taxable Value': 0,
+      'Taxable Value': summary?.taxableSales || 0,
       'Cess Amount': 0,
       'E-Commerce GSTIN': ''
     });
   }
 
-  const hsnData = summary.hsnSummary.map(h => ({
+  const hsnSummary = summary?.hsnSummary || [];
+  const hsnData = hsnSummary.map(h => ({
     'HSN': h.code,
     'Description': h.desc,
     'UQC': 'OTH',
@@ -1431,9 +1723,9 @@ export async function exportGSTR1Excel(options: {
   const docsData = [
     {
       'Nature of Document': 'Invoices for outward supply',
-      'Sr. No. From': invoices[0]?.invoiceNumber || 'N/A',
-      'Sr. No. To': invoices[invoices.length - 1]?.invoiceNumber || 'N/A',
-      'Total Number': summary.invoiceCount,
+      'Sr. No. From': (invoices && invoices[0]?.invoiceNumber) || 'N/A',
+      'Sr. No. To': (invoices && invoices[invoices.length - 1]?.invoiceNumber) || 'N/A',
+      'Total Number': summary?.invoiceCount || 0,
       'Cancelled': 0
     }
   ];
@@ -1441,13 +1733,13 @@ export async function exportGSTR1Excel(options: {
   const wb = utils.book_new();
   utils.book_append_sheet(wb, utils.json_to_sheet(b2bData.length > 0 ? b2bData : [{ 'Message': 'No B2B Invoices' }]), 'b2b');
   utils.book_append_sheet(wb, utils.json_to_sheet(b2csData), 'b2cs');
-  utils.book_append_sheet(wb, utils.json_to_sheet(hsnData), 'hsn');
+  utils.book_append_sheet(wb, utils.json_to_sheet(hsnData.length > 0 ? hsnData : [{ 'Message': 'No HSN records' }]), 'hsn');
   utils.book_append_sheet(wb, utils.json_to_sheet(docsData), 'docs');
 
-  writeFile(wb, `GSTR1_Offline_${periodLabel.replace(/[\s,]+/g, '_')}.xlsx`);
+  await downloadExcelWorkbook(wb, `GSTR1_Offline_${periodLabel.replace(/[\s,]+/g, '_')}.xlsx`);
 }
 
-// ─── 10. GENERATE GSTR-3B PDF (STATUTORY COMPLIANT TABLE MAPPING) ────────────
+// ─── 10. GENERATE OFFICIAL GOVT-STYLE GSTR-3B PDF ────────────────────────────
 export async function generateGSTR3BPDF(options: {
   summary: GSTReportSummary;
   expenses: any[];
@@ -1456,56 +1748,111 @@ export async function generateGSTR3BPDF(options: {
   const { summary, expenses, periodLabel } = options;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const leftMargin = 14;
-  const printableWidth = pageWidth - 28;
+  const rightEdge = pageWidth - 14;
+  const printableWidth = rightEdge - leftMargin;
 
   let y = 14;
 
-  // Header Banner
-  doc.setFillColor(20, 20, 20);
-  doc.rect(leftMargin, y, printableWidth, 22, 'F');
-
+  // Official Form GSTR-3B Header
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(212, 175, 55);
-  doc.text('FORM GSTR-3B: STATUTORY MONTHLY RETURN', leftMargin + 6, y + 9);
+  doc.setTextColor(20, 25, 30);
+  doc.text('FORM GSTR-3B', leftMargin, y + 5);
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(70, 70, 70);
+  doc.text('[See rule 61(5)]', leftMargin, y + 10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Monthly Return', leftMargin, y + 15);
+
+  // Government Form Preview Badge
+  doc.setDrawColor(180, 40, 40);
+  doc.setFillColor(254, 242, 242);
+  doc.rect(rightEdge - 75, y + 2, 75, 14, 'FD');
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(180, 40, 40);
+  doc.text('PREVIEW / WORKING RETURN', rightEdge - 37.5, y + 7, { align: 'center' });
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text('NOT FILED WITH GST PORTAL', rightEdge - 37.5, y + 12, { align: 'center' });
+
+  y += 20;
+
+  // Basic Information Box (Govt statutory structure)
+  doc.setDrawColor(200, 205, 210);
+  doc.setFillColor(248, 250, 252);
+  doc.rect(leftMargin, y, printableWidth, 20, 'FD');
 
   doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(40, 40, 40);
+  doc.text('1. GSTIN:', leftMargin + 4, y + 5.5);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(220, 220, 220);
-  doc.text(`Legal Name: ${SALON_INFO.name} | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel}`, leftMargin + 6, y + 16);
+  doc.text(SALON_INFO.gstin, leftMargin + 20, y + 5.5);
 
-  y += 28;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Year:', rightEdge - 55, y + 5.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text('2026-27', rightEdge - 42, y + 5.5);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Period:', rightEdge - 28, y + 5.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(periodLabel, rightEdge - 4, y + 5.5, { align: 'right' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('2. Legal name:', leftMargin + 4, y + 11);
+  doc.setFont('helvetica', 'normal');
+  doc.text(SALON_INFO.name, leftMargin + 28, y + 11);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('2(a). Trade name:', leftMargin + 4, y + 16.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(SALON_INFO.tradeName, leftMargin + 32, y + 16.5);
+
+  y += 25;
 
   // ── Table 3.1: Tax on Outward and Reverse-Charge Inward Supplies ──
-  doc.setFontSize(9.5);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(20, 20, 20);
+  doc.setTextColor(20, 25, 30);
   doc.text('3.1 Details of Outward Supplies and inward supplies liable to reverse charge', leftMargin, y);
   y += 4;
 
   const table31Rows = [
     [
       '(a) Outward taxable supplies (other than zero rated, nil rated and exempted)',
-      `₹${summary.taxableSales.toFixed(2)}`,
-      `₹${summary.igstTotal.toFixed(2)}`,
-      `₹${summary.cgstTotal.toFixed(2)}`,
-      `₹${summary.sgstTotal.toFixed(2)}`,
-      '₹0.00'
+      formatINR(summary.taxableSales),
+      formatINR(summary.igstTotal),
+      formatINR(summary.cgstTotal),
+      formatINR(summary.sgstTotal),
+      '0.00'
     ],
-    ['(b) Outward taxable supplies (zero rated)', '₹0.00', '₹0.00', '-', '-', '₹0.00'],
-    ['(c) Other outward supplies (Nil rated, exempted)', '₹0.00', '-', '-', '-', '-'],
-    ['(d) Inward supplies (liable to reverse charge)', '₹0.00', '₹0.00', '₹0.00', '₹0.00', '₹0.00'],
-    ['(e) Non-GST outward supplies', '₹0.00', '-', '-', '-', '-']
+    ['(b) Outward taxable supplies (zero rated)', '0.00', '0.00', '-', '-', '0.00'],
+    ['(c) Other outward supplies (Nil rated, exempted)', '0.00', '-', '-', '-', '-'],
+    ['(d) Inward supplies (liable to reverse charge)', '0.00', '0.00', '0.00', '0.00', '0.00'],
+    ['(e) Non-GST outward supplies', '0.00', '-', '-', '-', '-'],
+    [
+      { content: 'TOTAL 3.1 LIABILITIES:', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.taxableSales), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.igstTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.cgstTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.sgstTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } }
+    ]
   ];
 
   autoTable(doc, {
     startY: y,
-    head: [['Nature of Supplies', 'Total Taxable Value', 'Integrated Tax', 'Central Tax', 'State/UT Tax', 'Cess']],
-    body: table31Rows,
+    head: [['Nature of Supplies', 'Total Taxable Value (Rs)', 'Integrated Tax (Rs)', 'Central Tax (Rs)', 'State/UT Tax (Rs)', 'Cess (Rs)']],
+    body: table31Rows as any,
     theme: 'grid',
-    headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
-    styles: { fontSize: 7, cellPadding: 2.2 },
+    headStyles: { fillColor: [45, 55, 72], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 2 },
     columnStyles: {
       0: { cellWidth: 70 },
       1: { halign: 'right' },
@@ -1518,110 +1865,239 @@ export async function generateGSTR3BPDF(options: {
 
   y = (doc as any).lastAutoTable.finalY + 6;
 
-  // ── Table 4: Eligible ITC (Verified Purchase Records Only) ──
-  doc.setFontSize(9.5);
+  // ── Table 3.2: Inter-State Supplies ──
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('3.2 Of the supplies shown in 3.1 (a) above, details of inter-State supplies made to unregistered persons', leftMargin, y);
+  y += 4;
+
+  const table32Rows = [
+    [
+      { content: '1', styles: { halign: 'center' as const } },
+      { content: 'Supplies made to Unregistered Persons', styles: { halign: 'left' as const } },
+      { content: 'Other States', styles: { halign: 'center' as const } },
+      { content: '0.00', styles: { halign: 'right' as const } },
+      { content: '0.00', styles: { halign: 'right' as const } }
+    ]
+  ];
+
+  autoTable(doc, {
+    startY: y,
+    head: [['#', 'Nature of Supply', 'Place of Supply (State/UT)', 'Total Taxable Value (Rs)', 'Amount of Integrated Tax (Rs)']],
+    body: table32Rows as any,
+    theme: 'grid',
+    headStyles: { fillColor: [74, 85, 104], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 1.8 },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' },
+      3: { halign: 'right' },
+      4: { halign: 'right' }
+    }
+  });
+
+  y = (doc as any).lastAutoTable.finalY + 6;
+
+  // ── Table 4: Eligible ITC (Strictly Sourced from Verified Purchase Records) ──
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('4. Eligible Input Tax Credit (ITC)', leftMargin, y);
   y += 4;
 
   const itcRows = [
     ['(A) ITC Available (whether in full or part)', '', '', '', ''],
-    ['   (1) Import of goods', '₹0.00', '₹0.00', '₹0.00', '₹0.00'],
-    ['   (2) Import of services', '₹0.00', '₹0.00', '₹0.00', '₹0.00'],
-    ['   (3) Inward supplies liable to reverse charge', '₹0.00', '₹0.00', '₹0.00', '₹0.00'],
-    ['   (4) Inward supplies from ISD', '₹0.00', '₹0.00', '₹0.00', '₹0.00'],
-    ['   (5) All other ITC (Source purchase records verification)', '₹0.00', '₹0.00', '₹0.00', '₹0.00'],
-    ['(B) ITC Reversed (as per rules 42 & 43 & Section 17(5))', '₹0.00', '₹0.00', '₹0.00', '₹0.00'],
-    ['(C) Net ITC Available (A) - (B)', '₹0.00', '₹0.00', '₹0.00', '₹0.00']
+    ['   (1) Import of goods', '0.00', '0.00', '0.00', '0.00'],
+    ['   (2) Import of services', '0.00', '0.00', '0.00', '0.00'],
+    ['   (3) Inward supplies liable to reverse charge', '0.00', '0.00', '0.00', '0.00'],
+    ['   (4) Inward supplies from ISD', '0.00', '0.00', '0.00', '0.00'],
+    ['   (5) All other ITC (Source purchase records verification)', '0.00', '0.00', '0.00', '0.00'],
+    ['(B) ITC Reversed', '', '', '', ''],
+    ['   (1) As per rules 42 & 43 of CGST Rules and section 17(5)', '0.00', '0.00', '0.00', '0.00'],
+    ['   (2) Others', '0.00', '0.00', '0.00', '0.00'],
+    [
+      { content: '(C) Net ITC Available (A) - (B)', styles: { fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } }
+    ]
   ];
 
   autoTable(doc, {
     startY: y,
-    head: [['Details', 'Integrated Tax', 'Central Tax', 'State/UT Tax', 'Cess']],
-    body: itcRows,
+    head: [['Details', 'Integrated Tax (Rs)', 'Central Tax (Rs)', 'State/UT Tax (Rs)', 'Cess (Rs)']],
+    body: itcRows as any,
     theme: 'grid',
-    headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
-    styles: { fontSize: 7, cellPadding: 1.8 }
+    headStyles: { fillColor: [45, 55, 72], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 1.8 },
+    columnStyles: {
+      0: { cellWidth: 78 },
+      1: { halign: 'right' },
+      2: { halign: 'right' },
+      3: { halign: 'right' },
+      4: { halign: 'right' }
+    }
   });
 
   y = (doc as any).lastAutoTable.finalY + 6;
 
-  // ── Table 5: Values of Exempt, Nil-Rated and Non-GST Inward Supplies ──
-  doc.setFontSize(9.5);
+  // Check page height before Table 5
+  if (y > pageHeight - 85) {
+    doc.addPage();
+    y = 16;
+  }
+
+  // ── Table 5: Inward Supplies ──
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('5. Values of exempt, nil-rated and non-GST inward supplies', leftMargin, y);
   y += 4;
 
   const table5Rows = [
-    ['From a supplier under composition scheme, exempt and nil rated supply', '₹0.00', '₹0.00'],
-    ['Non GST supply', '₹0.00', '₹0.00']
+    ['From a supplier under composition scheme, exempt and nil rated supply', '0.00', '0.00'],
+    ['Non GST supply', '0.00', '0.00']
   ];
 
   autoTable(doc, {
     startY: y,
-    head: [['Nature of Supplies', 'Inter-State Supplies', 'Intra-State Supplies']],
-    body: table5Rows,
+    head: [['Nature of Supplies', 'Inter-State Supplies (Rs)', 'Intra-State Supplies (Rs)']],
+    body: table5Rows as any,
     theme: 'grid',
-    headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
-    styles: { fontSize: 7, cellPadding: 2, halign: 'center' },
-    columnStyles: { 0: { halign: 'left', cellWidth: 100 } }
+    headStyles: { fillColor: [74, 85, 104], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 2 },
+    columnStyles: {
+      0: { halign: 'left', cellWidth: 100 },
+      1: { halign: 'right' },
+      2: { halign: 'right' }
+    }
   });
 
   y = (doc as any).lastAutoTable.finalY + 6;
 
   // ── Table 5.1: Interest & Late Fee Payable ──
-  doc.setFontSize(9.5);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('5.1 Interest & Late Fee Payable', leftMargin, y);
   y += 4;
 
   const table51Rows = [
-    ['Integrated Tax', '₹0.00', '₹0.00'],
-    ['Central Tax', '₹0.00', '₹0.00'],
-    ['State/UT Tax', '₹0.00', '₹0.00'],
-    ['Cess', '₹0.00', '₹0.00']
+    ['Integrated Tax', '0.00', '0.00'],
+    ['Central Tax', '0.00', '0.00'],
+    ['State/UT Tax', '0.00', '0.00'],
+    ['Cess', '0.00', '0.00'],
+    [
+      { content: 'TOTAL INTEREST & LATE FEE:', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } }
+    ]
   ];
 
   autoTable(doc, {
     startY: y,
-    head: [['Description', 'Interest Payable', 'Late Fee Payable']],
-    body: table51Rows,
+    head: [['Description', 'Interest Payable (Rs)', 'Late Fee Payable (Rs)']],
+    body: table51Rows as any,
     theme: 'grid',
-    headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
-    styles: { fontSize: 7, cellPadding: 2, halign: 'center' }
+    headStyles: { fillColor: [74, 85, 104], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 2 },
+    columnStyles: {
+      0: { cellWidth: 70 },
+      1: { halign: 'right' },
+      2: { halign: 'right' }
+    }
   });
 
   y = (doc as any).lastAutoTable.finalY + 6;
 
-  // ── Table 6.1: Payment of Tax ──
-  doc.setFontSize(9.5);
+  // Check page height before Table 6.1
+  if (y > pageHeight - 70) {
+    doc.addPage();
+    y = 16;
+  }
+
+  // ── Table 6.1: Payment of Tax (Official Statutory Table) ──
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.text('6.1 Payment of Tax (Actual Cash & ITC Settlement)', leftMargin, y);
   y += 4;
 
   const table61Rows = [
-    ['Integrated Tax', `₹${summary.igstTotal.toFixed(2)}`, '₹0.00', `₹${summary.igstTotal.toFixed(2)}`, '₹0.00', '₹0.00'],
-    ['Central Tax', `₹${summary.cgstTotal.toFixed(2)}`, '₹0.00', `₹${summary.cgstTotal.toFixed(2)}`, '₹0.00', '₹0.00'],
-    ['State/UT Tax', `₹${summary.sgstTotal.toFixed(2)}`, '₹0.00', `₹${summary.sgstTotal.toFixed(2)}`, '₹0.00', '₹0.00'],
-    ['Total Net Liability', `₹${summary.totalGst.toFixed(2)}`, '₹0.00', `₹${summary.totalGst.toFixed(2)}`, '₹0.00', '₹0.00']
+    ['Integrated Tax', formatINR(summary.igstTotal), '0.00', formatINR(summary.igstTotal), '0.00', '0.00'],
+    ['Central Tax', formatINR(summary.cgstTotal), '0.00', formatINR(summary.cgstTotal), '0.00', '0.00'],
+    ['State/UT Tax', formatINR(summary.sgstTotal), '0.00', formatINR(summary.sgstTotal), '0.00', '0.00'],
+    [
+      { content: 'Total Net Settlement:', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.totalGst), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.totalGst), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } }
+    ]
   ];
 
   autoTable(doc, {
     startY: y,
-    head: [['Description', 'Tax Payable (3.1)', 'Paid through ITC (4)', 'Tax Paid in Cash', 'Interest Paid', 'Late Fee Paid']],
-    body: table61Rows,
+    head: [['Description', 'Tax Payable (Rs)', 'Paid through ITC (Rs)', 'Tax Paid in Cash (Rs)', 'Interest Paid (Rs)', 'Late Fee Paid (Rs)']],
+    body: table61Rows as any,
     theme: 'grid',
-    headStyles: { fillColor: [40, 40, 40], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
-    styles: { fontSize: 7, cellPadding: 2, halign: 'center' },
+    headStyles: { fillColor: [45, 55, 72], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    styles: { fontSize: 7, cellPadding: 2 },
     columnStyles: {
       0: { halign: 'left', cellWidth: 42 },
       1: { halign: 'right' },
       2: { halign: 'right' },
-      3: { halign: 'right' }
+      3: { halign: 'right' },
+      4: { halign: 'right' },
+      5: { halign: 'right' }
     }
   });
 
-  doc.save(`GSTR3B_Summary_${periodLabel.replace(/[\s,]+/g, '_')}.pdf`);
+  y = (doc as any).lastAutoTable.finalY + 8;
+
+  // Statutory Verification Block
+  if (y > pageHeight - 45) {
+    doc.addPage();
+    y = 16;
+  }
+
+  doc.setDrawColor(180, 190, 200);
+  doc.setFillColor(248, 250, 252);
+  doc.rect(leftMargin, y, printableWidth, 32, 'FD');
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(30, 30, 30);
+  doc.text('Verification & Declaration:', leftMargin + 4, y + 6);
+
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(70, 70, 70);
+  doc.text(
+    'I hereby solemnly affirm and declare that the information given herein above is true and correct to the best of my knowledge and belief and nothing has been concealed there from. This statutory return reconciles outward liabilities and tax payments under the CGST Act 2017.',
+    leftMargin + 4,
+    y + 11,
+    { maxWidth: printableWidth - 8 }
+  );
+
+  doc.text('Place: Dahod, Gujarat', leftMargin + 4, y + 20);
+  doc.text(`Date of Extraction: ${format(new Date(), 'dd-MM-yyyy')}`, leftMargin + 4, y + 25);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(20, 20, 20);
+  doc.text('For TEN11 SALON & SKIN CARE', rightEdge - 55, y + 20);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Authorized Signatory / Taxpayer', rightEdge - 55, y + 25);
+
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(120, 120, 120);
+    doc.text(`FORM GSTR-3B | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel}`, leftMargin, 8);
+    doc.text(`PREVIEW ONLY - NOT FILED`, pageWidth / 2, 8, { align: 'center' });
+    doc.text(`Page ${p} of ${totalPages}`, rightEdge, pageHeight - 6, { align: 'right' });
+  }
+
+  doc.save(`FORM_GSTR3B_${periodLabel.replace(/[\s,]+/g, '_')}.pdf`);
 }
 
 // ─── 11. EXPORT GSTR-3B EXCEL (STATUTORY COMPLIANT SHEETS) ───────────────────
@@ -1631,141 +2107,158 @@ export async function exportGSTR3BExcel(options: {
   periodLabel: string;
 }): Promise<void> {
   const { summary, periodLabel } = options;
-  const { utils, writeFile } = await import('xlsx');
+  const { utils } = await import('xlsx');
+
+  const taxableSales = Number(summary?.taxableSales || 0);
+  const igstTotal = Number(summary?.igstTotal || 0);
+  const cgstTotal = Number(summary?.cgstTotal || 0);
+  const sgstTotal = Number(summary?.sgstTotal || 0);
+  const totalGst = Number(summary?.totalGst || 0);
 
   // Sheet 1: Table 3.1
   const sheet31Data = [
     {
       'Table 3.1 Nature of Supplies': '(a) Outward taxable supplies (other than zero rated, nil rated and exempted)',
-      'Total Taxable Value (₹)': summary.taxableSales,
-      'Integrated Tax (₹)': summary.igstTotal,
-      'Central Tax (₹)': summary.cgstTotal,
-      'State/UT Tax (₹)': summary.sgstTotal,
-      'Cess (₹)': 0
+      'Total Taxable Value (Rs)': taxableSales,
+      'Integrated Tax (Rs)': igstTotal,
+      'Central Tax (Rs)': cgstTotal,
+      'State/UT Tax (Rs)': sgstTotal,
+      'Cess (Rs)': 0
     },
     {
       'Table 3.1 Nature of Supplies': '(b) Outward taxable supplies (zero rated)',
-      'Total Taxable Value (₹)': 0,
-      'Integrated Tax (₹)': 0,
-      'Central Tax (₹)': 0,
-      'State/UT Tax (₹)': 0,
-      'Cess (₹)': 0
+      'Total Taxable Value (Rs)': 0,
+      'Integrated Tax (Rs)': 0,
+      'Central Tax (Rs)': 0,
+      'State/UT Tax (Rs)': 0,
+      'Cess (Rs)': 0
     },
     {
       'Table 3.1 Nature of Supplies': '(c) Other outward supplies (Nil rated, exempted)',
-      'Total Taxable Value (₹)': 0,
-      'Integrated Tax (₹)': 0,
-      'Central Tax (₹)': 0,
-      'State/UT Tax (₹)': 0,
-      'Cess (₹)': 0
+      'Total Taxable Value (Rs)': 0,
+      'Integrated Tax (Rs)': 0,
+      'Central Tax (Rs)': 0,
+      'State/UT Tax (Rs)': 0,
+      'Cess (Rs)': 0
     },
     {
       'Table 3.1 Nature of Supplies': '(d) Inward supplies (liable to reverse charge)',
-      'Total Taxable Value (₹)': 0,
-      'Integrated Tax (₹)': 0,
-      'Central Tax (₹)': 0,
-      'State/UT Tax (₹)': 0,
-      'Cess (₹)': 0
+      'Total Taxable Value (Rs)': 0,
+      'Integrated Tax (Rs)': 0,
+      'Central Tax (Rs)': 0,
+      'State/UT Tax (Rs)': 0,
+      'Cess (Rs)': 0
     },
     {
       'Table 3.1 Nature of Supplies': '(e) Non-GST outward supplies',
-      'Total Taxable Value (₹)': 0,
-      'Integrated Tax (₹)': 0,
-      'Central Tax (₹)': 0,
-      'State/UT Tax (₹)': 0,
-      'Cess (₹)': 0
+      'Total Taxable Value (Rs)': 0,
+      'Integrated Tax (Rs)': 0,
+      'Central Tax (Rs)': 0,
+      'State/UT Tax (Rs)': 0,
+      'Cess (Rs)': 0
     }
   ];
 
-  // Sheet 2: Table 4 Eligible ITC
+  // Sheet 2: Table 3.2 Inter-State
+  const sheet32Data = [
+    {
+      'Table 3.2 Supplies': 'Supplies made to Unregistered Persons',
+      'Place of Supply (State/UT)': 'Other States',
+      'Total Taxable Value (Rs)': 0,
+      'Amount of Integrated Tax (Rs)': 0
+    }
+  ];
+
+  // Sheet 3: Table 4 Eligible ITC
   const sheet4Data = [
     {
       'Table 4 Eligible ITC Details': '(A) (5) All other ITC (Source purchase records)',
-      'Integrated Tax (₹)': 0,
-      'Central Tax (₹)': 0,
-      'State/UT Tax (₹)': 0,
-      'Cess (₹)': 0
+      'Integrated Tax (Rs)': 0,
+      'Central Tax (Rs)': 0,
+      'State/UT Tax (Rs)': 0,
+      'Cess (Rs)': 0
     },
     {
       'Table 4 Eligible ITC Details': '(B) ITC Reversed',
-      'Integrated Tax (₹)': 0,
-      'Central Tax (₹)': 0,
-      'State/UT Tax (₹)': 0,
-      'Cess (₹)': 0
+      'Integrated Tax (Rs)': 0,
+      'Central Tax (Rs)': 0,
+      'State/UT Tax (Rs)': 0,
+      'Cess (Rs)': 0
     },
     {
       'Table 4 Eligible ITC Details': '(C) Net ITC Available',
-      'Integrated Tax (₹)': 0,
-      'Central Tax (₹)': 0,
-      'State/UT Tax (₹)': 0,
-      'Cess (₹)': 0
+      'Integrated Tax (Rs)': 0,
+      'Central Tax (Rs)': 0,
+      'State/UT Tax (Rs)': 0,
+      'Cess (Rs)': 0
     }
   ];
 
-  // Sheet 3: Table 5 Exempt Inward
+  // Sheet 4: Table 5 Exempt Inward
   const sheet5Data = [
     {
       'Table 5 Inward Supplies': 'From a supplier under composition scheme, exempt and nil rated',
-      'Inter-State Supplies (₹)': 0,
-      'Intra-State Supplies (₹)': 0
+      'Inter-State Supplies (Rs)': 0,
+      'Intra-State Supplies (Rs)': 0
     },
     {
       'Table 5 Inward Supplies': 'Non GST supply',
-      'Inter-State Supplies (₹)': 0,
-      'Intra-State Supplies (₹)': 0
+      'Inter-State Supplies (Rs)': 0,
+      'Intra-State Supplies (Rs)': 0
     }
   ];
 
-  // Sheet 4: Table 5.1 Interest & Late Fee
+  // Sheet 5: Table 5.1 Interest & Late Fee
   const sheet51Data = [
-    { 'Table 5.1 Description': 'Integrated Tax', 'Interest Payable (₹)': 0, 'Late Fee Payable (₹)': 0 },
-    { 'Table 5.1 Description': 'Central Tax', 'Interest Payable (₹)': 0, 'Late Fee Payable (₹)': 0 },
-    { 'Table 5.1 Description': 'State/UT Tax', 'Interest Payable (₹)': 0, 'Late Fee Payable (₹)': 0 },
-    { 'Table 5.1 Description': 'Cess', 'Interest Payable (₹)': 0, 'Late Fee Payable (₹)': 0 }
+    { 'Table 5.1 Description': 'Integrated Tax', 'Interest Payable (Rs)': 0, 'Late Fee Payable (Rs)': 0 },
+    { 'Table 5.1 Description': 'Central Tax', 'Interest Payable (Rs)': 0, 'Late Fee Payable (Rs)': 0 },
+    { 'Table 5.1 Description': 'State/UT Tax', 'Interest Payable (Rs)': 0, 'Late Fee Payable (Rs)': 0 },
+    { 'Table 5.1 Description': 'Cess', 'Interest Payable (Rs)': 0, 'Late Fee Payable (Rs)': 0 }
   ];
 
-  // Sheet 5: Table 6.1 Payment of Tax
+  // Sheet 6: Table 6.1 Payment of Tax
   const sheet61Data = [
     {
       'Table 6.1 Description': 'Integrated Tax (IGST)',
-      'Total Tax Payable (₹)': summary.igstTotal,
-      'Paid through ITC (₹)': 0,
-      'Tax Paid in Cash (₹)': summary.igstTotal,
-      'Interest Paid in Cash (₹)': 0,
-      'Late Fee Paid in Cash (₹)': 0
+      'Total Tax Payable (Rs)': igstTotal,
+      'Paid through ITC (Rs)': 0,
+      'Tax Paid in Cash (Rs)': igstTotal,
+      'Interest Paid in Cash (Rs)': 0,
+      'Late Fee Paid in Cash (Rs)': 0
     },
     {
       'Table 6.1 Description': 'Central Tax (CGST)',
-      'Total Tax Payable (₹)': summary.cgstTotal,
-      'Paid through ITC (₹)': 0,
-      'Tax Paid in Cash (₹)': summary.cgstTotal,
-      'Interest Paid in Cash (₹)': 0,
-      'Late Fee Paid in Cash (₹)': 0
+      'Total Tax Payable (Rs)': cgstTotal,
+      'Paid through ITC (Rs)': 0,
+      'Tax Paid in Cash (Rs)': cgstTotal,
+      'Interest Paid in Cash (Rs)': 0,
+      'Late Fee Paid in Cash (Rs)': 0
     },
     {
       'Table 6.1 Description': 'State/UT Tax (SGST)',
-      'Total Tax Payable (₹)': summary.sgstTotal,
-      'Paid through ITC (₹)': 0,
-      'Tax Paid in Cash (₹)': summary.sgstTotal,
-      'Interest Paid in Cash (₹)': 0,
-      'Late Fee Paid in Cash (₹)': 0
+      'Total Tax Payable (Rs)': sgstTotal,
+      'Paid through ITC (Rs)': 0,
+      'Tax Paid in Cash (Rs)': sgstTotal,
+      'Interest Paid in Cash (Rs)': 0,
+      'Late Fee Paid in Cash (Rs)': 0
     },
     {
       'Table 6.1 Description': 'Total Net Tax Settlement',
-      'Total Tax Payable (₹)': summary.totalGst,
-      'Paid through ITC (₹)': 0,
-      'Tax Paid in Cash (₹)': summary.totalGst,
-      'Interest Paid in Cash (₹)': 0,
-      'Late Fee Paid in Cash (₹)': 0
+      'Total Tax Payable (Rs)': totalGst,
+      'Paid through ITC (Rs)': 0,
+      'Tax Paid in Cash (Rs)': totalGst,
+      'Interest Paid in Cash (Rs)': 0,
+      'Late Fee Paid in Cash (Rs)': 0
     }
   ];
 
   const wb = utils.book_new();
   utils.book_append_sheet(wb, utils.json_to_sheet(sheet31Data), 'Table 3.1 Outward');
+  utils.book_append_sheet(wb, utils.json_to_sheet(sheet32Data), 'Table 3.2 Inter-State');
   utils.book_append_sheet(wb, utils.json_to_sheet(sheet4Data), 'Table 4 ITC');
   utils.book_append_sheet(wb, utils.json_to_sheet(sheet5Data), 'Table 5 Inward Exempt');
   utils.book_append_sheet(wb, utils.json_to_sheet(sheet51Data), 'Table 5.1 Interest');
   utils.book_append_sheet(wb, utils.json_to_sheet(sheet61Data), 'Table 6.1 Payment of Tax');
 
-  writeFile(wb, `GSTR3B_Tables_${periodLabel.replace(/[\s,]+/g, '_')}.xlsx`);
+  await downloadExcelWorkbook(wb, `GSTR3B_Tables_${periodLabel.replace(/[\s,]+/g, '_')}.xlsx`);
 }

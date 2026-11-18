@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 
 import { calculateGST } from './taxCalculator';
 
-const GSTIN          = '24AARCIJE1234F1Z1';
+const GSTIN          = '24HDQPM1606E1ZM';
 const PLACE_OF_SUPPLY = 'Gujarat (24)';
 
 const SAC_MAP: Record<string, string> = {

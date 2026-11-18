@@ -429,210 +429,216 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* ── 7 METRIC CARDS ── */}
+      {/* ── 6 STATUTORY METRIC CARDS ── */}
       {summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
           
-          <div className="glass-card p-4 rounded-xl border border-white/10 flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold">Total Invoices</span>
-            <div className="mt-2 text-2xl font-light text-white">{summary.invoiceCount}</div>
-            <span className="text-[10px] text-white/40 mt-1">{summary.totalItemsCount} total items</span>
+          <div className="glass-card p-4 rounded-xl border border-white/10 flex flex-col justify-between min-w-0">
+            <span className="text-[10px] uppercase tracking-wider text-white/40 font-bold truncate">Total Invoices</span>
+            <div className="mt-2 text-xl xl:text-2xl font-light text-white truncate" title={summary.invoiceCount.toString()}>{summary.invoiceCount}</div>
+            <span className="text-[10px] text-white/40 mt-1 truncate">{summary.totalItemsCount} total items</span>
           </div>
 
-          <div className="glass-card p-4 rounded-xl border border-white/10 flex flex-col justify-between col-span-1 sm:col-span-1 lg:col-span-2">
-            <span className="text-[10px] uppercase tracking-wider text-[#D4AF37] font-bold">Taxable Sales (₹)</span>
-            <div className="mt-2 text-2xl font-light text-[#D4AF37]">
+          <div className="glass-card p-4 rounded-xl border border-white/10 flex flex-col justify-between min-w-0">
+            <span className="text-[10px] uppercase tracking-wider text-[#D4AF37] font-bold truncate">Taxable Sales (₹)</span>
+            <div className="mt-2 text-xl xl:text-2xl font-light text-[#D4AF37] truncate" title={`₹${summary.taxableSales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}>
               ₹{summary.taxableSales.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-white/40 mt-1">Excluding GST (Statutory Base)</span>
+            <span className="text-[10px] text-white/40 mt-1 truncate">Excl. GST (Statutory Base)</span>
           </div>
 
-          <div className="glass-card p-4 rounded-xl border border-white/10 flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-blue-400 font-bold">CGST (2.5%)</span>
-            <div className="mt-2 text-xl font-light text-blue-300">
+          <div className="glass-card p-4 rounded-xl border border-white/10 flex flex-col justify-between min-w-0">
+            <span className="text-[10px] uppercase tracking-wider text-blue-400 font-bold truncate">CGST (2.5%)</span>
+            <div className="mt-2 text-xl xl:text-2xl font-light text-blue-300 truncate" title={`₹${summary.cgstTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}>
               ₹{summary.cgstTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-white/40 mt-1">Central Tax</span>
+            <span className="text-[10px] text-white/40 mt-1 truncate">Central Tax</span>
           </div>
 
-          <div className="glass-card p-4 rounded-xl border border-white/10 flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-purple-400 font-bold">SGST (2.5%)</span>
-            <div className="mt-2 text-xl font-light text-purple-300">
+          <div className="glass-card p-4 rounded-xl border border-white/10 flex flex-col justify-between min-w-0">
+            <span className="text-[10px] uppercase tracking-wider text-purple-400 font-bold truncate">SGST (2.5%)</span>
+            <div className="mt-2 text-xl xl:text-2xl font-light text-purple-300 truncate" title={`₹${summary.sgstTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}>
               ₹{summary.sgstTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-white/40 mt-1">State / UT Tax</span>
+            <span className="text-[10px] text-white/40 mt-1 truncate">State / UT Tax</span>
           </div>
 
-          <div className="glass-card p-4 rounded-xl border border-white/10 flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-amber-400 font-bold">Total GST</span>
-            <div className="mt-2 text-xl font-light text-amber-300">
+          <div className="glass-card p-4 rounded-xl border border-white/10 flex flex-col justify-between min-w-0">
+            <span className="text-[10px] uppercase tracking-wider text-amber-400 font-bold truncate">Total GST</span>
+            <div className="mt-2 text-xl xl:text-2xl font-light text-amber-300 truncate" title={`₹${summary.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}>
               ₹{summary.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-white/40 mt-1">CGST + SGST + IGST</span>
+            <span className="text-[10px] text-white/40 mt-1 truncate">CGST + SGST + IGST</span>
           </div>
 
-          <div className="glass-card p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">Total Sales (₹)</span>
-            <div className="mt-2 text-2xl font-light text-emerald-300">
+          <div className="glass-card p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] flex flex-col justify-between min-w-0">
+            <span className="text-[10px] uppercase tracking-wider text-emerald-400 font-bold truncate">Total Sales (₹)</span>
+            <div className="mt-2 text-xl xl:text-2xl font-light text-emerald-300 truncate" title={`₹${summary.totalSalesValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}>
               ₹{summary.totalSalesValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-emerald-400/60 mt-1">Gross Bill Value</span>
+            <span className="text-[10px] text-emerald-400/60 mt-1 truncate">Gross Bill Value</span>
           </div>
 
         </div>
       )}
 
-      {/* ── REPORT ACTION BUTTONS (CORE SUITE) ── */}
-      <div className="glass-card p-5 border border-white/10 rounded-2xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-light text-white tracking-wide flex items-center gap-2">
-              <Download className="w-5 h-5 text-[#D4AF37]" />
-              Statutory Export Suite
-            </h3>
-            <p className="text-xs text-white/40 mt-0.5">
-              CA-approved compliance downloads with itemized line tax splits and zero data loss.
-            </p>
-          </div>
+      {/* ── REPORT ACTION BUTTONS ── */}
+      <div className="glass-card p-4 border border-white/10 rounded-2xl relative z-40">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
-          <div className="flex flex-wrap items-center gap-3">
+          {/* 1. HIGHEST PRIORITY: ALL INVOICES SINGLE PDF */}
+          <button
+            onClick={handleDownloadAllCombinedPDF}
+            disabled={isLoading || downloadingAction === 'combined_pdf'}
+            className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#E5C158] hover:from-[#E5C158] hover:to-[#D4AF37] text-black font-bold text-xs uppercase tracking-wider shadow-lg shadow-[#D4AF37]/20 flex items-center justify-center gap-2 transition-all transform active:scale-95 disabled:opacity-50 cursor-pointer"
+          >
+            {downloadingAction === 'combined_pdf' ? (
+              <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin shrink-0" />
+            ) : (
+              <Printer className="w-4 h-4 text-black shrink-0" />
+            )}
+            <span className="truncate">Download All Invoices (Single PDF)</span>
+          </button>
 
-            {/* 1. HIGHEST PRIORITY: ALL INVOICES SINGLE PDF */}
+          {/* 2. INVOICE REGISTER EXCEL */}
+          <button
+            onClick={handleDownloadInvoiceRegister}
+            disabled={isLoading || downloadingAction === 'excel_register'}
+            className="w-full px-4 py-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-semibold text-xs tracking-wide flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-md"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="truncate">Invoice Register (Excel)</span>
+          </button>
+
+          {/* 3. GSTR-1 REPORTS (DROPDOWN) */}
+          <div className="relative w-full" ref={gstr1Ref}>
             <button
-              onClick={handleDownloadAllCombinedPDF}
-              disabled={isLoading || downloadingAction === 'combined_pdf'}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#E5C158] hover:from-[#E5C158] hover:to-[#D4AF37] text-black font-bold text-xs uppercase tracking-wider shadow-lg shadow-[#D4AF37]/20 flex items-center gap-2 transition-all transform active:scale-95 disabled:opacity-50 cursor-pointer"
+              type="button"
+              onClick={() => { setShowGstr1Menu(!showGstr1Menu); setShowGstr3bMenu(false); }}
+              className="w-full px-4 py-3 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 font-semibold text-xs tracking-wide flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
             >
-              {downloadingAction === 'combined_pdf' ? (
-                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Printer className="w-4 h-4 text-black" />
-              )}
-              Download All Invoices — Single PDF
+              <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+              <span className="truncate">GSTR-1 Reports</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 shrink-0 ${showGstr1Menu ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* 2. INVOICE REGISTER EXCEL */}
+            {showGstr1Menu && (
+              <div
+                className="absolute left-0 sm:left-auto right-0 top-full mt-2 w-full sm:w-72 border border-white/20 rounded-xl shadow-2xl py-1.5 z-[100] divide-y divide-white/10"
+                style={{ backgroundColor: '#18181b' }}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownloadGSTR1PDF();
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
+                >
+                  <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 mt-0.5 group-hover:bg-blue-500/30 shrink-0">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-white group-hover:text-blue-300">
+                      GSTR-1 Summary PDF
+                    </div>
+                    <div className="text-[10px] text-white/50 mt-0.5">
+                      Official Government GSTR-1 format
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownloadGSTR1Excel();
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
+                >
+                  <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 mt-0.5 group-hover:bg-emerald-500/30 shrink-0">
+                    <FileSpreadsheet className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-white group-hover:text-emerald-300">
+                      GSTR-1 Excel Report
+                    </div>
+                    <div className="text-[10px] text-white/50 mt-0.5">
+                      Govt offline sheets (b2b, b2cs, hsn, docs)
+                    </div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 4. GSTR-3B RETURN (DROPDOWN) */}
+          <div className="relative w-full" ref={gstr3bRef}>
             <button
-              onClick={handleDownloadInvoiceRegister}
-              disabled={isLoading || downloadingAction === 'excel_register'}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-semibold text-xs tracking-wide flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-md"
+              type="button"
+              onClick={() => { setShowGstr3bMenu(!showGstr3bMenu); setShowGstr1Menu(false); }}
+              className="w-full px-4 py-3 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-semibold text-xs tracking-wide flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
             >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-              Invoice Register (Excel)
+              <Layers className="w-4 h-4 text-purple-400 shrink-0" />
+              <span className="truncate">GSTR-3B Return</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 shrink-0 ${showGstr3bMenu ? 'rotate-180' : ''}`} />
             </button>
 
-            {/* 3. GSTR-1 MENU (HIGH-CONTRAST OPAQUE DROPDOWN) */}
-            <div className="relative" ref={gstr1Ref}>
-              <button
-                type="button"
-                onClick={() => { setShowGstr1Menu(!showGstr1Menu); setShowGstr3bMenu(false); }}
-                className="px-4 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 font-semibold text-xs tracking-wide flex items-center gap-2 transition-all cursor-pointer shadow-md"
+            {showGstr3bMenu && (
+              <div
+                className="absolute right-0 top-full mt-2 w-full sm:w-72 border border-white/20 rounded-xl shadow-2xl py-1.5 z-[100] divide-y divide-white/10"
+                style={{ backgroundColor: '#18181b' }}
               >
-                <FileText className="w-4 h-4 text-blue-400" />
-                GSTR-1 Reports
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showGstr1Menu ? 'rotate-180' : ''}`} />
-              </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownloadGSTR3BPDF();
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
+                >
+                  <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400 mt-0.5 group-hover:bg-purple-500/30 shrink-0">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-white group-hover:text-purple-300">
+                      GSTR-3B Summary PDF
+                    </div>
+                    <div className="text-[10px] text-white/50 mt-0.5">
+                      Official Form GSTR-3B layout
+                    </div>
+                  </div>
+                </button>
 
-              {showGstr1Menu && (
-                <div className="absolute right-0 mt-2 w-64 bg-[#18181b] border border-white/20 rounded-xl shadow-2xl py-1.5 z-[100] divide-y divide-white/5">
-                  <button
-                    type="button"
-                    onClick={handleDownloadGSTR1PDF}
-                    className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
-                  >
-                    <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 mt-0.5 group-hover:bg-blue-500/30 shrink-0">
-                      <FileText className="w-4 h-4" />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownloadGSTR3BExcel();
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
+                >
+                  <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 mt-0.5 group-hover:bg-emerald-500/30 shrink-0">
+                    <FileSpreadsheet className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold text-white group-hover:text-emerald-300">
+                      GSTR-3B Table Excel
                     </div>
-                    <div>
-                      <div className="text-xs font-semibold text-white group-hover:text-blue-300">
-                        GSTR-1 Summary PDF
-                      </div>
-                      <div className="text-[10px] text-white/50 mt-0.5">
-                        Statutory summary of outward supplies
-                      </div>
+                    <div className="text-[10px] text-white/50 mt-0.5">
+                      Tables 3.1, 3.2, 4, 5, 5.1 & 6.1 workbook
                     </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleDownloadGSTR1Excel}
-                    className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
-                  >
-                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 mt-0.5 group-hover:bg-emerald-500/30 shrink-0">
-                      <FileSpreadsheet className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-white group-hover:text-emerald-300">
-                        GSTR-1 Excel Report
-                      </div>
-                      <div className="text-[10px] text-white/50 mt-0.5">
-                        Govt offline sheets (b2b, b2cs, hsn, docs)
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* 4. GSTR-3B MENU (HIGH-CONTRAST OPAQUE DROPDOWN) */}
-            <div className="relative" ref={gstr3bRef}>
-              <button
-                type="button"
-                onClick={() => { setShowGstr3bMenu(!showGstr3bMenu); setShowGstr1Menu(false); }}
-                className="px-4 py-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-semibold text-xs tracking-wide flex items-center gap-2 transition-all cursor-pointer shadow-md"
-              >
-                <Layers className="w-4 h-4 text-purple-400" />
-                GSTR-3B Return
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showGstr3bMenu ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showGstr3bMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-[#18181b] border border-white/20 rounded-xl shadow-2xl py-1.5 z-[100] divide-y divide-white/5">
-                  <button
-                    type="button"
-                    onClick={handleDownloadGSTR3BPDF}
-                    className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
-                  >
-                    <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400 mt-0.5 group-hover:bg-purple-500/30 shrink-0">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-white group-hover:text-purple-300">
-                        GSTR-3B Summary PDF
-                      </div>
-                      <div className="text-[10px] text-white/50 mt-0.5">
-                        Tables 3.1, 4, 5, 5.1 & 6.1 statutory return
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleDownloadGSTR3BExcel}
-                    className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
-                  >
-                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 mt-0.5 group-hover:bg-emerald-500/30 shrink-0">
-                      <FileSpreadsheet className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-white group-hover:text-emerald-300">
-                        GSTR-3B Table Excel
-                      </div>
-                      <div className="text-[10px] text-white/50 mt-0.5">
-                        Multi-sheet tables (Table 3.1, 4, 5, 5.1, 6.1)
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
+
         </div>
       </div>
 
       {/* ── INVOICES TABLE WITH INDIVIDUAL DOWNLOAD ACTIONS ── */}
-      <div className="glass-card rounded-2xl border border-white/10 overflow-hidden">
+      <div className="glass-card rounded-2xl border border-white/10 overflow-hidden relative z-10">
         
         {/* Table Controls */}
         <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
