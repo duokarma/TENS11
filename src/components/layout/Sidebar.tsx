@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, Users, Package, Calendar, CalendarCheck,
-  FileText, PieChart, Scissors,
+  FileText, PieChart, Scissors, FileSpreadsheet,
   LogOut, User as UserIcon, List, Tag
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -29,6 +29,7 @@ const navigation: NavItem[] = [
   { name: 'Staff', href: '/staff', icon: Users, allowedRoles: ['Owner', 'Manager'] },
   { name: 'Expenses', href: '/expenses', icon: FileText, allowedRoles: ['Owner', 'Manager'] },
   { name: 'Accounts', href: '/accounts', icon: PieChart, allowedRoles: ['Owner', 'Manager'] },
+  { name: 'GST Reports', href: '/reports', icon: FileSpreadsheet, allowedRoles: ['Owner', 'Manager'] },
 ];
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {

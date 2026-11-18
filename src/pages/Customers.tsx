@@ -4,11 +4,12 @@ import type { Customer, CustomerNote } from '../types';
 import { 
   Search, Plus, User, Scissors, Receipt, Package,
   Trash2, Edit2, X, Users, UserPlus, IndianRupee, TrendingUp, Calendar as CalendarIcon,
-  ChevronLeft, ChevronRight, ChevronDown, Download, FileSpreadsheet, FileText,
+  ChevronLeft, ChevronRight, ChevronDown, Download, FileSpreadsheet, FileText, Printer,
   MessageCircle, Star, ClipboardList, Tag, Filter, SortDesc,
   NotebookPen, Save, PlusCircle, Sparkles, Eye, EyeOff, Database
 } from 'lucide-react';
 import { generateInvoicePDF, generateProductInvoicePDF } from '../lib/pdfGenerator';
+import { generateAllInvoicesCombinedPDF, processInvoices, calculateReportSummary } from '../lib/gstReportService';
 import { calculateGST } from '../lib/taxCalculator';
 import { format, isThisMonth, isToday, isYesterday, isThisWeek } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -1433,6 +1434,36 @@ export default function Customers() {
     }
   };
 
+  // ── Export Combined Invoices PDF (Every Invoice Page-Wise + Summary) ──────
+  const handleExportCombinedPDF = async () => {
+    setIsExporting(true);
+    setShowExportMenu(false);
+    const toastId = toast.loading('Generating complete combined sales invoices PDF...');
+    try {
+      const data = await fetchExportData();
+      if (data.length === 0) {
+        toast.error('No invoices found for the selected period', { id: toastId });
+        return;
+      }
+      const processed = processInvoices(data);
+      const summ = calculateReportSummary(processed);
+      const period = invoiceMonth !== 'all'
+        ? format(new Date(invoiceMonth + '-01'), 'MMMM yyyy')
+        : 'All Time';
+      await generateAllInvoicesCombinedPDF({
+        invoices: processed,
+        summary: summ,
+        periodLabel: period
+      });
+      toast.success('Combined Sales Invoices PDF generated!', { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Combined PDF generation failed', { id: toastId });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // ── Export as PDF (flat rows, no merged cells) ────────────────────────────
   const handleExportPDF = async () => {
     setIsExporting(true);
@@ -1601,22 +1632,30 @@ export default function Customers() {
 
               {/* Dropdown menu */}
               {showExportMenu && (
-                <div className="absolute right-0 mt-1 w-48 glass-panel border border-white/10 rounded-xl shadow-2xl z-50 py-1 overflow-hidden">
+                <div className="absolute right-0 mt-1 w-64 glass-panel border border-white/10 rounded-xl shadow-2xl z-50 py-1 overflow-hidden">
+                  <button
+                    onClick={handleExportCombinedPDF}
+                    disabled={isExporting}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-[#D4AF37] font-bold hover:bg-white/10 transition-colors disabled:opacity-50"
+                  >
+                    <Printer className="h-4 w-4 text-[#D4AF37] shrink-0" />
+                    All Invoices (Combined PDF)
+                  </button>
                   <button
                     onClick={handleExportExcel}
                     disabled={isExporting}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-white/80 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
                   >
                     <FileSpreadsheet className="h-4 w-4 text-emerald-400 shrink-0" />
-                    Export as Excel
+                    Export as Excel (Register)
                   </button>
                   <button
                     onClick={handleExportPDF}
                     disabled={isExporting}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-white/80 hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
                   >
                     <FileText className="h-4 w-4 text-rose-400 shrink-0" />
-                    Export as PDF
+                    Summary List (PDF)
                   </button>
                 </div>
               )}

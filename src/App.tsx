@@ -13,6 +13,7 @@ import Accounts from './pages/Accounts';
 import Expenses from './pages/Expenses';
 import Packages from './pages/Packages';
 import Appointments from './pages/Appointments';
+import Reports from './pages/Reports';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
@@ -51,7 +52,7 @@ function App() {
                 <Route path="expenses" element={<Expenses />} />
                 <Route path="accounts" element={<Accounts />} />
                 <Route path="packages" element={<Packages />} />
-                <Route path="reports" element={<Placeholder title="Reports" />} />
+                <Route path="reports" element={<Reports />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Route>
