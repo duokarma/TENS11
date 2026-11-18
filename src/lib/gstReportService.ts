@@ -446,12 +446,6 @@ export function processInvoices(
       };
     });
 
-    let invTaxable = Math.round(items.reduce((s, i) => s + i.taxableAmount, 0) * 100) / 100;
-    let invCgst = Math.round(items.reduce((s, i) => s + i.cgst, 0) * 100) / 100;
-    let invSgst = Math.round(items.reduce((s, i) => s + i.sgst, 0) * 100) / 100;
-    let invIgst = Math.round(items.reduce((s, i) => s + i.igst, 0) * 100) / 100;
-    let invTotalGst = Math.round((invCgst + invSgst + invIgst) * 100) / 100;
-
     const sumLines = Math.round(items.reduce((s, i) => s + i.total, 0) * 100) / 100;
     const diff = Math.round((grandTotal - sumLines) * 100) / 100;
     if (Math.abs(diff) > 0 && items.length > 0) {
@@ -463,6 +457,12 @@ export function processInvoices(
       largestItem.sgst = reCalc.sgst;
       largestItem.igst = reCalc.igst;
     }
+
+    const invTaxable = Math.round(items.reduce((s, i) => s + i.taxableAmount, 0) * 100) / 100;
+    const invCgst = Math.round(items.reduce((s, i) => s + i.cgst, 0) * 100) / 100;
+    const invSgst = Math.round(items.reduce((s, i) => s + i.sgst, 0) * 100) / 100;
+    const invIgst = Math.round(items.reduce((s, i) => s + i.igst, 0) * 100) / 100;
+    const invTotalGst = Math.round((invCgst + invSgst + invIgst) * 100) / 100;
 
     const totalQty = items.reduce((acc, it) => acc + it.quantity, 0);
 
@@ -580,6 +580,26 @@ export function calculateReportSummary(invoices: ProcessedInvoice[]): GSTReportS
         nonGstSupplies += it.taxableAmount;
       }
     }
+  }
+
+  // Ensure each rate bucket is rounded cleanly to 2 decimals
+  for (const r of Object.keys(rateBuckets)) {
+    const b = rateBuckets[Number(r)];
+    b.taxable = Math.round(b.taxable * 100) / 100;
+    b.cgst = Math.round(b.cgst * 100) / 100;
+    b.sgst = Math.round(b.sgst * 100) / 100;
+    b.igst = Math.round(b.igst * 100) / 100;
+    b.total = Math.round(b.total * 100) / 100;
+  }
+
+  // Ensure each HSN entry is rounded cleanly to 2 decimals
+  for (const h of Object.values(hsnMap)) {
+    h.quantity = Math.round(h.quantity * 100) / 100;
+    h.totalValue = Math.round(h.totalValue * 100) / 100;
+    h.taxableValue = Math.round(h.taxableValue * 100) / 100;
+    h.cgst = Math.round(h.cgst * 100) / 100;
+    h.sgst = Math.round(h.sgst * 100) / 100;
+    h.igst = Math.round(h.igst * 100) / 100;
   }
 
   return {
@@ -1250,7 +1270,29 @@ export async function exportInvoiceRegisterExcel(options: {
     });
   });
 
-  const hsnRows = (summary.hsnSummary || []).map((h, i) => ({
+  if (itemRows.length > 0) {
+    itemRows.push({
+      '#': 'TOTAL',
+      'Invoice Number': `Total Items: ${summary.totalItemsCount}`,
+      'Invoice Date': '',
+      'Customer': '',
+      'Item Description': '',
+      'Category': '',
+      'HSN / SAC Code': '',
+      'Quantity': summary.totalItemsCount,
+      'Rate (Rs)': '',
+      'Gross (Rs)': summary.totalSalesValue,
+      'Discount (Rs)': 0,
+      'Taxable Amount (Rs)': summary.taxableSales,
+      'GST Rate': '',
+      'CGST (Rs)': summary.cgstTotal,
+      'SGST (Rs)': summary.sgstTotal,
+      'IGST (Rs)': summary.igstTotal,
+      'Line Total (Rs)': summary.totalSalesValue
+    } as any);
+  }
+
+  const hsnRows: any[] = (summary.hsnSummary || []).map((h, i) => ({
     '#': i + 1,
     'HSN / SAC': h.code,
     'Description': h.desc,
@@ -1263,6 +1305,22 @@ export async function exportInvoiceRegisterExcel(options: {
     'IGST (Rs)': h.igst,
     'Total Value (Rs)': h.totalValue
   }));
+
+  if (hsnRows.length > 0) {
+    hsnRows.push({
+      '#': 'TOTAL',
+      'HSN / SAC': `Codes: ${summary.hsnSummary.length}`,
+      'Description': '',
+      'Type': '',
+      'Total Quantity': summary.totalItemsCount,
+      'GST Rate': '',
+      'Taxable Value (Rs)': summary.taxableSales,
+      'CGST (Rs)': summary.cgstTotal,
+      'SGST (Rs)': summary.sgstTotal,
+      'IGST (Rs)': summary.igstTotal,
+      'Total Value (Rs)': summary.totalSalesValue
+    } as any);
+  }
 
   const wb = utils.book_new();
   utils.book_append_sheet(wb, utils.json_to_sheet(registerRows.length > 0 ? registerRows : [{ 'Message': 'No invoices recorded' }]), 'Invoice Register');

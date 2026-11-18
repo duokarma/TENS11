@@ -527,23 +527,105 @@ async function generateAll() {
 
   // Invoice Register Excel
   const regWb = XLSX.utils.book_new();
-  const regData = invoices.map((inv, idx) => ({
+  const regData: any[] = invoices.map((inv, idx) => ({
     'Sr No': idx + 1,
     'Invoice Number': inv.invoiceNumber,
     'Invoice Date': inv.formattedDate,
     'Customer Name': inv.customerName,
     'Customer Phone': inv.customerPhone,
-    'GSTIN': 'URP',
-    'Supply Type': 'B2C',
+    'GSTIN': inv.customerGstin || 'URP',
+    'Supply Type': inv.isB2B ? 'B2B' : 'B2C',
+    'Place of Supply': inv.placeOfSupply,
+    'Payment Method': inv.paymentMethod,
+    'Gross Amount (Rs)': inv.grossTotal,
     'Taxable Value (Rs)': inv.taxableAmount,
     'CGST (Rs)': inv.cgst,
     'SGST (Rs)': inv.sgst,
+    'Total GST (Rs)': inv.totalGst,
     'Grand Total (Rs)': inv.grandTotal
   }));
+
+  regData.push({
+    'Sr No': 'TOTAL',
+    'Invoice Number': `Total: ${summary.invoiceCount}`,
+    'Invoice Date': '',
+    'Customer Name': '',
+    'Customer Phone': '',
+    'GSTIN': '',
+    'Supply Type': '',
+    'Place of Supply': '',
+    'Payment Method': '',
+    'Gross Amount (Rs)': summary.totalSalesValue,
+    'Taxable Value (Rs)': summary.taxableSales,
+    'CGST (Rs)': summary.cgstTotal,
+    'SGST (Rs)': summary.sgstTotal,
+    'Total GST (Rs)': summary.totalGst,
+    'Grand Total (Rs)': summary.totalSalesValue
+  });
+
+  const itemRows: any[] = [];
+  let itIdx = 1;
+  invoices.forEach(inv => {
+    inv.items.forEach(it => {
+      itemRows.push({
+        '#': itIdx++,
+        'Invoice Number': inv.invoiceNumber,
+        'Invoice Date': inv.formattedDate,
+        'Customer': inv.customerName,
+        'Item Description': it.name,
+        'Category': it.type.toUpperCase(),
+        'HSN / SAC Code': it.code,
+        'Quantity': it.quantity,
+        'Rate (Rs)': it.rate,
+        'Gross (Rs)': it.grossAmount,
+        'Discount (Rs)': it.discount,
+        'Taxable Amount (Rs)': it.taxableAmount,
+        'GST Rate': `${it.gstRate}%`,
+        'CGST (Rs)': it.cgst,
+        'SGST (Rs)': it.sgst,
+        'IGST (Rs)': it.igst,
+        'Line Total (Rs)': it.total
+      });
+    });
+  });
+
+  itemRows.push({
+    '#': 'TOTAL',
+    'Invoice Number': `Total Items: ${summary.totalItemsCount}`,
+    'Invoice Date': '',
+    'Customer': '',
+    'Item Description': '',
+    'Category': '',
+    'HSN / SAC Code': '',
+    'Quantity': summary.totalItemsCount,
+    'Rate (Rs)': '',
+    'Gross (Rs)': summary.totalSalesValue,
+    'Discount (Rs)': 0,
+    'Taxable Amount (Rs)': summary.taxableSales,
+    'GST Rate': '',
+    'CGST (Rs)': summary.cgstTotal,
+    'SGST (Rs)': summary.sgstTotal,
+    'IGST (Rs)': 0,
+    'Line Total (Rs)': summary.totalSalesValue
+  });
+
   XLSX.utils.book_append_sheet(regWb, XLSX.utils.json_to_sheet(regData), 'Invoice Register');
+  XLSX.utils.book_append_sheet(regWb, XLSX.utils.json_to_sheet(itemRows), 'Itemized Register');
+
   const regPath = path.join(outDir, 'Invoice_Register_November_2026.xlsx');
   XLSX.writeFile(regWb, regPath);
   console.log(`Saved Invoice Register Excel: ${regPath} (${fs.statSync(regPath).size} bytes)`);
+
+  // Copy all files to Artifact Directory as well
+  const artifactDir = 'C:\\Users\\Moizd\\.gemini\\antigravity\\brain\\a06608ef-6f40-42bf-856e-d0b2fc54b3f1';
+  if (fs.existsSync(artifactDir)) {
+    fs.copyFileSync(gstr1File, path.join(artifactDir, 'FORM_GSTR1_November_2026.pdf'));
+    fs.copyFileSync(gstr3bFile, path.join(artifactDir, 'FORM_GSTR3B_November_2026.pdf'));
+    fs.copyFileSync(gstr1XlsxPath, path.join(artifactDir, 'GSTR1_Offline_November_2026.xlsx'));
+    fs.copyFileSync(gstr3bXlsxPath, path.join(artifactDir, 'GSTR3B_Tables_November_2026.xlsx'));
+    fs.copyFileSync(regPath, path.join(artifactDir, 'Invoice_Register_November_2026.xlsx'));
+    console.log('Successfully copied all 5 artifacts to Artifact Directory.');
+  }
 
   console.log('\n=== ALL STATUTORY PRODUCTION ARTIFACTS VERIFIED AND SAVED ===');
 }
