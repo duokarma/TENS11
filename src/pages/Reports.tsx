@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, Download, FileSpreadsheet, Calendar, Search, 
-  Filter, CheckCircle, ChevronDown, IndianRupee, Eye, RefreshCw, FileCode, Printer, Layers
+  ChevronDown, RefreshCw, Printer, Layers, AlertCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, subMonths } from 'date-fns';
@@ -16,7 +16,6 @@ import {
   exportInvoiceRegisterExcel,
   generateGSTR1PDF,
   exportGSTR1Excel,
-  exportGSTR1JSON,
   generateGSTR3BPDF,
   exportGSTR3BExcel,
   type ProcessedInvoice,
@@ -35,13 +34,32 @@ export default function Reports() {
   const [summary, setSummary] = useState<GSTReportSummary | null>(null);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'b2b' | 'b2c'>('all');
 
-  // Dropdown states
+  // Dropdown states & refs for outside click dismissal
   const [showGstr1Menu, setShowGstr1Menu] = useState(false);
   const [showGstr3bMenu, setShowGstr3bMenu] = useState(false);
   const [downloadingAction, setDownloadingAction] = useState<string | null>(null);
+
+  const gstr1Ref = useRef<HTMLDivElement>(null);
+  const gstr3bRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (gstr1Ref.current && !gstr1Ref.current.contains(event.target as Node)) {
+        setShowGstr1Menu(false);
+      }
+      if (gstr3bRef.current && !gstr3bRef.current.contains(event.target as Node)) {
+        setShowGstr3bMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // ── Month options (Last 24 months) ──
   const monthOptions = useMemo(() => {
@@ -75,9 +93,31 @@ export default function Reports() {
     return `${format(new Date(startDate), 'dd MMM yyyy')} to ${format(new Date(endDate), 'dd MMM yyyy')}`;
   }, [filterMode, selectedMonth, selectedFY, startDate, endDate, monthOptions]);
 
+  // ── Safe Summary Fallback ──
+  const getSafeSummary = (): GSTReportSummary => {
+    return summary || {
+      invoiceCount: invoices.length,
+      totalSalesValue: 0,
+      taxableSales: 0,
+      cgstTotal: 0,
+      sgstTotal: 0,
+      igstTotal: 0,
+      totalGst: 0,
+      totalItemsCount: 0,
+      b2bCount: 0,
+      b2cCount: 0,
+      b2bTaxable: 0,
+      b2cTaxable: 0,
+      rateBuckets: {},
+      paymentBreakdown: {},
+      hsnSummary: []
+    };
+  };
+
   // ── Load Report Data ──
   const loadData = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       let queryOptions: { month?: string; startDate?: string; endDate?: string } = {};
 
@@ -106,7 +146,8 @@ export default function Reports() {
       setSummary(summ);
       setExpenses(expRes.data || []);
     } catch (err: any) {
-      console.error(err);
+      console.error('GST Report Load Error:', err);
+      setLoadError(err.message || 'Failed to load report data');
       toast.error(err.message || 'Failed to load report data');
     } finally {
       setIsLoading(false);
@@ -134,8 +175,8 @@ export default function Reports() {
 
   // ── Download Handlers ──
   const handleDownloadAllCombinedPDF = async () => {
-    if (!summary || invoices.length === 0) {
-      toast.error('No invoices found to download');
+    if (invoices.length === 0) {
+      toast.error('No invoices found to download for this period');
       return;
     }
     setDownloadingAction('combined_pdf');
@@ -143,7 +184,7 @@ export default function Reports() {
     try {
       await generateAllInvoicesCombinedPDF({
         invoices,
-        summary,
+        summary: getSafeSummary(),
         periodLabel
       });
       toast.success('Combined Sales Invoices PDF generated!', { id: toastId });
@@ -155,8 +196,8 @@ export default function Reports() {
   };
 
   const handleDownloadInvoiceRegister = async () => {
-    if (!summary || invoices.length === 0) {
-      toast.error('No invoices found to export');
+    if (invoices.length === 0) {
+      toast.error('No invoices found to export for this period');
       return;
     }
     setDownloadingAction('excel_register');
@@ -164,7 +205,7 @@ export default function Reports() {
     try {
       await exportInvoiceRegisterExcel({
         invoices,
-        summary,
+        summary: getSafeSummary(),
         periodLabel
       });
       toast.success('Sales Register Excel exported!', { id: toastId });
@@ -176,73 +217,60 @@ export default function Reports() {
   };
 
   const handleDownloadGSTR1PDF = async () => {
-    if (!summary || invoices.length === 0) {
-      toast.error('No invoices found');
-      return;
-    }
     setShowGstr1Menu(false);
     const toastId = toast.loading('Generating GSTR-1 Summary PDF...');
     try {
-      await generateGSTR1PDF({ invoices, summary, periodLabel });
-      toast.success('GSTR-1 PDF generated!', { id: toastId });
+      await generateGSTR1PDF({
+        invoices,
+        summary: getSafeSummary(),
+        periodLabel
+      });
+      toast.success('GSTR-1 Summary PDF generated!', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'Error generating GSTR-1 PDF', { id: toastId });
     }
   };
 
   const handleDownloadGSTR1Excel = async () => {
-    if (!summary || invoices.length === 0) {
-      toast.error('No invoices found');
-      return;
-    }
     setShowGstr1Menu(false);
-    const toastId = toast.loading('Generating GSTR-1 Offline Excel...');
+    const toastId = toast.loading('Generating GSTR-1 Excel Report...');
     try {
-      await exportGSTR1Excel({ invoices, summary, periodLabel });
-      toast.success('GSTR-1 Excel downloaded!', { id: toastId });
+      await exportGSTR1Excel({
+        invoices,
+        summary: getSafeSummary(),
+        periodLabel
+      });
+      toast.success('GSTR-1 Excel Report downloaded!', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'Error generating GSTR-1 Excel', { id: toastId });
     }
   };
 
-  const handleDownloadGSTR1JSON = () => {
-    if (!summary || invoices.length === 0) {
-      toast.error('No invoices found');
-      return;
-    }
-    setShowGstr1Menu(false);
-    try {
-      exportGSTR1JSON({
-        invoices,
-        summary,
-        periodLabel,
-        monthStr: filterMode === 'month' ? selectedMonth : 'all'
-      });
-      toast.success('GSTR-1 Portal JSON downloaded!');
-    } catch (err: any) {
-      toast.error(err.message || 'Error generating GSTR-1 JSON');
-    }
-  };
-
   const handleDownloadGSTR3BPDF = async () => {
-    if (!summary) return;
     setShowGstr3bMenu(false);
     const toastId = toast.loading('Generating GSTR-3B Summary PDF...');
     try {
-      await generateGSTR3BPDF({ summary, expenses, periodLabel });
-      toast.success('GSTR-3B PDF generated!', { id: toastId });
+      await generateGSTR3BPDF({
+        summary: getSafeSummary(),
+        expenses,
+        periodLabel
+      });
+      toast.success('GSTR-3B Summary PDF generated!', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'Error generating GSTR-3B PDF', { id: toastId });
     }
   };
 
   const handleDownloadGSTR3BExcel = async () => {
-    if (!summary) return;
     setShowGstr3bMenu(false);
-    const toastId = toast.loading('Generating GSTR-3B Excel...');
+    const toastId = toast.loading('Generating GSTR-3B Table Excel...');
     try {
-      await exportGSTR3BExcel({ summary, expenses, periodLabel });
-      toast.success('GSTR-3B Excel downloaded!', { id: toastId });
+      await exportGSTR3BExcel({
+        summary: getSafeSummary(),
+        expenses,
+        periodLabel
+      });
+      toast.success('GSTR-3B Table Excel downloaded!', { id: toastId });
     } catch (err: any) {
       toast.error(err.message || 'Error generating GSTR-3B Excel', { id: toastId });
     }
@@ -281,6 +309,25 @@ export default function Reports() {
           </div>
         </div>
       </div>
+
+      {/* ── ERROR BANNER (IF ANY) ── */}
+      {loadError && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center justify-between gap-3 text-red-200">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+            <div>
+              <div className="text-sm font-semibold">Unable to load GST records</div>
+              <div className="text-xs text-red-300/80 mt-0.5">{loadError}</div>
+            </div>
+          </div>
+          <button
+            onClick={loadData}
+            className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-xs font-semibold text-white transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* ── FILTER & DATE SELECTION PANEL ── */}
       <div className="glass-card p-5 border border-white/10 rounded-2xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
@@ -369,7 +416,7 @@ export default function Reports() {
           <button
             onClick={loadData}
             disabled={isLoading}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
             title="Refresh Data"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-[#D4AF37]' : ''}`} />
@@ -417,11 +464,11 @@ export default function Reports() {
           </div>
 
           <div className="glass-card p-4 rounded-xl border border-white/10 flex flex-col justify-between">
-            <span className="text-[10px] uppercase tracking-wider text-amber-400 font-bold">Total GST (5%)</span>
+            <span className="text-[10px] uppercase tracking-wider text-amber-400 font-bold">Total GST</span>
             <div className="mt-2 text-xl font-light text-amber-300">
               ₹{summary.totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </div>
-            <span className="text-[10px] text-white/40 mt-1">CGST + SGST</span>
+            <span className="text-[10px] text-white/40 mt-1">CGST + SGST + IGST</span>
           </div>
 
           <div className="glass-card p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.03] flex flex-col justify-between">
@@ -435,7 +482,7 @@ export default function Reports() {
         </div>
       )}
 
-      {/* ── REPORT ACTION BUTTONS (CORE REQUIREMENT) ── */}
+      {/* ── REPORT ACTION BUTTONS (CORE SUITE) ── */}
       <div className="glass-card p-5 border border-white/10 rounded-2xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -444,7 +491,7 @@ export default function Reports() {
               Statutory Export Suite
             </h3>
             <p className="text-xs text-white/40 mt-0.5">
-              Instant CA-ready compliance downloads with complete item breakdowns and zero data loss.
+              CA-approved compliance downloads with itemized line tax splits and zero data loss.
             </p>
           </div>
 
@@ -454,7 +501,7 @@ export default function Reports() {
             <button
               onClick={handleDownloadAllCombinedPDF}
               disabled={isLoading || downloadingAction === 'combined_pdf'}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#E5C158] hover:from-[#E5C158] hover:to-[#D4AF37] text-black font-bold text-xs uppercase tracking-wider shadow-lg shadow-[#D4AF37]/20 flex items-center gap-2 transition-all transform active:scale-95 disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#E5C158] hover:from-[#E5C158] hover:to-[#D4AF37] text-black font-bold text-xs uppercase tracking-wider shadow-lg shadow-[#D4AF37]/20 flex items-center gap-2 transition-all transform active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {downloadingAction === 'combined_pdf' ? (
                 <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -468,76 +515,113 @@ export default function Reports() {
             <button
               onClick={handleDownloadInvoiceRegister}
               disabled={isLoading || downloadingAction === 'excel_register'}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-semibold text-xs tracking-wide flex items-center gap-2 transition-all disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-semibold text-xs tracking-wide flex items-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-md"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
               Invoice Register (Excel)
             </button>
 
-            {/* 3. GSTR-1 MENU */}
-            <div className="relative">
+            {/* 3. GSTR-1 MENU (HIGH-CONTRAST OPAQUE DROPDOWN) */}
+            <div className="relative" ref={gstr1Ref}>
               <button
+                type="button"
                 onClick={() => { setShowGstr1Menu(!showGstr1Menu); setShowGstr3bMenu(false); }}
-                className="px-4 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 font-semibold text-xs tracking-wide flex items-center gap-2 transition-all"
+                className="px-4 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 font-semibold text-xs tracking-wide flex items-center gap-2 transition-all cursor-pointer shadow-md"
               >
                 <FileText className="w-4 h-4 text-blue-400" />
                 GSTR-1 Reports
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showGstr1Menu ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showGstr1Menu ? 'rotate-180' : ''}`} />
               </button>
 
               {showGstr1Menu && (
-                <div className="absolute right-0 mt-2 w-56 glass-card border border-white/15 rounded-xl shadow-2xl py-1.5 z-50">
+                <div className="absolute right-0 mt-2 w-64 bg-[#18181b] border border-white/20 rounded-xl shadow-2xl py-1.5 z-[100] divide-y divide-white/5">
                   <button
+                    type="button"
                     onClick={handleDownloadGSTR1PDF}
-                    className="w-full px-4 py-2 text-xs text-left text-white/80 hover:bg-white/10 hover:text-white flex items-center gap-2"
+                    className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
                   >
-                    <FileText className="w-4 h-4 text-blue-400" />
-                    GSTR-1 Summary PDF
+                    <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 mt-0.5 group-hover:bg-blue-500/30 shrink-0">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-white group-hover:text-blue-300">
+                        GSTR-1 Summary PDF
+                      </div>
+                      <div className="text-[10px] text-white/50 mt-0.5">
+                        Statutory summary of outward supplies
+                      </div>
+                    </div>
                   </button>
+
                   <button
+                    type="button"
                     onClick={handleDownloadGSTR1Excel}
-                    className="w-full px-4 py-2 text-xs text-left text-white/80 hover:bg-white/10 hover:text-white flex items-center gap-2"
+                    className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
                   >
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-                    GSTR-1 Offline Excel (Tables)
-                  </button>
-                  <button
-                    onClick={handleDownloadGSTR1JSON}
-                    className="w-full px-4 py-2 text-xs text-left text-white/80 hover:bg-white/10 hover:text-white flex items-center gap-2"
-                  >
-                    <FileCode className="w-4 h-4 text-amber-400" />
-                    GST Portal JSON (Direct Upload)
+                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 mt-0.5 group-hover:bg-emerald-500/30 shrink-0">
+                      <FileSpreadsheet className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-white group-hover:text-emerald-300">
+                        GSTR-1 Excel Report
+                      </div>
+                      <div className="text-[10px] text-white/50 mt-0.5">
+                        Govt offline sheets (b2b, b2cs, hsn, docs)
+                      </div>
+                    </div>
                   </button>
                 </div>
               )}
             </div>
 
-            {/* 4. GSTR-3B MENU */}
-            <div className="relative">
+            {/* 4. GSTR-3B MENU (HIGH-CONTRAST OPAQUE DROPDOWN) */}
+            <div className="relative" ref={gstr3bRef}>
               <button
+                type="button"
                 onClick={() => { setShowGstr3bMenu(!showGstr3bMenu); setShowGstr1Menu(false); }}
-                className="px-4 py-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-semibold text-xs tracking-wide flex items-center gap-2 transition-all"
+                className="px-4 py-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-semibold text-xs tracking-wide flex items-center gap-2 transition-all cursor-pointer shadow-md"
               >
                 <Layers className="w-4 h-4 text-purple-400" />
                 GSTR-3B Return
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showGstr3bMenu ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showGstr3bMenu ? 'rotate-180' : ''}`} />
               </button>
 
               {showGstr3bMenu && (
-                <div className="absolute right-0 mt-2 w-52 glass-card border border-white/15 rounded-xl shadow-2xl py-1.5 z-50">
+                <div className="absolute right-0 mt-2 w-64 bg-[#18181b] border border-white/20 rounded-xl shadow-2xl py-1.5 z-[100] divide-y divide-white/5">
                   <button
+                    type="button"
                     onClick={handleDownloadGSTR3BPDF}
-                    className="w-full px-4 py-2 text-xs text-left text-white/80 hover:bg-white/10 hover:text-white flex items-center gap-2"
+                    className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
                   >
-                    <FileText className="w-4 h-4 text-purple-400" />
-                    GSTR-3B Summary PDF
+                    <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-400 mt-0.5 group-hover:bg-purple-500/30 shrink-0">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-white group-hover:text-purple-300">
+                        GSTR-3B Summary PDF
+                      </div>
+                      <div className="text-[10px] text-white/50 mt-0.5">
+                        Tables 3.1, 4, 5, 5.1 & 6.1 statutory return
+                      </div>
+                    </div>
                   </button>
+
                   <button
+                    type="button"
                     onClick={handleDownloadGSTR3BExcel}
-                    className="w-full px-4 py-2 text-xs text-left text-white/80 hover:bg-white/10 hover:text-white flex items-center gap-2"
+                    className="w-full px-4 py-3 text-left hover:bg-white/10 transition-colors flex items-start gap-3 cursor-pointer group"
                   >
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-                    GSTR-3B Table Excel
+                    <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 mt-0.5 group-hover:bg-emerald-500/30 shrink-0">
+                      <FileSpreadsheet className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-white group-hover:text-emerald-300">
+                        GSTR-3B Table Excel
+                      </div>
+                      <div className="text-[10px] text-white/50 mt-0.5">
+                        Multi-sheet tables (Table 3.1, 4, 5, 5.1, 6.1)
+                      </div>
+                    </div>
                   </button>
                 </div>
               )}
@@ -578,14 +662,14 @@ export default function Reports() {
           </div>
 
           {/* Search Bar */}
-          <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+          <div className="flex items-center w-full sm:w-64 bg-black/40 border border-white/15 px-3 py-2 rounded-xl focus-within:border-[#D4AF37]/50 transition-colors">
+            <Search className="w-4 h-4 text-white/40 mr-2.5 shrink-0" />
             <input
               type="text"
               placeholder="Search invoice or customer..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full bg-black/40 border border-white/15 pl-9 pr-3 py-1.5 rounded-xl text-xs text-white placeholder-white/40 outline-none focus:border-[#D4AF37]/50"
+              className="bg-transparent outline-none w-full text-xs text-white placeholder-white/40"
             />
           </div>
         </div>
@@ -665,7 +749,7 @@ export default function Reports() {
                     <td className="py-3 px-4 text-center">
                       <button
                         onClick={() => handleDownloadSingleInvoice(inv)}
-                        className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-[#D4AF37]/20 hover:text-[#D4AF37] border border-white/10 text-[11px] font-medium transition-colors flex items-center gap-1 mx-auto"
+                        className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-[#D4AF37]/20 hover:text-[#D4AF37] border border-white/10 text-[11px] font-medium transition-colors flex items-center gap-1 mx-auto cursor-pointer"
                         title="Download Individual Invoice PDF"
                       >
                         <Download className="w-3 h-3" />
