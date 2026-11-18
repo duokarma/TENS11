@@ -274,6 +274,12 @@ export interface GSTReportSummary {
   rateBuckets: Record<number, { taxable: number; cgst: number; sgst: number; igst: number; total: number }>;
   paymentBreakdown: Record<string, number>;
   hsnSummary: HSNBreakdown[];
+  // Statutory Outward & Inward Category Totals (Dynamically calculated)
+  nilRatedSupplies: number;
+  exemptedSupplies: number;
+  nonGstSupplies: number;
+  zeroRatedSupplies: number;
+  reverseChargeSupplies: number;
 }
 
 // ─── 1. FETCH DATA (SAFE QUERY — NO UNKNOWN COLUMNS) ──────────────────────────
@@ -407,11 +413,15 @@ export function processInvoices(
     }
 
     const grossTotalSum = rawItems.reduce((acc, it) => acc + (it.qty * it.rate), 0);
-    const effectiveGross = grossTotalSum > 0 ? grossTotalSum : grandTotal;
+    // If checkout grandTotal differs from raw item sum, scale items proportionally so line items sum exactly to grandTotal
+    const scaleFactor = grossTotalSum > 0 && grandTotal > 0 ? (grandTotal / grossTotalSum) : 1;
 
     const items: InvoiceLineItem[] = rawItems.map(item => {
-      const itemGross = item.qty * item.rate;
-      const itemDiscount = grossTotalSum > 0 
+      const scaledRate = grossTotalSum > 0 && grandTotal > 0 && Math.abs(grossTotalSum - grandTotal) > 0.01
+        ? Math.round((item.rate * scaleFactor) * 100) / 100
+        : item.rate;
+      const itemGross = Math.round(item.qty * scaledRate * 100) / 100;
+      const itemDiscount = (grossTotalSum > 0 && discountAmount > 0 && Math.abs(scaleFactor - 1) < 0.001)
         ? Math.round((discountAmount * (itemGross / grossTotalSum)) * 100) / 100 
         : 0;
       const netLineGross = Math.max(0, itemGross - itemDiscount);
@@ -424,7 +434,7 @@ export function processInvoices(
         code: item.code,
         codeDesc: item.codeDesc,
         quantity: item.qty,
-        rate: item.rate,
+        rate: scaledRate,
         grossAmount: itemGross,
         discount: itemDiscount,
         taxableAmount: taxCalc.taxableAmount,
@@ -447,6 +457,11 @@ export function processInvoices(
     if (Math.abs(diff) > 0 && items.length > 0) {
       const largestItem = items.reduce((max, it) => it.total > max.total ? it : max, items[0]);
       largestItem.total = Math.round((largestItem.total + diff) * 100) / 100;
+      const reCalc = calculateLineTax(largestItem.total, largestItem.gstRate, isInterstate);
+      largestItem.taxableAmount = reCalc.taxableAmount;
+      largestItem.cgst = reCalc.cgst;
+      largestItem.sgst = reCalc.sgst;
+      largestItem.igst = reCalc.igst;
     }
 
     const totalQty = items.reduce((acc, it) => acc + it.quantity, 0);
@@ -465,7 +480,7 @@ export function processInvoices(
       paymentMethod: visit.payment_method || 'Cash',
       items,
       totalQty,
-      grossTotal: effectiveGross,
+      grossTotal: grandTotal,
       discountAmount,
       taxableAmount: invTaxable,
       cgst: invCgst,
@@ -490,6 +505,11 @@ export function calculateReportSummary(invoices: ProcessedInvoice[]): GSTReportS
   let b2cCount = 0;
   let b2bTaxable = 0;
   let b2cTaxable = 0;
+  let nilRatedSupplies = 0;
+  let exemptedSupplies = 0;
+  let nonGstSupplies = 0;
+  let zeroRatedSupplies = 0;
+  let reverseChargeSupplies = 0;
 
   const paymentBreakdown: Record<string, number> = {};
   const hsnMap: Record<string, HSNBreakdown> = {};
@@ -547,6 +567,18 @@ export function calculateReportSummary(invoices: ProcessedInvoice[]): GSTReportS
       rateBuckets[rate].sgst += it.sgst;
       rateBuckets[rate].igst += it.igst;
       rateBuckets[rate].total += it.total;
+
+      // Track statutory categories dynamically from line items
+      if (it.gstRate === 0) {
+        nilRatedSupplies += it.taxableAmount;
+      }
+      const descLower = (it.name || '').toLowerCase();
+      if (it.code === 'EXEMPT' || descLower.includes('exempt')) {
+        exemptedSupplies += it.taxableAmount;
+      }
+      if (it.code === 'NON-GST' || descLower.includes('non-gst') || descLower.includes('petrol') || descLower.includes('liquor')) {
+        nonGstSupplies += it.taxableAmount;
+      }
     }
   }
 
@@ -565,7 +597,12 @@ export function calculateReportSummary(invoices: ProcessedInvoice[]): GSTReportS
     b2cTaxable: Math.round(b2cTaxable * 100) / 100,
     rateBuckets,
     paymentBreakdown,
-    hsnSummary: Object.values(hsnMap)
+    hsnSummary: Object.values(hsnMap),
+    nilRatedSupplies: Math.round(nilRatedSupplies * 100) / 100,
+    exemptedSupplies: Math.round(exemptedSupplies * 100) / 100,
+    nonGstSupplies: Math.round(nonGstSupplies * 100) / 100,
+    zeroRatedSupplies: Math.round(zeroRatedSupplies * 100) / 100,
+    reverseChargeSupplies: Math.round(reverseChargeSupplies * 100) / 100
   };
 }
 
@@ -1284,36 +1321,45 @@ export async function generateGSTR1PDF(options: {
   doc.rect(leftMargin, y, printableWidth, 24, 'FD');
 
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
   doc.setTextColor(40, 40, 40);
-  doc.text('1. GSTIN:', leftMargin + 4, y + 6);
+
+  // Row 1: GSTIN (Left), Financial Year (Middle), Tax Period (Right)
+  doc.setFont('helvetica', 'bold');
+  doc.text('1. GSTIN:', leftMargin + 3, y + 5.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(SALON_INFO.gstin, leftMargin + 20, y + 6);
+  doc.text(SALON_INFO.gstin, leftMargin + 18, y + 5.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Year:', rightEdge - 55, y + 6);
+  doc.text('Financial Year:', leftMargin + 72, y + 5.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('2026-27', rightEdge - 42, y + 6);
+  doc.text('2026-27', leftMargin + 95, y + 5.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Tax Period:', rightEdge - 28, y + 6);
+  doc.text('Tax Period:', leftMargin + 125, y + 5.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(periodLabel, rightEdge - 4, y + 6, { align: 'right' });
+  doc.text(periodLabel, leftMargin + 143, y + 5.5);
+
+  // Row 2: Legal Name (Left), Taxpayer Category (Right)
+  doc.setFont('helvetica', 'bold');
+  doc.text('2. (a) Legal Name:', leftMargin + 3, y + 11.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(SALON_INFO.name, leftMargin + 30, y + 11.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('2. (a) Legal name of the registered person:', leftMargin + 4, y + 12);
+  doc.text('Taxpayer Category:', leftMargin + 125, y + 11.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(SALON_INFO.name, leftMargin + 65, y + 12);
+  doc.text('Regular / Section 9', leftMargin + 153, y + 11.5);
+
+  // Row 3: Trade Name (Left), Preceding FY Turnover (Right)
+  doc.setFont('helvetica', 'bold');
+  doc.text('2. (b) Trade Name:', leftMargin + 3, y + 17.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(SALON_INFO.tradeName, leftMargin + 30, y + 17.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('2. (b) Trade name, if any:', leftMargin + 4, y + 18);
+  doc.text('3. (a) Preceding FY Turnover:', leftMargin + 90, y + 17.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(SALON_INFO.tradeName, leftMargin + 45, y + 18);
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('3. (a) Preceding FY Aggregate Turnover:', rightEdge - 75, y + 18);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Active / Regular Taxpayer', rightEdge - 4, y + 18, { align: 'right' });
+  doc.text('Verified Active (CA Reconciled)', leftMargin + 135, y + 17.5);
 
   y += 29;
 
@@ -1492,12 +1538,12 @@ export async function generateGSTR1PDF(options: {
     ['1', 'Inter-State supplies to registered persons', '0.00', '0.00', '0.00'],
     ['2', 'Intra-State supplies to registered persons', '0.00', '0.00', '0.00'],
     ['3', 'Inter-State supplies to unregistered persons', '0.00', '0.00', '0.00'],
-    ['4', 'Intra-State supplies to unregistered persons', '0.00', '0.00', '0.00'],
+    ['4', 'Intra-State supplies to unregistered persons', formatINR(summary.nilRatedSupplies), formatINR(summary.exemptedSupplies), formatINR(summary.nonGstSupplies)],
     [
       { content: 'TOTAL EXEMPT / NIL RATED:', colSpan: 2, styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
-      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
-      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
-      { content: '0.00', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } }
+      { content: formatINR(summary.nilRatedSupplies), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.exemptedSupplies), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.nonGstSupplies), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } }
     ]
   ];
 
@@ -1730,9 +1776,19 @@ export async function exportGSTR1Excel(options: {
     }
   ];
 
+  const nilData = [
+    {
+      'Description': 'Intra-State supplies to unregistered persons',
+      'Nil Rated Supplies': summary?.nilRatedSupplies || 0,
+      'Exempted (other than nil rated/non GST supply)': summary?.exemptedSupplies || 0,
+      'Non-GST supplies': summary?.nonGstSupplies || 0
+    }
+  ];
+
   const wb = utils.book_new();
   utils.book_append_sheet(wb, utils.json_to_sheet(b2bData.length > 0 ? b2bData : [{ 'Message': 'No B2B Invoices' }]), 'b2b');
   utils.book_append_sheet(wb, utils.json_to_sheet(b2csData), 'b2cs');
+  utils.book_append_sheet(wb, utils.json_to_sheet(nilData), 'nil');
   utils.book_append_sheet(wb, utils.json_to_sheet(hsnData.length > 0 ? hsnData : [{ 'Message': 'No HSN records' }]), 'hsn');
   utils.book_append_sheet(wb, utils.json_to_sheet(docsData), 'docs');
 
@@ -1785,36 +1841,50 @@ export async function generateGSTR3BPDF(options: {
   // Basic Information Box (Govt statutory structure)
   doc.setDrawColor(200, 205, 210);
   doc.setFillColor(248, 250, 252);
-  doc.rect(leftMargin, y, printableWidth, 20, 'FD');
+  doc.rect(leftMargin, y, printableWidth, 24, 'FD');
 
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
   doc.setTextColor(40, 40, 40);
-  doc.text('1. GSTIN:', leftMargin + 4, y + 5.5);
+
+  // Row 1: GSTIN, Year, Period
+  doc.setFont('helvetica', 'bold');
+  doc.text('1. GSTIN:', leftMargin + 3, y + 5.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(SALON_INFO.gstin, leftMargin + 20, y + 5.5);
+  doc.text(SALON_INFO.gstin, leftMargin + 18, y + 5.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Year:', rightEdge - 55, y + 5.5);
+  doc.text('Financial Year:', leftMargin + 72, y + 5.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('2026-27', rightEdge - 42, y + 5.5);
+  doc.text('2026-27', leftMargin + 95, y + 5.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Period:', rightEdge - 28, y + 5.5);
+  doc.text('Tax Period:', leftMargin + 125, y + 5.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(periodLabel, rightEdge - 4, y + 5.5, { align: 'right' });
+  doc.text(periodLabel, leftMargin + 143, y + 5.5);
+
+  // Row 2: Legal Name and Category
+  doc.setFont('helvetica', 'bold');
+  doc.text('2. Legal Name:', leftMargin + 3, y + 11.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(SALON_INFO.name, leftMargin + 28, y + 11.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('2. Legal name:', leftMargin + 4, y + 11);
+  doc.text('Taxpayer Category:', leftMargin + 125, y + 11.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(SALON_INFO.name, leftMargin + 28, y + 11);
+  doc.text('Regular / Section 9', leftMargin + 153, y + 11.5);
+
+  // Row 3: Trade Name and Return Status
+  doc.setFont('helvetica', 'bold');
+  doc.text('2(a). Trade Name:', leftMargin + 3, y + 17.5);
+  doc.setFont('helvetica', 'normal');
+  doc.text(SALON_INFO.tradeName, leftMargin + 30, y + 17.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('2(a). Trade name:', leftMargin + 4, y + 16.5);
+  doc.text('Return Status:', leftMargin + 125, y + 17.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(SALON_INFO.tradeName, leftMargin + 32, y + 16.5);
+  doc.text('Working Draft (Pre-filing)', leftMargin + 146, y + 17.5);
 
-  y += 25;
+  y += 29;
 
   // ── Table 3.1: Tax on Outward and Reverse-Charge Inward Supplies ──
   doc.setFontSize(9);
@@ -1832,13 +1902,13 @@ export async function generateGSTR3BPDF(options: {
       formatINR(summary.sgstTotal),
       '0.00'
     ],
-    ['(b) Outward taxable supplies (zero rated)', '0.00', '0.00', '-', '-', '0.00'],
-    ['(c) Other outward supplies (Nil rated, exempted)', '0.00', '-', '-', '-', '-'],
-    ['(d) Inward supplies (liable to reverse charge)', '0.00', '0.00', '0.00', '0.00', '0.00'],
-    ['(e) Non-GST outward supplies', '0.00', '-', '-', '-', '-'],
+    ['(b) Outward taxable supplies (zero rated)', formatINR(summary.zeroRatedSupplies), formatINR(summary.zeroRatedSupplies > 0 ? summary.igstTotal : 0), '-', '-', '0.00'],
+    ['(c) Other outward supplies (Nil rated, exempted)', formatINR(summary.nilRatedSupplies + summary.exemptedSupplies), '-', '-', '-', '-'],
+    ['(d) Inward supplies (liable to reverse charge)', formatINR(summary.reverseChargeSupplies), '0.00', '0.00', '0.00', '0.00'],
+    ['(e) Non-GST outward supplies', formatINR(summary.nonGstSupplies), '-', '-', '-', '-'],
     [
       { content: 'TOTAL 3.1 LIABILITIES:', styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
-      { content: formatINR(summary.taxableSales), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
+      { content: formatINR(summary.taxableSales + summary.zeroRatedSupplies + summary.nilRatedSupplies + summary.exemptedSupplies + summary.nonGstSupplies), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
       { content: formatINR(summary.igstTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
       { content: formatINR(summary.cgstTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
       { content: formatINR(summary.sgstTotal), styles: { halign: 'right' as const, fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },

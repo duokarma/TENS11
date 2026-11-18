@@ -110,7 +110,12 @@ export default function Reports() {
       b2cTaxable: 0,
       rateBuckets: {},
       paymentBreakdown: {},
-      hsnSummary: []
+      hsnSummary: [],
+      nilRatedSupplies: 0,
+      exemptedSupplies: 0,
+      nonGstSupplies: 0,
+      zeroRatedSupplies: 0,
+      reverseChargeSupplies: 0
     };
   };
 
