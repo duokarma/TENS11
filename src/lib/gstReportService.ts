@@ -1432,36 +1432,36 @@ export async function generateGSTR1PDF(options: {
   doc.text(SALON_INFO.gstin, leftMargin + 18, y + 5.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Financial Year:', leftMargin + 72, y + 5.5);
+  doc.text('Financial Year:', leftMargin + 68, y + 5.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('2026-27', leftMargin + 95, y + 5.5);
+  doc.text('2026-27', leftMargin + 90, y + 5.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Tax Period:', leftMargin + 125, y + 5.5);
+  doc.text('Tax Period:', leftMargin + 118, y + 5.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(periodLabel, leftMargin + 143, y + 5.5);
+  doc.text(periodLabel, leftMargin + 136, y + 5.5);
 
   // Row 2: Legal Name (Left), Taxpayer Category (Right)
   doc.setFont('helvetica', 'bold');
   doc.text('2. (a) Legal Name:', leftMargin + 3, y + 11.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(SALON_INFO.name, leftMargin + 30, y + 11.5);
+  doc.text(SALON_INFO.name, leftMargin + 28, y + 11.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Taxpayer Category:', leftMargin + 125, y + 11.5);
+  doc.text('Taxpayer Category:', leftMargin + 118, y + 11.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('Regular / Section 9', leftMargin + 153, y + 11.5);
+  doc.text('Regular / Section 9', leftMargin + 146, y + 11.5);
 
   // Row 3: Trade Name (Left), Preceding FY Turnover (Right)
   doc.setFont('helvetica', 'bold');
   doc.text('2. (b) Trade Name:', leftMargin + 3, y + 17.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(SALON_INFO.tradeName, leftMargin + 30, y + 17.5);
+  doc.text(SALON_INFO.tradeName, leftMargin + 28, y + 17.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('3. (a) Preceding FY Turnover:', leftMargin + 90, y + 17.5);
+  doc.text('3. (a) Preceding FY Turnover:', leftMargin + 95, y + 17.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('Verified Active (CA Reconciled)', leftMargin + 135, y + 17.5);
+  doc.text('Verified Active (Regular)', leftMargin + 140, y + 17.5);
 
   y += 29;
 
@@ -1795,11 +1795,16 @@ export async function generateGSTR1PDF(options: {
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
+    if (p > 1) {
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(120, 120, 120);
+      doc.text(`FORM GSTR-1 | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel} (PROVISIONAL / MTD)`, leftMargin, 8);
+      doc.text(`PROVISIONAL MTD REPORT — REGENERATE POST 30-NOV`, pageWidth / 2, 8, { align: 'center' });
+    }
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text(`FORM GSTR-1 | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel} (PROVISIONAL / MTD)`, leftMargin, 8);
-    doc.text(`PROVISIONAL MTD REPORT — REGENERATE POST 30-NOV`, pageWidth / 2, 8, { align: 'center' });
     doc.text(`Page ${p} of ${totalPages}`, rightEdge, pageHeight - 6, { align: 'right' });
   }
 
@@ -1955,36 +1960,36 @@ export async function generateGSTR3BPDF(options: {
   doc.text(SALON_INFO.gstin, leftMargin + 18, y + 5.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Financial Year:', leftMargin + 72, y + 5.5);
+  doc.text('Financial Year:', leftMargin + 68, y + 5.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('2026-27', leftMargin + 95, y + 5.5);
+  doc.text('2026-27', leftMargin + 90, y + 5.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Tax Period:', leftMargin + 125, y + 5.5);
+  doc.text('Tax Period:', leftMargin + 118, y + 5.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(periodLabel, leftMargin + 143, y + 5.5);
+  doc.text(periodLabel, leftMargin + 136, y + 5.5);
 
   // Row 2: Legal Name and Category
   doc.setFont('helvetica', 'bold');
   doc.text('2. Legal Name:', leftMargin + 3, y + 11.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(SALON_INFO.name, leftMargin + 28, y + 11.5);
+  doc.text(SALON_INFO.name, leftMargin + 25, y + 11.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Taxpayer Category:', leftMargin + 125, y + 11.5);
+  doc.text('Taxpayer Category:', leftMargin + 118, y + 11.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('Regular / Section 9', leftMargin + 153, y + 11.5);
+  doc.text('Regular / Section 9', leftMargin + 146, y + 11.5);
 
   // Row 3: Trade Name and Return Status
   doc.setFont('helvetica', 'bold');
   doc.text('2(a). Trade Name:', leftMargin + 3, y + 17.5);
   doc.setFont('helvetica', 'normal');
-  doc.text(SALON_INFO.tradeName, leftMargin + 30, y + 17.5);
+  doc.text(SALON_INFO.tradeName, leftMargin + 28, y + 17.5);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Return Status:', leftMargin + 125, y + 17.5);
+  doc.text('Return Status:', leftMargin + 118, y + 17.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('Provisional / MTD Draft (Period Open)', leftMargin + 146, y + 17.5);
+  doc.text('Provisional (MTD)', leftMargin + 140, y + 17.5);
 
   y += 29;
 
@@ -2266,11 +2271,16 @@ export async function generateGSTR3BPDF(options: {
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
+    if (p > 1) {
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(120, 120, 120);
+      doc.text(`FORM GSTR-3B | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel} (PROVISIONAL / MTD)`, leftMargin, 8);
+      doc.text(`PROVISIONAL MTD REPORT — REGENERATE POST 30-NOV`, pageWidth / 2, 8, { align: 'center' });
+    }
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text(`FORM GSTR-3B | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel} (PROVISIONAL / MTD)`, leftMargin, 8);
-    doc.text(`PROVISIONAL MTD REPORT — REGENERATE POST 30-NOV`, pageWidth / 2, 8, { align: 'center' });
     doc.text(`Page ${p} of ${totalPages}`, rightEdge, pageHeight - 6, { align: 'right' });
   }
 

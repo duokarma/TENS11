@@ -60,34 +60,34 @@ async function generateAll() {
   gstr1Doc.text('24HDQPM1606E1ZM', leftMargin + 18, y + 5.5);
 
   gstr1Doc.setFont('helvetica', 'bold');
-  gstr1Doc.text('Financial Year:', leftMargin + 72, y + 5.5);
+  gstr1Doc.text('Financial Year:', leftMargin + 68, y + 5.5);
   gstr1Doc.setFont('helvetica', 'normal');
-  gstr1Doc.text('2026-27', leftMargin + 95, y + 5.5);
+  gstr1Doc.text('2026-27', leftMargin + 90, y + 5.5);
 
   gstr1Doc.setFont('helvetica', 'bold');
-  gstr1Doc.text('Tax Period:', leftMargin + 125, y + 5.5);
+  gstr1Doc.text('Tax Period:', leftMargin + 118, y + 5.5);
   gstr1Doc.setFont('helvetica', 'normal');
-  gstr1Doc.text(periodLabel, leftMargin + 143, y + 5.5);
+  gstr1Doc.text(periodLabel, leftMargin + 136, y + 5.5);
 
   gstr1Doc.setFont('helvetica', 'bold');
   gstr1Doc.text('2. (a) Legal Name:', leftMargin + 3, y + 11.5);
   gstr1Doc.setFont('helvetica', 'normal');
-  gstr1Doc.text('TEN11 SALON & SKIN CARE', leftMargin + 30, y + 11.5);
+  gstr1Doc.text('TEN11 SALON & SKIN CARE', leftMargin + 28, y + 11.5);
 
   gstr1Doc.setFont('helvetica', 'bold');
-  gstr1Doc.text('Taxpayer Category:', leftMargin + 125, y + 11.5);
+  gstr1Doc.text('Taxpayer Category:', leftMargin + 118, y + 11.5);
   gstr1Doc.setFont('helvetica', 'normal');
-  gstr1Doc.text('Regular / Section 9', leftMargin + 153, y + 11.5);
+  gstr1Doc.text('Regular / Section 9', leftMargin + 146, y + 11.5);
 
   gstr1Doc.setFont('helvetica', 'bold');
   gstr1Doc.text('2. (b) Trade Name:', leftMargin + 3, y + 17.5);
   gstr1Doc.setFont('helvetica', 'normal');
-  gstr1Doc.text('TEN11 SALON & SKIN CARE', leftMargin + 30, y + 17.5);
+  gstr1Doc.text('TEN11 SALON & SKIN CARE', leftMargin + 28, y + 17.5);
 
   gstr1Doc.setFont('helvetica', 'bold');
-  gstr1Doc.text('3. (a) Preceding FY Turnover:', leftMargin + 90, y + 17.5);
+  gstr1Doc.text('3. (a) Preceding FY Turnover:', leftMargin + 95, y + 17.5);
   gstr1Doc.setFont('helvetica', 'normal');
-  gstr1Doc.text('Verified Active (CA Reconciled)', leftMargin + 135, y + 17.5);
+  gstr1Doc.text('Verified Active (Regular)', leftMargin + 140, y + 17.5);
 
   y += 29;
 
@@ -322,34 +322,34 @@ async function generateAll() {
   gstr3bDoc.text('24HDQPM1606E1ZM', leftMargin + 18, y3 + 5.5);
 
   gstr3bDoc.setFont('helvetica', 'bold');
-  gstr3bDoc.text('Financial Year:', leftMargin + 72, y3 + 5.5);
+  gstr3bDoc.text('Financial Year:', leftMargin + 68, y3 + 5.5);
   gstr3bDoc.setFont('helvetica', 'normal');
-  gstr3bDoc.text('2026-27', leftMargin + 95, y3 + 5.5);
+  gstr3bDoc.text('2026-27', leftMargin + 90, y3 + 5.5);
 
   gstr3bDoc.setFont('helvetica', 'bold');
-  gstr3bDoc.text('Tax Period:', leftMargin + 125, y3 + 5.5);
+  gstr3bDoc.text('Tax Period:', leftMargin + 118, y3 + 5.5);
   gstr3bDoc.setFont('helvetica', 'normal');
-  gstr3bDoc.text(periodLabel, leftMargin + 143, y3 + 5.5);
+  gstr3bDoc.text(periodLabel, leftMargin + 136, y3 + 5.5);
 
   gstr3bDoc.setFont('helvetica', 'bold');
   gstr3bDoc.text('2. Legal Name:', leftMargin + 3, y3 + 11.5);
   gstr3bDoc.setFont('helvetica', 'normal');
-  gstr3bDoc.text('TEN11 SALON & SKIN CARE', leftMargin + 28, y3 + 11.5);
+  gstr3bDoc.text('TEN11 SALON & SKIN CARE', leftMargin + 25, y3 + 11.5);
 
   gstr3bDoc.setFont('helvetica', 'bold');
-  gstr3bDoc.text('Taxpayer Category:', leftMargin + 125, y3 + 11.5);
+  gstr3bDoc.text('Taxpayer Category:', leftMargin + 118, y3 + 11.5);
   gstr3bDoc.setFont('helvetica', 'normal');
-  gstr3bDoc.text('Regular / Section 9', leftMargin + 153, y3 + 11.5);
+  gstr3bDoc.text('Regular / Section 9', leftMargin + 146, y3 + 11.5);
 
   gstr3bDoc.setFont('helvetica', 'bold');
   gstr3bDoc.text('2(a). Trade Name:', leftMargin + 3, y3 + 17.5);
   gstr3bDoc.setFont('helvetica', 'normal');
-  gstr3bDoc.text('TEN11 SALON & SKIN CARE', leftMargin + 30, y3 + 17.5);
+  gstr3bDoc.text('TEN11 SALON & SKIN CARE', leftMargin + 28, y3 + 17.5);
 
   gstr3bDoc.setFont('helvetica', 'bold');
-  gstr3bDoc.text('Return Status:', leftMargin + 125, y3 + 17.5);
+  gstr3bDoc.text('Return Status:', leftMargin + 118, y3 + 17.5);
   gstr3bDoc.setFont('helvetica', 'normal');
-  gstr3bDoc.text('Provisional / MTD Draft (Period Open)', leftMargin + 146, y3 + 17.5);
+  gstr3bDoc.text('Provisional (MTD)', leftMargin + 140, y3 + 17.5);
 
   y3 += 29;
 
