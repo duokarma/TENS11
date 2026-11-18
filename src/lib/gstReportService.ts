@@ -2072,8 +2072,13 @@ export async function generateGSTR3BPDF(options: {
   // ── Table 4: Eligible ITC (Strictly Sourced from Verified Purchase Records) ──
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(20, 25, 30);
   doc.text('4. Eligible Input Tax Credit (ITC)', leftMargin, y);
-  y += 4;
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text('Statutory Notice: ITC on 5% salon service inputs disallowed under Group 99972. Product ITC & Rule 42 Common ITC subject to CA GSTR-2B audit.', leftMargin, y + 4);
+  y += 7;
 
   const itcRows = [
     ['(A) ITC Available (whether in full or part)', '', '', '', ''],
@@ -2081,9 +2086,9 @@ export async function generateGSTR3BPDF(options: {
     ['   (2) Import of services', '0.00', '0.00', '0.00', '0.00'],
     ['   (3) Inward supplies liable to reverse charge', '0.00', '0.00', '0.00', '0.00'],
     ['   (4) Inward supplies from ISD', '0.00', '0.00', '0.00', '0.00'],
-    ['   (5) All other ITC (Source purchase records verification)', '0.00', '0.00', '0.00', '0.00'],
+    ['   (5) All other ITC (Eligible Product ITC & Rule 42 Common ITC)', '0.00', '0.00', '0.00', '0.00'],
     ['(B) ITC Reversed', '', '', '', ''],
-    ['   (1) As per rules 42 & 43 of CGST Rules and section 17(5)', '0.00', '0.00', '0.00', '0.00'],
+    ['   (1) As per rules 42 & 43 of CGST Rules and section 17(5) (Ineligible Service Inputs)', '0.00', '0.00', '0.00', '0.00'],
     ['   (2) Others', '0.00', '0.00', '0.00', '0.00'],
     [
       { content: '(C) Net ITC Available (A) - (B)', styles: { fontStyle: 'bold' as const, fillColor: [240, 243, 246] } },
@@ -2344,21 +2349,21 @@ export async function exportGSTR3BExcel(options: {
   // Sheet 3: Table 4 Eligible ITC
   const sheet4Data = [
     {
-      'Table 4 Eligible ITC Details': '(A) (5) All other ITC (Source purchase records)',
+      'Table 4 Eligible ITC Details': '(A) (5) All other ITC (Eligible Product ITC & Rule 42 Common ITC - To be confirmed by CA from GSTR-2B)',
       'Integrated Tax (Rs)': 0,
       'Central Tax (Rs)': 0,
       'State/UT Tax (Rs)': 0,
       'Cess (Rs)': 0
     },
     {
-      'Table 4 Eligible ITC Details': '(B) ITC Reversed',
+      'Table 4 Eligible ITC Details': '(B) (1) ITC Reversed as per Rule 42/43 & Section 17(5) (Ineligible Salon Service Inputs)',
       'Integrated Tax (Rs)': 0,
       'Central Tax (Rs)': 0,
       'State/UT Tax (Rs)': 0,
       'Cess (Rs)': 0
     },
     {
-      'Table 4 Eligible ITC Details': '(C) Net ITC Available',
+      'Table 4 Eligible ITC Details': '(C) Net ITC Available (Subject to CA GSTR-2B Ledger Reconciliation)',
       'Integrated Tax (Rs)': 0,
       'Central Tax (Rs)': 0,
       'State/UT Tax (Rs)': 0,
