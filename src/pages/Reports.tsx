@@ -301,7 +301,7 @@ export default function Reports() {
             GST Reports & Invoices
           </h2>
           <p className="mt-1 font-light text-white/50 text-sm">
-            Statutory CA GST returns, Consolidated Sales Invoice books, and GSTR-1 / GSTR-3B reconciliations.
+            Statutory GST returns, Consolidated Sales Invoice books, and GSTR-1 / GSTR-3B reconciliations.
           </p>
         </div>
 

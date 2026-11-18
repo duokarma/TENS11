@@ -40,10 +40,10 @@ async function generateAll() {
   gstr1Doc.setFontSize(7.5);
   gstr1Doc.setFont('helvetica', 'bold');
   gstr1Doc.setTextColor(180, 40, 40);
-  gstr1Doc.text('PREVIEW / WORKING REPORT', rightEdge - 37.5, y + 7, { align: 'center' });
-  gstr1Doc.setFontSize(6.5);
+  gstr1Doc.text('PROVISIONAL / MTD REPORT', rightEdge - 37.5, y + 7, { align: 'center' });
+  gstr1Doc.setFontSize(6);
   gstr1Doc.setFont('helvetica', 'normal');
-  gstr1Doc.text('NOT FILED WITH GST PORTAL', rightEdge - 37.5, y + 12, { align: 'center' });
+  gstr1Doc.text('INTERIM REPORT (AS OF 18-NOV-2026)', rightEdge - 37.5, y + 12, { align: 'center' });
 
   y += 20;
 
@@ -302,10 +302,10 @@ async function generateAll() {
   gstr3bDoc.setFontSize(7.5);
   gstr3bDoc.setFont('helvetica', 'bold');
   gstr3bDoc.setTextColor(180, 40, 40);
-  gstr3bDoc.text('PREVIEW / WORKING RETURN', rightEdge - 37.5, y3 + 7, { align: 'center' });
-  gstr3bDoc.setFontSize(6.5);
+  gstr3bDoc.text('PROVISIONAL / MTD RETURN', rightEdge - 37.5, y3 + 7, { align: 'center' });
+  gstr3bDoc.setFontSize(6);
   gstr3bDoc.setFont('helvetica', 'normal');
-  gstr3bDoc.text('NOT FILED WITH GST PORTAL', rightEdge - 37.5, y3 + 12, { align: 'center' });
+  gstr3bDoc.text('INTERIM REPORT (AS OF 18-NOV-2026)', rightEdge - 37.5, y3 + 12, { align: 'center' });
 
   y3 += 20;
 
@@ -349,7 +349,7 @@ async function generateAll() {
   gstr3bDoc.setFont('helvetica', 'bold');
   gstr3bDoc.text('Return Status:', leftMargin + 125, y3 + 17.5);
   gstr3bDoc.setFont('helvetica', 'normal');
-  gstr3bDoc.text('Working Draft (Pre-filing)', leftMargin + 146, y3 + 17.5);
+  gstr3bDoc.text('Provisional / MTD Draft (Period Open)', leftMargin + 146, y3 + 17.5);
 
   y3 += 29;
 

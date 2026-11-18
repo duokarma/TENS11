@@ -1410,10 +1410,10 @@ export async function generateGSTR1PDF(options: {
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(180, 40, 40);
-  doc.text('PREVIEW / WORKING REPORT', rightEdge - 37.5, y + 7, { align: 'center' });
-  doc.setFontSize(6.5);
+  doc.text('PROVISIONAL / MTD REPORT', rightEdge - 37.5, y + 7, { align: 'center' });
+  doc.setFontSize(6);
   doc.setFont('helvetica', 'normal');
-  doc.text('NOT FILED WITH GST PORTAL', rightEdge - 37.5, y + 12, { align: 'center' });
+  doc.text('INTERIM REPORT (AS OF 18-NOV-2026)', rightEdge - 37.5, y + 12, { align: 'center' });
 
   y += 20;
 
@@ -1798,8 +1798,8 @@ export async function generateGSTR1PDF(options: {
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text(`FORM GSTR-1 | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel}`, leftMargin, 8);
-    doc.text(`PREVIEW ONLY - NOT FILED`, pageWidth / 2, 8, { align: 'center' });
+    doc.text(`FORM GSTR-1 | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel} (PROVISIONAL / MTD)`, leftMargin, 8);
+    doc.text(`PROVISIONAL MTD REPORT — REGENERATE POST 30-NOV`, pageWidth / 2, 8, { align: 'center' });
     doc.text(`Page ${p} of ${totalPages}`, rightEdge, pageHeight - 6, { align: 'right' });
   }
 
@@ -1933,10 +1933,10 @@ export async function generateGSTR3BPDF(options: {
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(180, 40, 40);
-  doc.text('PREVIEW / WORKING RETURN', rightEdge - 37.5, y + 7, { align: 'center' });
-  doc.setFontSize(6.5);
+  doc.text('PROVISIONAL / MTD RETURN', rightEdge - 37.5, y + 7, { align: 'center' });
+  doc.setFontSize(6);
   doc.setFont('helvetica', 'normal');
-  doc.text('NOT FILED WITH GST PORTAL', rightEdge - 37.5, y + 12, { align: 'center' });
+  doc.text('INTERIM REPORT (AS OF 18-NOV-2026)', rightEdge - 37.5, y + 12, { align: 'center' });
 
   y += 20;
 
@@ -1984,7 +1984,7 @@ export async function generateGSTR3BPDF(options: {
   doc.setFont('helvetica', 'bold');
   doc.text('Return Status:', leftMargin + 125, y + 17.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('Working Draft (Pre-filing)', leftMargin + 146, y + 17.5);
+  doc.text('Provisional / MTD Draft (Period Open)', leftMargin + 146, y + 17.5);
 
   y += 29;
 
@@ -2269,8 +2269,8 @@ export async function generateGSTR3BPDF(options: {
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text(`FORM GSTR-3B | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel}`, leftMargin, 8);
-    doc.text(`PREVIEW ONLY - NOT FILED`, pageWidth / 2, 8, { align: 'center' });
+    doc.text(`FORM GSTR-3B | GSTIN: ${SALON_INFO.gstin} | Period: ${periodLabel} (PROVISIONAL / MTD)`, leftMargin, 8);
+    doc.text(`PROVISIONAL MTD REPORT — REGENERATE POST 30-NOV`, pageWidth / 2, 8, { align: 'center' });
     doc.text(`Page ${p} of ${totalPages}`, rightEdge, pageHeight - 6, { align: 'right' });
   }
 
